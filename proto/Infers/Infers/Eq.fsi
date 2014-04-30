@@ -2,7 +2,6 @@
 
 open System
 open Infers.Rep
-open Infers.Engine
 
 val eq: 'a -> 'a -> bool
 
@@ -11,7 +10,7 @@ type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 type p<'p, 'e, 'es>
 
-type [<Class; InferenceRules>] Rules =
+type [<InferenceRules>] Rules =
   new: unit -> Rules
 
   // Base Types ---------------------------------------------------------

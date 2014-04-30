@@ -19,7 +19,7 @@ type [<AbstractClass>] p<'p, 'e, 'es> =
 type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 
-type [<Class; InferenceRules>] Rules =
+type [<InferenceRules>] Rules =
   new: unit -> Rules
 
   member unit: t<unit>

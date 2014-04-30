@@ -1,4 +1,4 @@
-﻿module Infers.Rep
+﻿namespace Infers.Rep
 
 open Microsoft.FSharp.Reflection
 open System
@@ -7,31 +7,44 @@ open System.Collections.Concurrent
 open System.Reflection
 open System.Reflection.Emit
 open System.Threading
+open Infers
 open Infers.Engine
-open Infers.Util
 
 /////////////////////////////////////////////////////////////////////////
 
-let repModule =
-  let appDomain = AppDomain.CurrentDomain;
-  let assemblyName = AssemblyName "RepAssembly"
-  let assemblyBuilder =
-    appDomain.DefineDynamicAssembly
-     (assemblyName, AssemblyBuilderAccess.RunAndCollect)
-  assemblyBuilder.DefineDynamicModule assemblyName.Name
+[<AutoOpen>]
+module Util =
+  let repModule =
+    let appDomain = AppDomain.CurrentDomain;
+    let assemblyName = AssemblyName "RepAssembly"
+    let assemblyBuilder =
+      appDomain.DefineDynamicAssembly
+       (assemblyName, AssemblyBuilderAccess.RunAndCollect)
+    assemblyBuilder.DefineDynamicModule assemblyName.Name
 
-let mutable uniqueId = 0
-let inline uniqueName () =
-  let i = uniqueId
-  uniqueId <- i+1
-  sprintf "Generated%d" i
+  let mutable uniqueId = 0
+  let inline uniqueName () =
+    let i = uniqueId
+    uniqueId <- i+1
+    sprintf "Generated%d" i
 
-type Builder<'a> =
-  TypeBuilder * list<string * obj> -> list<string * obj> * 'a
+  type Builder<'a> =
+    TypeBuilder * list<string * obj> -> list<string * obj> * 'a
 
-let inline (>>=) xB x2yB = fun (tB, vs) ->
-  let (vs, x) = xB (tB, vs)
-  x2yB x (tB, vs)
+  let inline (>>=) xB x2yB = fun (tB, vs) ->
+    let (vs, x) = xB (tB, vs)
+    x2yB x (tB, vs)
+
+  let build (tycon: Type) (elems: array<Type>) =
+    if 0 < elems.Length then
+      let results = Array.zeroCreate elems.Length
+      results.[elems.Length-1] <- elems.[elems.Length-1]
+      for i=elems.Length-2 downto 0 do
+        results.[i] <- tycon.MakeGenericType [|elems.[i]; results.[i+1]|]
+      results
+    else
+      [|typeof<Empty>|] // Special case
+
 
 type Builder =
   static member result x : Builder<_> = fun (_, vs) -> (vs, x)
@@ -140,149 +153,82 @@ type Builder =
 
 /////////////////////////////////////////////////////////////////////////
 
-type [<AbstractClass; AllowNullLiteral; InferenceRules>] Rep<'t> () = class end
+module Products =
 
-/////////////////////////////////////////////////////////////////////////
+  let products ts = build typedefof<And<_, _>> ts
 
-type Empty = struct end
-
-type And<'x, 'xs> = struct
-  val mutable Elem: 'x
-  val mutable Rest: 'xs
-end
-
-/////////////////////////////////////////////////////////////////////////
-
-type [<AbstractClass>] AsProduct<'t, 'p> =
-  abstract Extract: 't * byref<'p> -> unit
-  abstract Create: byref<'p> -> 't
-
-let build (tycon: Type) (elems: array<Type>) =
-  if 0 < elems.Length then
-    let results = Array.zeroCreate elems.Length
-    results.[elems.Length-1] <- elems.[elems.Length-1]
-    for i=elems.Length-2 downto 0 do
-      results.[i] <- tycon.MakeGenericType [|elems.[i]; results.[i+1]|]
-    results
-  else
-    [|typeof<Empty>|] // Special case
-
-let products ts = build typedefof<And<_, _>> ts
-
-let defineExtractAndCreate t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
-  let getField (t: Type) name =
-    match t.GetField name with // Only public is ok here.
-     | null -> failwithf "The %A type has no field named \"%s\"" t name
-     | field -> field
-  let emitGet i =
-    Builder.emit (OpCodes.Ldarg_1) >>
-    Builder.emit (OpCodes.Call, props.[i].GetGetMethod true)
-  let rec emitLoadAddr arg i =
-    if i = 0 then
-      Builder.emit arg
-    else
-      let loadPrev = emitLoadAddr arg (i-1)
-      if i <> products.Length-1 then
-        loadPrev >>
-        Builder.emit (OpCodes.Ldflda, getField products.[i-1] "Rest")
+  let defineExtractAndCreate t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
+    let getField (t: Type) name =
+      match t.GetField name with // Only public is ok here.
+       | null -> failwithf "The %A type has no field named \"%s\"" t name
+       | field -> field
+    let emitGet i =
+      Builder.emit (OpCodes.Ldarg_1) >>
+      Builder.emit (OpCodes.Call, props.[i].GetGetMethod true)
+    let rec emitLoadAddr arg i =
+      if i = 0 then
+        Builder.emit arg
       else
-        loadPrev
-  let emitStore i =
-    if products.Length = 1 then
-      Builder.emit (OpCodes.Stobj, products.[i])
-    elif i < products.Length-1 then
-      Builder.emit (OpCodes.Stfld, getField products.[i] "Elem")
-    else
-      Builder.emit (OpCodes.Stfld, getField products.[i-1] "Rest")
-  let emitCopy i =
-    emitLoadAddr OpCodes.Ldarg_2 i >> emitGet i >> emitStore i
-  let rec emitCopies n =
-    let copyThis = emitCopy (n-1)
-    if n > 1 then emitCopies (n-1) >> copyThis else copyThis
-  let emitLoad i =
-    emitLoadAddr OpCodes.Ldarg_1 i >>
-    if products.Length = 1 then
-      Builder.emit (OpCodes.Ldobj, products.[i])
-    elif i < products.Length-1 then
-      Builder.emit (OpCodes.Ldfld, getField products.[i] "Elem")
-    else
-      Builder.emit (OpCodes.Ldfld, getField products.[i-1] "Rest")
-  let rec emitLoads n =
-    let loadThis = emitLoad (n-1)
-    if n > 1 then emitLoads (n-1) >> loadThis else loadThis
-  Builder.overrideMethod "Extract"
-   typeof<Void>
-   [|t; products.[0].MakeByRefType ()|]
-   (if props.Length > 0 then
-      emitCopies props.Length >>
-      Builder.emit (OpCodes.Ret)
-    else
-      Builder.emit (OpCodes.Ret)) >>= fun () ->
-  Builder.overrideMethod "Create"
-   t
-   [|products.[0].MakeByRefType ()|]
-   (if props.Length > 0 then
-      emitLoads props.Length >>
-      emitCtor >>
-      Builder.emit (OpCodes.Ret)
-    else
-      emitCtor >>
-      Builder.emit (OpCodes.Ret))
+        let loadPrev = emitLoadAddr arg (i-1)
+        if i <> products.Length-1 then
+          loadPrev >>
+          Builder.emit (OpCodes.Ldflda, getField products.[i-1] "Rest")
+        else
+          loadPrev
+    let emitStore i =
+      if products.Length = 1 then
+        Builder.emit (OpCodes.Stobj, products.[i])
+      elif i < products.Length-1 then
+        Builder.emit (OpCodes.Stfld, getField products.[i] "Elem")
+      else
+        Builder.emit (OpCodes.Stfld, getField products.[i-1] "Rest")
+    let emitCopy i =
+      emitLoadAddr OpCodes.Ldarg_2 i >> emitGet i >> emitStore i
+    let rec emitCopies n =
+      let copyThis = emitCopy (n-1)
+      if n > 1 then emitCopies (n-1) >> copyThis else copyThis
+    let emitLoad i =
+      emitLoadAddr OpCodes.Ldarg_1 i >>
+      if products.Length = 1 then
+        Builder.emit (OpCodes.Ldobj, products.[i])
+      elif i < products.Length-1 then
+        Builder.emit (OpCodes.Ldfld, getField products.[i] "Elem")
+      else
+        Builder.emit (OpCodes.Ldfld, getField products.[i-1] "Rest")
+    let rec emitLoads n =
+      let loadThis = emitLoad (n-1)
+      if n > 1 then emitLoads (n-1) >> loadThis else loadThis
+    Builder.overrideMethod "Extract"
+     typeof<Void>
+     [|t; products.[0].MakeByRefType ()|]
+     (if props.Length > 0 then
+        emitCopies props.Length >>
+        Builder.emit (OpCodes.Ret)
+      else
+        Builder.emit (OpCodes.Ret)) >>= fun () ->
+    Builder.overrideMethod "Create"
+     t
+     [|products.[0].MakeByRefType ()|]
+     (if props.Length > 0 then
+        emitLoads props.Length >>
+        emitCtor >>
+        Builder.emit (OpCodes.Ret)
+      else
+        emitCtor >>
+        Builder.emit (OpCodes.Ret))
 
-let asProductField t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
-  Builder.metaField (typedefof<AsProduct<_, _>>.MakeGenericType [|t; products.[0]|])
-   (defineExtractAndCreate t emitCtor props products)
-
-/////////////////////////////////////////////////////////////////////////
-
-type [<AbstractClass>] AsChoice<'u, 'c> () = class end
-
-let choices ts = build typedefof<Choice<_, _>> ts
-
-let asChoiceField t (choices: array<Type>) =
-  Builder.metaField (typedefof<AsChoice<_, _>>.MakeGenericType [|t; choices.[0]|])
-   (Builder.result ())
+  let asProductField t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
+    Builder.metaField (typedefof<AsProduct<_, _>>.MakeGenericType [|t; products.[0]|])
+     (defineExtractAndCreate t emitCtor props products)
 
 /////////////////////////////////////////////////////////////////////////
 
-type [<AbstractClass>] Elem<'t, 'e, 'p> =
-  val mutable Index: int
-  abstract Get: 't -> 'e
+module Unions =
+  let choices ts = build typedefof<Choice<_, _>> ts
 
-type [<AbstractClass; AllowNullLiteral>] Tuple<'t> () =
-  inherit Rep<'t> ()
-  [<DefaultValue>] val mutable Arity: int
-
-/////////////////////////////////////////////////////////////////////////
-
-type [<AbstractClass>] Label<'u, 'cs, 'l, 'ls> =
-  inherit Elem<'u, 'l, 'ls>
-  val mutable Name: string
-
-type [<AbstractClass>] Case<'u, 'ls, 'cs> =
-  inherit AsProduct<'u, 'ls>
-  val mutable Name: string
-  val mutable Arity: int
-  val mutable Tag: int
-
-type [<AbstractClass; AllowNullLiteral>] Union<'u> () =
-  inherit Rep<'u> ()
-  [<DefaultValue>] val mutable Arity: int
-  abstract Tag: 'u -> int
-
-/////////////////////////////////////////////////////////////////////////
-
-type [<AbstractClass>] Field<'r, 'f, 'p> =
-  inherit Elem<'r, 'f, 'p>
-  val mutable Name: string
-  val mutable IsMutable: bool 
-  abstract Set: 'r * 'f -> unit
-  default x.Set (_: 'r, _: 'f) : unit = notImplemented ()
-  
-type [<AbstractClass; AllowNullLiteral>] Record<'r> () =
-  inherit Rep<'r> ()
-  [<DefaultValue>] val mutable Arity: int
-  [<DefaultValue>] val mutable IsMutable: bool
+  let asChoiceField t (choices: array<Type>) =
+    Builder.metaField (typedefof<AsChoice<_, _>>.MakeGenericType [|t; choices.[0]|])
+     (Builder.result ())
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -297,14 +243,14 @@ type [<InferenceRules>] Rules () =
        let fields =
          FSharpType.GetRecordFields
           (t, BindingFlags.Public ||| BindingFlags.NonPublic)
-       let products = products (fields |> Array.map (fun p -> p.PropertyType))
+       let products = Products.products (fields |> Array.map (fun p -> p.PropertyType))
 
        match
          Builder.metaType typeof<Record<'r>>
           (Builder.metaValue "Arity" fields.Length         >>= fun () ->
            Builder.metaValue "IsMutable"
             (fields |> Array.exists (fun p -> p.CanWrite)) >>= fun () ->
-           asProductField t
+           Products.asProductField t
             (Builder.emit
               (OpCodes.Newobj,
                FSharpValue.PreComputeRecordConstructorInfo
@@ -346,11 +292,11 @@ type [<InferenceRules>] Rules () =
          |> Array.map (fun caseFields ->
             caseFields
             |> Array.map (fun prop -> prop.PropertyType)
-            |> products)
+            |> Products.products)
        let choices =
          caseProducts
          |> Array.map (fun ts -> ts.[0])
-         |> choices
+         |> Unions.choices
 
        match
          Builder.metaType typeof<Union<'u>>
@@ -366,7 +312,7 @@ type [<InferenceRules>] Rules () =
                  Builder.emit (OpCodes.Ret))
              | _ ->
                failwith "Expected PropertyInfo or static MethodInfo.") >>= fun () ->
-           asChoiceField t choices >>= fun () ->
+           Unions.asChoiceField t choices >>= fun () ->
            Builder.forTo 0 (cases.Length-1) (fun i ->
              Builder.metaField
               (typedefof<Case<_, _, _>>.MakeGenericType
@@ -374,7 +320,7 @@ type [<InferenceRules>] Rules () =
               (Builder.metaValue "Name" cases.[i].Name         >>= fun () ->
                Builder.metaValue "Arity" caseFields.[i].Length >>= fun () ->
                Builder.metaValue "Tag" i                       >>= fun () ->
-               defineExtractAndCreate
+               Products.defineExtractAndCreate
                 t
                 (Builder.emit
                   (OpCodes.Call,
@@ -399,7 +345,7 @@ type [<InferenceRules>] Rules () =
     else
        null
 
-  member rr.tuple () : Tuple<'t> =
+  member rr.tuple () : Rep.Tuple<'t> =
     if FSharpType.IsTuple typeof<'t> then
        lock repModule <| fun () ->
 
@@ -412,12 +358,12 @@ type [<InferenceRules>] Rules () =
        let props =
          Array.init elems.Length <| fun i ->
          t.GetProperty (sprintf "Item%d" (i + 1))
-       let products = products elems
+       let products = Products.products elems
 
        match
          Builder.metaType typeof<Tuple<'t>>
           (Builder.metaValue "Arity" elems.Length >>= fun () ->
-           asProductField t
+           Products.asProductField t
             (Builder.emit
               (OpCodes.Newobj,
                match FSharpValue.PreComputeTupleConstructorInfo t with
@@ -432,7 +378,7 @@ type [<InferenceRules>] Rules () =
             Builder.metaField elemType
              (Builder.overrideGetMethod "Get" t props.[i] >>= fun () ->
               Builder.metaValue "Index" i))) with
-        | :? Tuple<'t> as t ->
+        | :? Rep.Tuple<'t> as t ->
           t
         | _ -> failwith "Bug"
     else

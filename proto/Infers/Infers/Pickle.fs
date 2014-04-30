@@ -88,7 +88,6 @@ let inline mkUnion (m: Union<'u>) (U u: u<'u, 'c, 'c>) =
     mk (fun r -> r.ReadInt32 ()) (fun w i -> w.Write i)
 
 type [<InferenceRules>] Rules () =
-
   member e.unit: t<unit> = mkConst ()
 
   member e.bool: t<bool> = mk (fun r -> r.ReadBoolean ()) (fun w x -> w.Write x)

@@ -1,4 +1,5 @@
-﻿module internal Infers.Util
+﻿[<AutoOpen>]
+module internal Infers.Util
 
 open System
 

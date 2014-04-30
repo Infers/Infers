@@ -3,13 +3,13 @@
 open System
 open Infers.Engine
 
-type [<Sealed; RecursionRules>] RecFun () =
+type [<RecursionRules>] RecFun () =
   member rf.Tier (_: 'a -> 'b) : ref<'a -> 'b> =
     ref (fun _ -> failwith "Tier")
   member rf.Untie (r: ref<'a -> 'b>) : ('a -> 'b) = fun x -> !r x
   member rf.Tie (r: ref<'a -> 'b>, f: 'a -> 'b) : unit = r := f
 
-type [<Sealed; RecursionRules>] RecFunc0 () =
+type [<RecursionRules>] RecFunc0 () =
   member rf.Tier (_: Func<'a>) : ref<Func<'a>> =
     ref (Func<'a>(fun _ -> failwith "Tier"))
   member rf.Untie (r: ref<Func<'a>>) : Func<'a> =
@@ -17,7 +17,7 @@ type [<Sealed; RecursionRules>] RecFunc0 () =
   member rf.Tie (r: ref<Func<'a>>, f: Func<'a>) : unit =
     r := f
 
-type [<Sealed; RecursionRules>] RecFunc1 () =
+type [<RecursionRules>] RecFunc1 () =
   member rf.Tier (_: Func<'a, 'b>) : ref<Func<'a, 'b>> =
     ref (Func<'a, 'b>(fun _ -> failwith "Tier"))
   member rf.Untie (r: ref<Func<'a, 'b>>) : Func<'a, 'b> =
@@ -25,7 +25,7 @@ type [<Sealed; RecursionRules>] RecFunc1 () =
   member rf.Tie (r: ref<Func<'a, 'b>>, f: Func<'a, 'b>) : unit =
     r := f
 
-type [<Sealed; RecursionRules>] RecFunc2 () =
+type [<RecursionRules>] RecFunc2 () =
   member rf.Tier (_: Func<'a, 'b, 'c>) : ref<Func<'a, 'b, 'c>> =
     ref (Func<'a, 'b, 'c>(fun _ -> failwith "Tier"))
   member rf.Untie (r: ref<Func<'a, 'b, 'c>>) : Func<'a, 'b, 'c> =

@@ -3,15 +3,6 @@
 open System
 open System.Reflection
 open System.Collections.Generic
-open Infers.Util
-
-/////////////////////////////////////////////////////////////////////////
-
-type InferenceRules () = inherit Attribute ()
-
-/////////////////////////////////////////////////////////////////////////
-
-type RecursionRules () = inherit Attribute ()
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -85,7 +76,7 @@ let rec tryMatch (formal: Type)
 
 /////////////////////////////////////////////////////////////////////////
 
-let maybeAddRulesObject (o: Object) cs =
+let maybeAddRulesObject (o: obj) cs =
   match (o.GetType ()).GetCustomAttributes (typeof<InferenceRules>, true) with
    | [||] -> cs
    | _ -> HashEqSet.add o cs
@@ -100,14 +91,14 @@ let prepare (m: MethodInfo) (v2t: HashEqMap<Type, Type>) : MethodInfo =
   else
     m
 
-type TyCon (tyConObj: Object) =
+type TyCon (tyConObj: obj) =
   let tyConType = tyConObj.GetType ()
   let getMethod name =
     match tyConType.GetMethod
-            (name,
-             BindingFlags.Public
-             ||| BindingFlags.NonPublic
-             ||| BindingFlags.Instance) with
+           (name,
+            BindingFlags.Public
+            ||| BindingFlags.NonPublic
+            ||| BindingFlags.Instance) with
      | null ->
        failwithf "Infers.Engine: %A does not have static method named %s"
         tyConType name
@@ -127,18 +118,18 @@ type TyCon (tyConObj: Object) =
      | [|_;p|] -> p.ParameterType
      | _ -> failwithf "Infers.Engine: Tie method should have two parameters"
 
-  let call (m: MethodInfo) (formalType: Type) (actualType: Type) (actuals: array<Object>) =
+  let call (m: MethodInfo) (formalType: Type) (actualType: Type) (actuals: array<obj>) =
     tryMatch formalType actualType HashEqMap.empty
     |> Option.bind (fun v2t ->
        (prepare m v2t).Invoke (tyConObj, actuals) |> Some)
 
-  member x.Tier (t: Type) : option<Object> =
+  member x.Tier (t: Type) : option<obj> =
     call tier tierParam t [|null|]
-  member x.Untie (t: Type, tier: Object) : Object =
+  member x.Untie (t: Type, tier: obj) : obj =
     match call untie untieResult t [|tier|] with
      | None -> failwith "Infers.Engine: Failed to call Untie"
      | Some x -> x
-  member x.Tie (t: Type, tier: Object, result: Object) : unit  =
+  member x.Tie (t: Type, tier: obj, result: obj) : unit  =
     match call tie tieParam t [|tier; result|] with
      | None -> failwith "Infers.Engine: Failed to call Tie"
      | Some _ -> ()
@@ -146,8 +137,8 @@ type TyCon (tyConObj: Object) =
 /////////////////////////////////////////////////////////////////////////
 
 let rec generate' (tyCon: TyCon)
-                  (gs: HashEqSet<Object>)
-                  (t2o: HashEqMap<Type, unit -> Object>)
+                  (gs: HashEqSet<obj>)
+                  (t2o: HashEqMap<Type, unit -> obj>)
                   (t: Type) : seq<_ * _ * _> =
   Seq.concat
    [HashEqMap.tryFind t t2o
@@ -218,7 +209,7 @@ let rec generate' (tyCon: TyCon)
                    let t2o = HashEqMap.add t (fun () -> x) t2o
                    Some (x, v2t, t2o)))))]
 
-let generate (inferenceRules: seq<Object>) (recursionRules: Object) : option<'a> =
+let generate (inferenceRules: seq<obj>) (recursionRules: obj) : option<'a> =
   generate'
    (TyCon recursionRules)
    (inferenceRules

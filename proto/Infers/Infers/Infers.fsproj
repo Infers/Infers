@@ -39,14 +39,16 @@
   <Import Project="$(FSharpTargetsPath)" Condition="Exists('$(FSharpTargetsPath)')" />
   <ItemGroup>
     <Compile Include="Util.fs" />
+    <Compile Include="Attrs.fs" />
     <Compile Include="Engine.fsi" />
     <Compile Include="Engine.fs" />
     <Compile Include="Inj.fsi" />
     <Compile Include="Inj.fs" />
     <Compile Include="Rec.fsi" />
     <Compile Include="Rec.fs" />
-    <Compile Include="Rep.fsi" />
-    <Compile Include="Rep.fs" />
+    <Compile Include="RepTypes.fs" />
+    <Compile Include="RepRules.fsi" />
+    <Compile Include="RepRules.fs" />
     <Compile Include="Eq.fsi" />
     <Compile Include="Eq.fs" />
     <Compile Include="Pickle.fsi" />
