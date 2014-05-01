@@ -1,6 +1,8 @@
-﻿namespace Infers.Rep
+﻿#if FSHARP_NON_INTERACTIVE
+namespace Infers.Rep
 
 open Infers
+#endif
 
 /////////////////////////////////////////////////////////////////////////
 

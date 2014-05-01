@@ -8,7 +8,7 @@ type RecRulesInvoker (rr: obj) =
   let rrt = rr.GetType ()
 
   let getMethod name =
-    match rrt.GetMethod (name, BindingFlags.AnyInstance) with
+    match rrt.GetMethod (name, BindingFlags.AnyDeclaredInstance) with
      | null -> failwithf "%A must have method named %s" rrt name
      | meth -> meth
 

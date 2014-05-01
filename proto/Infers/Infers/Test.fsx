@@ -9,4 +9,4 @@ type [<InferenceRules>] Dummy () =
     yO >>= fun y ->
     Some (x, y)
 
-(tryGenerate [Dummy ()] (RecFun ()) : option<option<int * list<option<int>>>>)
+(tryGenerate true [Dummy ()] (RecFun ()) : option<option<int * list<option<int>>>>)

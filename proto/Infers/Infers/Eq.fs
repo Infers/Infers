@@ -1,10 +1,12 @@
-﻿module Infers.Eq
+﻿#if FSHARP_NON_INTERACTIVE
+module Infers.Eq
 
-open System
-open Microsoft.FSharp.Core.LanguagePrimitives
 open Infers.Util
 open Infers.Rep
 open Infers.Engine
+#endif
+open System
+open Microsoft.FSharp.Core.LanguagePrimitives
 
 type t<'a> = Func<'a, 'a, bool>
 type c<'u, 'cs, 'l, 'ls> = C of t<'u>
@@ -72,7 +74,7 @@ type [<InferenceRules>] Rules () =
 
   member e.elem (m: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
     P (toFunc (fun x y -> via m.Get (toFun t) x y))
-  member e.tuple (_: Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
+  member e.tuple (_: Rep.Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
     p
 
   member e.field (m: Field<'r, 'f, 'p>, t: t<'f>) : p<'r, 'f, 'p> =
@@ -81,7 +83,7 @@ type [<InferenceRules>] Rules () =
     if m.IsMutable then toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =
-  match Engine.tryGenerate [Rules (); Rep.Rules ()] (Rec.RecFunc2 ()) with
+  match Engine.tryGenerate false [Rules (); Rep.Rules ()] (Rec.RecFunc2 ()) with
    | None -> failwithf "Eq: Unsupported type: %A" typeof<'a>
    | Some eq ->
      eq

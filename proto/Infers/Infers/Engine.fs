@@ -26,16 +26,28 @@ module InfRuleSet =
    |> Seq.fold (fun rulesSet rules -> HashEqSet.add rules rulesSet)
       HashEqSet.empty
 
+  let hasInferenceRules (ty: Type) =
+    match ty.GetCustomAttributes (typeof<InferenceRules>, true) with
+     | [||] -> false
+     | _ -> true
+
   let rules infRuleSet =
     HashEqSet.toSeq infRuleSet
     |> Seq.collect (fun infRules ->
-       (infRules.GetType ()).GetMethods BindingFlags.AnyInstance
-       |> Seq.map (fun infRule -> InfRule (infRule, infRules)))
+       let rec loop ty =
+         if hasInferenceRules ty then
+           Seq.concat
+            [ty.GetMethods BindingFlags.AnyDeclaredInstance
+             |> Seq.map (fun infRule -> InfRule (infRule, infRules))
+             loop ty.BaseType]
+         else
+           Seq.empty
+       infRules.GetType () |> loop)
 
   let maybeAddRules (o: obj) infRuleSet =
-    match (o.GetType ()).GetCustomAttributes (typeof<InferenceRules>, true) with
-     | [||] -> infRuleSet
-     | _ -> HashEqSet.add o infRuleSet
+    if hasInferenceRules (o.GetType ())
+    then HashEqSet.add o infRuleSet
+    else infRuleSet
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -45,19 +57,29 @@ let guard b = if b then Some () else None
 
 /////////////////////////////////////////////////////////////////////////
 
-let rec generate (recRules: RecRulesInvoker)
+let rec generate (explain: bool)
+                 (nesting: int)
+                 (recRules: RecRulesInvoker)
                  (infRuleSet: HashEqSet<obj>)
                  (knownObjs: HashEqMap<Type, unit -> obj>)
                  (desiredTy: Type) : option<_ * _ * _> =
+  let inline tell u2msg =
+    if explain then
+      printfn "%s%s" (String.replicate nesting " ") (u2msg ())
+  let nesting = nesting + 2
+  tell <| fun () -> sprintf "desired: %A" desiredTy
   match HashEqMap.tryFind desiredTy knownObjs with
    | Some u2o ->
+     tell <| fun () -> sprintf "known"
      Some (u2o (), HashEqMap.empty, knownObjs)
    | None ->
      InfRuleSet.rules infRuleSet
      |> Seq.tryPick (fun infRule ->
+        tell <| fun () -> sprintf "trying: %A :- %A" infRule.ReturnType infRule.ParTypes
         tryMatch infRule.ReturnType desiredTy HashEqMap.empty >>= fun v2t ->
         let desiredTy = resolve v2t desiredTy
         guard (not (containsVars desiredTy)) >>= fun () ->
+        tell <| fun () -> sprintf "match as: %A" desiredTy
         let (knownObjs, tie) =
           match recRules.Tier desiredTy with
            | None -> (knownObjs, ignore)
@@ -70,10 +92,11 @@ let rec generate (recRules: RecRulesInvoker)
            | [] ->
              let argObjs = Array.ofList (List.rev argObjs)
              infRule.Invoke (genArgTypes, argObjs) |>> fun desiredObj ->
+             tell <| fun () -> sprintf "built: %A" desiredTy
              tie desiredObj
              (desiredObj, v2t, HashEqMap.add desiredTy (K desiredObj) knownObjs)
            | parType::parTypes ->
-             generate recRules infRuleSet knownObjs parType >>=
+             generate explain nesting recRules infRuleSet knownObjs parType >>=
              fun (argObj, v2t, knownObjs) ->
                lp (InfRuleSet.maybeAddRules argObj infRuleSet)
                   (genArgTypes |> Array.map (resolve v2t))
@@ -86,10 +109,12 @@ let rec generate (recRules: RecRulesInvoker)
            []
            (infRule.ParTypes |> Array.map (resolve v2t) |> List.ofArray))
 
-let tryGenerate (infRules: seq<obj>) (recRules: obj) : option<'a> =
+let tryGenerate (explain: bool) (infRules: seq<obj>) (recRules: obj) : option<'a> =
   if containsVars typeof<'a> then
     failwith "Infers can only generate monomorphic values"
   generate
+   explain
+   0
    (RecRulesInvoker recRules)
    (InfRuleSet.ofSeq infRules)
    HashEqMap.empty

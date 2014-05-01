@@ -1,4 +1,9 @@
-﻿namespace Infers.Rep
+﻿#if FSHARP_NON_INTERACTIVE
+namespace Infers.Rep
+
+open Infers
+open Infers.Engine
+#endif
 
 open Microsoft.FSharp.Reflection
 open System
@@ -7,8 +12,6 @@ open System.Collections.Concurrent
 open System.Reflection
 open System.Reflection.Emit
 open System.Threading
-open Infers
-open Infers.Engine
 
 /////////////////////////////////////////////////////////////////////////
 
