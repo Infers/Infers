@@ -1,4 +1,4 @@
-﻿module Infers.Inj
+﻿namespace Infers
 
 open System
 open Infers.Engine

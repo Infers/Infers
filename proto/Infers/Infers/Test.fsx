@@ -9,4 +9,19 @@ type [<InferenceRules>] Dummy () =
     yO >>= fun y ->
     Some (x, y)
 
-(tryGenerate true [Dummy ()] (RecFun ()) : option<option<int * list<option<int>>>>)
+(tryGenerate true [Dummy ()] : option<option<int * list<option<int>>>>)
+
+type P<'T> = 'T -> unit
+
+type [<InferenceRules>] Print () =
+  member r.IntRule () : P<int> = fun i -> printf "%d" i
+  member r.ListRule<'T> (s: P<'T>, self: P<list<'T>>) : P<list<'T>> =
+    function
+     | [] -> printf "\n"
+     | x::xs ->
+       s x ; self xs
+  member r.DelayRule<'T> (f: unit -> P<'T>) : P<'T> = raise Backtrack
+
+match (tryGenerate true [Print (); Rec.Rules ()] : option<P<list<int>>>) with
+ | None -> printf "None\n"
+ | Some p -> p [1;2;3]

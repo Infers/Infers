@@ -83,7 +83,7 @@ type [<InferenceRules>] Rules () =
     if m.IsMutable then toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =
-  match Engine.tryGenerate false [Rules (); Rep.Rules ()] (Rec.RecFunc2 ()) with
+  match Engine.tryGenerate false [Rules (); Rep.Rules (); Rec.Rules ()] with
    | None -> failwithf "Eq: Unsupported type: %A" typeof<'a>
    | Some eq ->
      eq

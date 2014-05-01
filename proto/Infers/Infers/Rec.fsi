@@ -1,32 +1,13 @@
-﻿module Infers.Rec
+﻿namespace Infers
 
 open System
-open Infers.Engine
 
-/// Recursion rules for F# functions.
-type RecFun =
-  new: unit -> RecFun
-  member Tier: ('a -> 'b) -> ref<'a -> 'b>
-  member Untie: ref<'a -> 'b> -> ('a -> 'b)
-  member Tie: ref<'a -> 'b> * ('a -> 'b) -> unit
+module Rec =
+  type [<InferenceRules>] Rules =
+    new: unit -> Rules
 
-/// Recursion rules for nullary .Net `Func` delegates.
-type RecFunc0 =
-  new: unit -> RecFunc0
-  member Tier: Func<'a> -> ref<Func<'a>>
-  member Untie: ref<Func<'a>> -> Func<'a>
-  member Tie: ref<Func<'a>> * Func<'a> -> unit
+    member func: unit -> Rec<'x -> 'y>
 
-/// Recursion rules for unary .Net `Func` delegates.
-type RecFunc1 =
-  new: unit -> RecFunc1
-  member Tier: Func<'a, 'b> -> ref<Func<'a, 'b>>
-  member Untie: ref<Func<'a, 'b>> -> Func<'a, 'b>
-  member Tie: ref<Func<'a, 'b>> * Func<'a, 'b> -> unit
-
-/// Recursion rules for binary .Net `Func` delegates.
-type RecFunc2 =
-  new: unit -> RecFunc2
-  member Tier: Func<'a, 'b, 'c> -> ref<Func<'a, 'b, 'c>>
-  member Untie: ref<Func<'a, 'b, 'c>> -> Func<'a, 'b, 'c>
-  member Tie: ref<Func<'a, 'b, 'c>> * Func<'a, 'b, 'c> -> unit
+    member func0: unit -> Rec<Func<'x>>
+    member func1: unit -> Rec<Func<'x, 'y>>
+    member func2: unit -> Rec<Func<'x, 'y, 'z>>

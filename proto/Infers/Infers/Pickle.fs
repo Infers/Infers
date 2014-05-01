@@ -21,11 +21,6 @@ type [<AbstractClass>] p<'p, 'e, 'es> () =
   abstract Pickle: BinaryWriter * byref<'e> -> unit
   abstract Unpickle: BinaryReader * byref<'e> -> unit
 
-type RecPU () =
-  member rpu.Tier (_: t<'a>) : r<'a> = r<'a>()
-  member rpu.Untie (r: r<'a>) : t<'a> = r :> t<'a>
-  member rpu.Tie (r: r<'a>, t: t<'a>) : unit = r.impl <- t
-
 let inline mk (unpickle: BinaryReader -> 'a)
               (pickle: BinaryWriter -> 'a -> unit) : t<'a> =
   {new t<'a> () with
@@ -90,6 +85,12 @@ let inline mkUnion (m: Union<'u>) (U u: u<'u, 'c, 'c>) =
 type [<InferenceRules>] Rules () =
   member e.unit: t<unit> = mkConst ()
 
+  member e.pu () : Rec<t<'x>> =
+    let r = r<'x>()
+    {new Rec<t<'x>> () with
+      override p.Get () = r :> t<'x>
+      override p.Set (t) = r.impl <- t}
+
   member e.bool: t<bool> = mk (fun r -> r.ReadBoolean ()) (fun w x -> w.Write x)
 
   member e.int8:  t<int8>  = mk (fun r -> r.ReadSByte ()) (fun w x -> w.Write x)
@@ -142,7 +143,7 @@ type [<InferenceRules>] Rules () =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =
-  match Engine.tryGenerate false [Rules (); Rep.Rules ()] (RecPU ()) with
+  match Engine.tryGenerate false [Rules (); Rep.Rules ()] with
    | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
    | Some pu ->
      pu

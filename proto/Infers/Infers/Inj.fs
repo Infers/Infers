@@ -1,4 +1,4 @@
-﻿module Infers.Inj
+﻿namespace Infers
 
 open System
 open Infers.Engine
@@ -10,11 +10,12 @@ type [<AbstractClass>] Inj<'d, 'c> () =
 
 /////////////////////////////////////////////////////////////////////////
 
-let inline inj (x2y: 'x -> 'y) =
-  {new Inj<'x, 'y> () with member i.Map (x) = x2y x}
+[<AutoOpen>]
+module internal BaseRulesHelpers =
+  let inline inj (x2y: 'x -> 'y) =
+    {new Inj<'x, 'y> () with member i.Map (x) = x2y x}
 
 type [<InferenceRules>] BaseRules () =
-
   member br.boolIn: Inj<bool, Choice<unit, unit>> =
     inj (fun x -> if x then Choice1Of2 () else Choice2Of2 ())
   member br.boolOut: Inj<Choice<unit, unit>, bool> = 

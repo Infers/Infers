@@ -237,12 +237,12 @@ module Unions =
 
 type [<InferenceRules>] Rules () =
   member rr.record () : Record<'r> =
-    if not (FSharpType.IsRecord (typeof<'r>, BindingFlags.Any)) then
+    let t = typeof<'r>
+    if not (FSharpType.IsRecord (t, BindingFlags.Any)) then
       raise Backtrack
 
     lock repModule <| fun () ->
 
-    let t = typeof<'r>
     let fields =
       FSharpType.GetRecordFields
        (t, BindingFlags.Public ||| BindingFlags.NonPublic)
@@ -275,11 +275,11 @@ type [<InferenceRules>] Rules () =
      | _ -> failwith "Bug"
 
   member rr.union () : Union<'u> =
-    if not (FSharpType.IsUnion (typeof<'u>, BindingFlags.Any)) then
+    let t = typeof<'u>
+    if not (FSharpType.IsUnion (t, BindingFlags.Any)) then
       raise Backtrack
 
     lock repModule <| fun () ->
-    let t = typeof<'u>
 
     let cases =
       FSharpType.GetUnionCases
@@ -345,12 +345,11 @@ type [<InferenceRules>] Rules () =
      | _ -> failwith "Bug"
 
   member rr.tuple () : Rep.Tuple<'t> =
-    if not (FSharpType.IsTuple typeof<'t>) then
+    let t = typeof<'t>
+    if not (FSharpType.IsTuple t) then
       raise Backtrack
 
     lock repModule <| fun () ->
-
-    let t = typeof<'t>
 
     let elems = FSharpType.GetTupleElements t
     if 7 < elems.Length then

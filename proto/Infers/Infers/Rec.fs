@@ -1,35 +1,35 @@
 ﻿#if FSHARP_NON_INTERACTIVE
-module Infers.Rec
+namespace Infers
 #endif
 
 open System
 
-type RecFun () =
-  member rf.Tier (_: 'a -> 'b) : ref<'a -> 'b> =
-    ref (fun _ -> failwith "Tier")
-  member rf.Untie (r: ref<'a -> 'b>) : ('a -> 'b) = fun x -> !r x
-  member rf.Tie (r: ref<'a -> 'b>, f: 'a -> 'b) : unit = r := f
+module Rec =
+  type [<InferenceRules>] Rules () =
+    member rr.func () =
+      let r = ref (fun _ -> failwith "rec")
+      let f = fun x -> !r x
+      {new Rec<'a -> 'b> () with
+        override p.Get () = f
+        override p.Set (f) = r := f}
 
-type RecFunc0 () =
-  member rf.Tier (_: Func<'a>) : ref<Func<'a>> =
-    ref (Func<'a>(fun _ -> failwith "Tier"))
-  member rf.Untie (r: ref<Func<'a>>) : Func<'a> =
-    Func<'a>(fun () -> (!r).Invoke ())
-  member rf.Tie (r: ref<Func<'a>>, f: Func<'a>) : unit =
-    r := f
+    member rr.func0 () =
+      let r = ref (Func<'x>(fun _ -> failwith "rec"))
+      let f = Func<'x>(fun () -> (!r).Invoke ())
+      {new Rec<Func<'x>> () with
+        override p.Get () = f
+        override p.Set (f) = r := f}
 
-type RecFunc1 () =
-  member rf.Tier (_: Func<'a, 'b>) : ref<Func<'a, 'b>> =
-    ref (Func<'a, 'b>(fun _ -> failwith "Tier"))
-  member rf.Untie (r: ref<Func<'a, 'b>>) : Func<'a, 'b> =
-    Func<'a, 'b>(fun x -> (!r).Invoke (x))
-  member rf.Tie (r: ref<Func<'a, 'b>>, f: Func<'a, 'b>) : unit =
-    r := f
+    member rr.func1 () =
+      let r = ref (Func<'x, 'y>(fun _ -> failwith "rec"))
+      let f = Func<'x, 'y>(fun x -> (!r).Invoke (x))
+      {new Rec<Func<'x, 'y>> () with
+        override p.Get () = f
+        override p.Set (f) = r := f}
 
-type RecFunc2 () =
-  member rf.Tier (_: Func<'a, 'b, 'c>) : ref<Func<'a, 'b, 'c>> =
-    ref (Func<'a, 'b, 'c>(fun _ -> failwith "Tier"))
-  member rf.Untie (r: ref<Func<'a, 'b, 'c>>) : Func<'a, 'b, 'c> =
-    Func<'a, 'b, 'c>(fun x y -> (!r).Invoke (x, y))
-  member rf.Tie (r: ref<Func<'a, 'b, 'c>>, f: Func<'a, 'b, 'c>) : unit =
-    r := f
+    member rr.func2 () =
+      let r = ref (Func<'x, 'y, 'z>(fun _ -> failwith "rec"))
+      let f = Func<'x, 'y, 'z>(fun x y -> (!r).Invoke (x, y))
+      {new Rec<Func<'x, 'y, 'z>> () with
+        override p.Get () = f
+        override p.Set (f) = r := f}

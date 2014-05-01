@@ -60,7 +60,6 @@ let guard b = if b then Some () else None
 
 let rec generate (explain: bool)
                  (nesting: int)
-                 (recRules: RecRulesInvoker)
                  (infRuleSet: HashEqSet<obj>)
                  (knownObjs: HashEqMap<Type, unit -> obj>)
                  (desiredTy: Type) : option<_ * _ * _> =
@@ -81,23 +80,30 @@ let rec generate (explain: bool)
         let desiredTy = resolve v2t desiredTy
         guard (not (containsVars desiredTy)) >>= fun () ->
         tell <| fun () -> sprintf "match as: %A" desiredTy
+        let recTy = typedefof<Rec<_>>.MakeGenericType [|desiredTy|]
         let (knownObjs, tie) =
-          match recRules.Tier desiredTy with
-           | None -> (knownObjs, ignore)
-           | Some tier ->
+          match generate explain nesting infRuleSet knownObjs recTy with
+           | None ->
              (HashEqMap.add desiredTy
-               (fun () -> recRules.Untie (desiredTy, tier)) knownObjs,
-              fun complete -> recRules.Tie (desiredTy, tier, complete))
+               (fun () -> failwithf "Error: No rec rule for %A" desiredTy)
+               knownObjs,
+              K >> HashEqMap.add desiredTy)
+           | Some (recObj, _, knownObjs) ->
+             let recObj = recObj :?> RecObj
+             (HashEqMap.add desiredTy
+               (fun () -> recObj.GetObj ()) knownObjs,
+              fun complete knownObjs ->
+                recObj.SetObj complete
+                HashEqMap.add desiredTy (K complete) knownObjs)
         let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
           match parTypes with
            | [] ->
              let argObjs = Array.ofList (List.rev argObjs)
              infRule.Invoke (genArgTypes, argObjs) |>> fun desiredObj ->
              tell <| fun () -> sprintf "built: %A" desiredTy
-             tie desiredObj
-             (desiredObj, v2t, HashEqMap.add desiredTy (K desiredObj) knownObjs)
+             (desiredObj, v2t, tie desiredObj knownObjs)
            | parType::parTypes ->
-             generate explain nesting recRules infRuleSet knownObjs parType >>=
+             generate explain nesting infRuleSet knownObjs parType >>=
              fun (argObj, v2t, knownObjs) ->
                lp (InfRuleSet.maybeAddRules argObj infRuleSet)
                   (genArgTypes |> Array.map (resolve v2t))
@@ -110,13 +116,12 @@ let rec generate (explain: bool)
            []
            (infRule.ParTypes |> Array.map (resolve v2t) |> List.ofArray))
 
-let tryGenerate (explain: bool) (infRules: seq<obj>) (recRules: obj) : option<'a> =
+let tryGenerate (explain: bool) (infRules: seq<obj>) : option<'a> =
   if containsVars typeof<'a> then
     failwith "Infers can only generate monomorphic values"
   generate
    explain
    0
-   (RecRulesInvoker recRules)
    (InfRuleSet.ofSeq infRules)
    HashEqMap.empty
    typeof<'a> |>> fun (x, _, _) ->
