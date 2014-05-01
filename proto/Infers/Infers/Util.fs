@@ -1,7 +1,10 @@
-﻿[<AutoOpen>]
-module internal Infers.Util
+﻿#if FSHARP_NON_INTERACTIVE
+[<AutoOpen>]
+module Infers.Util
+#endif
 
 open System
+open System.Reflection
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -16,6 +19,7 @@ let inline (|GotSome|GotNone|) (b, v) =
 /////////////////////////////////////////////////////////////////////////
 
 let inline id x = x
+let inline K x _ = x
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -25,6 +29,7 @@ let notImplemented () = raise (NotImplementedException ())
 
 module Option =
   let toSeq o = match o with None -> Seq.empty | Some x -> Seq.singleton x
+  let ofNull x = match x with null -> None | x -> Some x
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -88,3 +93,11 @@ module HashEqMap =
   let toSeq (T m) = Map.toSeq m |> Seq.collect snd
 
 type HashEqMap<'k, 'v> when 'k: equality = HashEqMap.t<'k, 'v>
+
+/////////////////////////////////////////////////////////////////////////
+
+module BindingFlags =
+  let AnyInstance =
+    BindingFlags.Public
+    ||| BindingFlags.NonPublic
+    ||| BindingFlags.Instance

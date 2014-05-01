@@ -1,7 +1,8 @@
-﻿module Infers.Rec
+﻿#if FSHARP_NON_INTERACTIVE
+module Infers.Rec
+#endif
 
 open System
-open Infers.Engine
 
 type [<RecursionRules>] RecFun () =
   member rf.Tier (_: 'a -> 'b) : ref<'a -> 'b> =

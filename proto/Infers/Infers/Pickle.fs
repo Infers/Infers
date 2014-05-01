@@ -142,7 +142,7 @@ type [<InferenceRules>] Rules () =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =
-  match Engine.generate [Rules (); Rep.Rules ()] (RecPU ()) with
+  match Engine.tryGenerate [Rules (); Rep.Rules ()] (RecPU ()) with
    | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
    | Some pu ->
      pu
