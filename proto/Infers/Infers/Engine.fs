@@ -16,9 +16,10 @@ type InfRule (infRule: MethodInfo, infRules: obj) =
    then infRule.GetGenericArguments ()
    else [||]
   member ir.Invoke (genArgTypes, argObjs) =
-   (if infRule.ContainsGenericParameters
-    then infRule.MakeGenericMethod genArgTypes
-    else infRule).Invoke (infRules, argObjs) |> Option.ofNull
+   try (if infRule.ContainsGenericParameters
+        then infRule.MakeGenericMethod genArgTypes
+        else infRule).Invoke (infRules, argObjs) |> Some
+   with Backtrack -> None
 
 module InfRuleSet =
   let ofSeq infRules =

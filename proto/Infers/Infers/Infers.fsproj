@@ -40,7 +40,7 @@
   <ItemGroup>
     <Compile Include="Util.fs" />
     <Compile Include="TypeManip.fs" />
-    <Compile Include="Attrs.fs" />
+    <Compile Include="EngineInterface.fs" />
     <Compile Include="RecRulesInvoker.fsi" />
     <Compile Include="RecRulesInvoker.fs" />
     <Compile Include="Engine.fsi" />

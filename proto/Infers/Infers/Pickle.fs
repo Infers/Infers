@@ -21,7 +21,7 @@ type [<AbstractClass>] p<'p, 'e, 'es> () =
   abstract Pickle: BinaryWriter * byref<'e> -> unit
   abstract Unpickle: BinaryReader * byref<'e> -> unit
 
-type [<RecursionRules>] RecPU () =
+type RecPU () =
   member rpu.Tier (_: t<'a>) : r<'a> = r<'a>()
   member rpu.Untie (r: r<'a>) : t<'a> = r :> t<'a>
   member rpu.Tie (r: r<'a>, t: t<'a>) : unit = r.impl <- t

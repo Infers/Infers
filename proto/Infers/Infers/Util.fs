@@ -97,8 +97,10 @@ type HashEqMap<'k, 'v> when 'k: equality = HashEqMap.t<'k, 'v>
 /////////////////////////////////////////////////////////////////////////
 
 module BindingFlags =
+  let Any =
+    BindingFlags.Public
+    ||| BindingFlags.NonPublic
   let AnyDeclaredInstance =
     BindingFlags.DeclaredOnly
-    ||| BindingFlags.Public
-    ||| BindingFlags.NonPublic
+    ||| Any
     ||| BindingFlags.Instance

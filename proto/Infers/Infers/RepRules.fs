@@ -237,152 +237,148 @@ module Unions =
 
 type [<InferenceRules>] Rules () =
   member rr.record () : Record<'r> =
-    if FSharpType.IsRecord
-                  (typeof<'r>,
-                   BindingFlags.Public ||| BindingFlags.NonPublic) then
-       lock repModule <| fun () ->
+    if not (FSharpType.IsRecord (typeof<'r>, BindingFlags.Any)) then
+      raise Backtrack
 
-       let t = typeof<'r>
-       let fields =
-         FSharpType.GetRecordFields
-          (t, BindingFlags.Public ||| BindingFlags.NonPublic)
-       let products = Products.products (fields |> Array.map (fun p -> p.PropertyType))
+    lock repModule <| fun () ->
 
-       match
-         Builder.metaType typeof<Record<'r>>
-          (Builder.metaValue "Arity" fields.Length         >>= fun () ->
-           Builder.metaValue "IsMutable"
-            (fields |> Array.exists (fun p -> p.CanWrite)) >>= fun () ->
-           Products.asProductField t
-            (Builder.emit
-              (OpCodes.Newobj,
-               FSharpValue.PreComputeRecordConstructorInfo
-                (t, BindingFlags.Public ||| BindingFlags.NonPublic)))
-            fields
-            products                >>= fun () ->
-           Builder.forTo 0 (fields.Length-1) (fun i ->
-             let fieldType =
-               typedefof<Field<_, _, _>>.MakeGenericType
-                [|t; fields.[i].PropertyType; products.[i]|]
-             Builder.metaField fieldType
-              (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
-               Builder.overrideSetMethodWhenCanWrite "Set" fields.[i] >>= fun () ->
-               Builder.metaValue "Index" i                    >>= fun () ->
-               Builder.metaValue "Name" fields.[i].Name       >>= fun () ->
-               Builder.metaValue "IsMutable" fields.[i].CanWrite))) with
-        | :? Record<'r> as r ->
-          r
-        | _ -> failwith "Bug"
-    else
-       null
+    let t = typeof<'r>
+    let fields =
+      FSharpType.GetRecordFields
+       (t, BindingFlags.Public ||| BindingFlags.NonPublic)
+    let products = Products.products (fields |> Array.map (fun p -> p.PropertyType))
+
+    match
+      Builder.metaType typeof<Record<'r>>
+       (Builder.metaValue "Arity" fields.Length         >>= fun () ->
+        Builder.metaValue "IsMutable"
+         (fields |> Array.exists (fun p -> p.CanWrite)) >>= fun () ->
+        Products.asProductField t
+         (Builder.emit
+           (OpCodes.Newobj,
+            FSharpValue.PreComputeRecordConstructorInfo
+             (t, BindingFlags.Public ||| BindingFlags.NonPublic)))
+         fields
+         products                >>= fun () ->
+        Builder.forTo 0 (fields.Length-1) (fun i ->
+          let fieldType =
+            typedefof<Field<_, _, _>>.MakeGenericType
+             [|t; fields.[i].PropertyType; products.[i]|]
+          Builder.metaField fieldType
+           (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
+            Builder.overrideSetMethodWhenCanWrite "Set" fields.[i] >>= fun () ->
+            Builder.metaValue "Index" i                    >>= fun () ->
+            Builder.metaValue "Name" fields.[i].Name       >>= fun () ->
+            Builder.metaValue "IsMutable" fields.[i].CanWrite))) with
+     | :? Record<'r> as r ->
+       r
+     | _ -> failwith "Bug"
 
   member rr.union () : Union<'u> =
-    if FSharpType.IsUnion
-                  (typeof<'u>,
-                   BindingFlags.Public ||| BindingFlags.NonPublic) then
-       lock repModule <| fun () ->
-       let t = typeof<'u>
+    if not (FSharpType.IsUnion (typeof<'u>, BindingFlags.Any)) then
+      raise Backtrack
 
-       let cases =
-         FSharpType.GetUnionCases
-          (t, BindingFlags.Public ||| BindingFlags.NonPublic)
-       let caseFields =
-         cases
-         |> Array.map (fun case ->
-            case.GetFields ())
-       let caseProducts =
+    lock repModule <| fun () ->
+    let t = typeof<'u>
+
+    let cases =
+      FSharpType.GetUnionCases
+       (t, BindingFlags.Public ||| BindingFlags.NonPublic)
+    let caseFields =
+      cases
+      |> Array.map (fun case ->
+         case.GetFields ())
+    let caseProducts =
+      caseFields
+      |> Array.map (fun caseFields ->
          caseFields
-         |> Array.map (fun caseFields ->
-            caseFields
-            |> Array.map (fun prop -> prop.PropertyType)
-            |> Products.products)
-       let choices =
-         caseProducts
-         |> Array.map (fun ts -> ts.[0])
-         |> Unions.choices
+         |> Array.map (fun prop -> prop.PropertyType)
+         |> Products.products)
+    let choices =
+      caseProducts
+      |> Array.map (fun ts -> ts.[0])
+      |> Unions.choices
 
-       match
-         Builder.metaType typeof<Union<'u>>
-          (Builder.metaValue "Arity" cases.Length >>= fun () ->
-           (match FSharpValue.PreComputeUnionTagMemberInfo
-                   (t, BindingFlags.Public ||| BindingFlags.NonPublic) with
-             | :? PropertyInfo as prop ->
-               Builder.overrideGetMethod "Tag" t prop
-             | :? MethodInfo as meth when meth.IsStatic ->
-               Builder.overrideMethod "Tag" typeof<int> [|t|]
-                (Builder.emit (OpCodes.Ldarg_1) >>
-                 Builder.emit (OpCodes.Call, meth) >>
-                 Builder.emit (OpCodes.Ret))
-             | _ ->
-               failwith "Expected PropertyInfo or static MethodInfo.") >>= fun () ->
-           Unions.asChoiceField t choices >>= fun () ->
-           Builder.forTo 0 (cases.Length-1) (fun i ->
-             Builder.metaField
-              (typedefof<Case<_, _, _>>.MakeGenericType
-                [|t; caseProducts.[i].[0]; choices.[i]|])
-              (Builder.metaValue "Name" cases.[i].Name         >>= fun () ->
-               Builder.metaValue "Arity" caseFields.[i].Length >>= fun () ->
-               Builder.metaValue "Tag" i                       >>= fun () ->
-               Products.defineExtractAndCreate
-                t
-                (Builder.emit
-                  (OpCodes.Call,
-                   FSharpValue.PreComputeUnionConstructorInfo
-                    (cases.[i],
-                     BindingFlags.Public ||| BindingFlags.NonPublic)))
-                caseFields.[i]
-                caseProducts.[i]) >>= fun () ->
-             Builder.forTo 0 (caseFields.[i].Length-1) (fun j ->
-               Builder.metaField
-                (typedefof<Label<_,_,_,_>>.MakeGenericType
-                  [|t;
-                    choices.[i];
-                    caseFields.[i].[j].PropertyType;
-                    caseProducts.[i].[j]|])
-                (Builder.metaValue "Name" caseFields.[i].[j].Name >>= fun () ->
-                 Builder.metaValue "Index" j >>= fun () ->
-                 Builder.overrideGetMethod "Get" t caseFields.[i].[j])))) with
-        | :? Union<'u> as u ->
-          u
-        | _ -> failwith "Bug"
-    else
-       null
+    match
+      Builder.metaType typeof<Union<'u>>
+       (Builder.metaValue "Arity" cases.Length >>= fun () ->
+        (match FSharpValue.PreComputeUnionTagMemberInfo
+                (t, BindingFlags.Public ||| BindingFlags.NonPublic) with
+          | :? PropertyInfo as prop ->
+            Builder.overrideGetMethod "Tag" t prop
+          | :? MethodInfo as meth when meth.IsStatic ->
+            Builder.overrideMethod "Tag" typeof<int> [|t|]
+             (Builder.emit (OpCodes.Ldarg_1) >>
+              Builder.emit (OpCodes.Call, meth) >>
+              Builder.emit (OpCodes.Ret))
+          | _ ->
+            failwith "Expected PropertyInfo or static MethodInfo.") >>= fun () ->
+        Unions.asChoiceField t choices >>= fun () ->
+        Builder.forTo 0 (cases.Length-1) (fun i ->
+          Builder.metaField
+           (typedefof<Case<_, _, _>>.MakeGenericType
+             [|t; caseProducts.[i].[0]; choices.[i]|])
+           (Builder.metaValue "Name" cases.[i].Name         >>= fun () ->
+            Builder.metaValue "Arity" caseFields.[i].Length >>= fun () ->
+            Builder.metaValue "Tag" i                       >>= fun () ->
+            Products.defineExtractAndCreate
+             t
+             (Builder.emit
+               (OpCodes.Call,
+                FSharpValue.PreComputeUnionConstructorInfo
+                 (cases.[i],
+                  BindingFlags.Public ||| BindingFlags.NonPublic)))
+             caseFields.[i]
+             caseProducts.[i]) >>= fun () ->
+          Builder.forTo 0 (caseFields.[i].Length-1) (fun j ->
+            Builder.metaField
+             (typedefof<Label<_,_,_,_>>.MakeGenericType
+               [|t;
+                 choices.[i];
+                 caseFields.[i].[j].PropertyType;
+                 caseProducts.[i].[j]|])
+             (Builder.metaValue "Name" caseFields.[i].[j].Name >>= fun () ->
+              Builder.metaValue "Index" j >>= fun () ->
+              Builder.overrideGetMethod "Get" t caseFields.[i].[j])))) with
+     | :? Union<'u> as u ->
+       u
+     | _ -> failwith "Bug"
 
   member rr.tuple () : Rep.Tuple<'t> =
-    if FSharpType.IsTuple typeof<'t> then
-       lock repModule <| fun () ->
+    if not (FSharpType.IsTuple typeof<'t>) then
+      raise Backtrack
 
-       let t = typeof<'t>
+    lock repModule <| fun () ->
 
-       let elems = FSharpType.GetTupleElements t
-       if 7 < elems.Length then
-         failwith "XXX: Tuples with more than 7 elements are not yet supported."
+    let t = typeof<'t>
 
-       let props =
-         Array.init elems.Length <| fun i ->
-         t.GetProperty (sprintf "Item%d" (i + 1))
-       let products = Products.products elems
+    let elems = FSharpType.GetTupleElements t
+    if 7 < elems.Length then
+      failwith "XXX: Tuples with more than 7 elements are not yet supported."
 
-       match
-         Builder.metaType typeof<Tuple<'t>>
-          (Builder.metaValue "Arity" elems.Length >>= fun () ->
-           Products.asProductField t
-            (Builder.emit
-              (OpCodes.Newobj,
-               match FSharpValue.PreComputeTupleConstructorInfo t with
-                | (ctor, None) -> ctor
-                | (ctor, Some _) -> failwith "XXX"))
-            props
-            products >>= fun () ->
-           Builder.forTo 0 (elems.Length-1) (fun i ->
-            let elemType =
-              typedefof<Elem<_, _, _>>.MakeGenericType
-               [|t; elems.[i]; products.[i]|]
-            Builder.metaField elemType
-             (Builder.overrideGetMethod "Get" t props.[i] >>= fun () ->
-              Builder.metaValue "Index" i))) with
-        | :? Rep.Tuple<'t> as t ->
-          t
-        | _ -> failwith "Bug"
-    else
-       null
+    let props =
+      Array.init elems.Length <| fun i ->
+      t.GetProperty (sprintf "Item%d" (i + 1))
+    let products = Products.products elems
+
+    match
+      Builder.metaType typeof<Tuple<'t>>
+       (Builder.metaValue "Arity" elems.Length >>= fun () ->
+        Products.asProductField t
+         (Builder.emit
+           (OpCodes.Newobj,
+            match FSharpValue.PreComputeTupleConstructorInfo t with
+             | (ctor, None) -> ctor
+             | (ctor, Some _) -> failwith "XXX"))
+         props
+         products >>= fun () ->
+        Builder.forTo 0 (elems.Length-1) (fun i ->
+         let elemType =
+           typedefof<Elem<_, _, _>>.MakeGenericType
+            [|t; elems.[i]; products.[i]|]
+         Builder.metaField elemType
+          (Builder.overrideGetMethod "Get" t props.[i] >>= fun () ->
+           Builder.metaValue "Index" i))) with
+     | :? Rep.Tuple<'t> as t ->
+       t
+     | _ -> failwith "Bug"

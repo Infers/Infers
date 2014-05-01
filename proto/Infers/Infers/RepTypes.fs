@@ -30,13 +30,13 @@ type [<AbstractClass>] AsProduct<'t, 'p> () =
 /// Representation of a discriminated union type `'u` as nested choices of
 /// type `'c`.
 type [<AbstractClass>] AsChoice<'u, 'c> () = class
-  // XXX Missing design & imlpementation
+  // XXX Missing design & implementation
   end
 
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# tuple type `'t`.
-type [<AbstractClass; AllowNullLiteral; InferenceRules>] Tuple<'t> =
+type [<AbstractClass; InferenceRules>] Tuple<'t> =
   new (arity) = {Arity = arity}
 
   /// The number of elements the tuple type `'t` has.
@@ -58,7 +58,7 @@ type [<AbstractClass>] Elem<'t, 'e, 'p> =
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# discriminated union type `'u`.
-type [<AbstractClass; AllowNullLiteral; InferenceRules>] Union<'u> =
+type [<AbstractClass; InferenceRules>] Union<'u> =
   new (arity) = {Arity = arity}
 
   /// The number of cases the discriminated union type `'u` has.
@@ -95,7 +95,7 @@ type [<AbstractClass>] Label<'u, 'cs, 'l, 'ls> =
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# record type `'r`.
-type [<AbstractClass; AllowNullLiteral; InferenceRules>] Record<'r> =
+type [<AbstractClass; InferenceRules>] Record<'r> =
   new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
 
   /// The number of fields the record type `'r` has.
