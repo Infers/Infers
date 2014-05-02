@@ -39,6 +39,7 @@ module InfRuleSet =
          if hasInferenceRules ty then
            Seq.concat
             [ty.GetMethods BindingFlags.AnyDeclaredInstance
+             |> TypeManip.orderMethodsBySpecificFirst
              |> Seq.map (fun infRule -> InfRule (infRule, infRules))
              loop ty.BaseType]
          else

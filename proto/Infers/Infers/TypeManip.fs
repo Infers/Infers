@@ -84,3 +84,21 @@ let tryInvoke meth formalType actualType this actuals =
   tryMatch formalType actualType HashEqMap.empty
   |> Option.map (fun v2t ->
      (prepare meth v2t).Invoke (this, actuals))
+
+type PartialOrder<'T> =
+  | PartialOrder of ('T -> 'T -> bool)
+
+let specificFirst =
+  let cmp a b =
+    let h = tryMatch a b HashEqMap.empty
+    h.IsSome
+  PartialOrder cmp
+
+let orderMethodsBySpecificFirst (methods: seq<MethodInfo>) =
+  let (PartialOrder sp) = specificFirst
+  methods
+  |> Seq.mapi (fun i x -> (i, x))
+  |> Seq.toArray
+  |> Array.sortWith (fun (i, a) (j, b) ->
+      if sp a.ReturnType b.ReturnType then -1 else compare i j)
+  |> Seq.map snd
