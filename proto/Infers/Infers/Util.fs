@@ -1,7 +1,5 @@
-﻿#if FSHARP_NON_INTERACTIVE
-[<AutoOpen>]
-module Infers.Util
-#endif
+﻿[<AutoOpen>]
+module internal Infers.Util
 
 open System
 open System.Reflection

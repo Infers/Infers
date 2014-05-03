@@ -1,4 +1,12 @@
-﻿let (>>=) xO x2yO = Option.bind x2yO xO
+﻿#r "bin\\Debug\\Infers.dll" ;;
+
+open System ;;
+open Infers ;;
+
+Eq.eq (1,1) (1,1) ;;
+
+#if FALSE
+let (>>=) xO x2yO = Option.bind x2yO xO
 
 type [<InferenceRules>] Dummy () =
   member d.int = Some 0
@@ -25,3 +33,4 @@ type [<InferenceRules>] Print () =
 match (tryGenerate true [Print (); Rec.Rules ()] : option<P<list<int>>>) with
  | None -> printf "None\n"
  | Some p -> p [1;2;3]
+#endif

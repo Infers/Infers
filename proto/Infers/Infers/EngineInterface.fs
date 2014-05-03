@@ -1,6 +1,4 @@
-﻿#if FSHARP_NON_INTERACTIVE
-namespace Infers
-#endif
+﻿namespace Infers
 
 open System
 

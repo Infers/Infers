@@ -1,9 +1,4 @@
-﻿#if FSHARP_NON_INTERACTIVE
-namespace Infers.Rep
-
-open Infers
-open Infers.Engine
-#endif
+﻿namespace Infers.Rep
 
 open Microsoft.FSharp.Reflection
 open System
@@ -12,6 +7,8 @@ open System.Collections.Concurrent
 open System.Reflection
 open System.Reflection.Emit
 open System.Threading
+open Infers
+open Infers.Engine
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -27,12 +24,13 @@ module Util =
 
   let mutable uniqueId = 0
   let inline uniqueName () =
-    let i = uniqueId
-    uniqueId <- i+1
+    let i = uniqueId + 1
+    uniqueId <- i
     sprintf "Generated%d" i
 
   type Builder<'a> =
-    TypeBuilder * list<string * obj> -> list<string * obj> * 'a
+    TypeBuilder * list<string * FieldBuilder * Type * obj>
+     -> list<string * FieldBuilder * Type * obj> * 'a
 
   let inline (>>=) xB x2yB = fun (tB, vs) ->
     let (vs, x) = xB (tB, vs)
@@ -49,6 +47,8 @@ module Util =
       [|typeof<Empty>|] // Special case
 
 
+
+
 type Builder =
   static member result x : Builder<_> = fun (_, vs) -> (vs, x)
 
@@ -56,16 +56,47 @@ type Builder =
     fun (typeBuilder, values) ->
       (values, typeBuilder)
 
-  static member metaType (baseType: Type) (builder: Builder<unit>) =
+  static member metaType (baseType: Type) (basePars: array<obj>) (builder: Builder<unit>) =
     let typeBuilder =
       repModule.DefineType
        (uniqueName (),
         TypeAttributes.Public,
         baseType)
     let (values, ()) = builder (typeBuilder, [])
+    let baseArgTypes =
+      match baseType.GetConstructors (BindingFlags.Any ||| BindingFlags.Instance) with
+       | [|baseCtor|] when (baseCtor.GetParameters ()).Length = basePars.Length ->
+         let baseArgTypes =
+           baseCtor.GetParameters () |> Array.map (fun p -> p.ParameterType)
+         let ctor =
+           typeBuilder.DefineConstructor
+            (MethodAttributes.Public,
+             CallingConventions.Standard,
+             baseArgTypes)
+         let ilGen = ctor.GetILGenerator ()
+         for i=0 to basePars.Length do
+           ilGen.Emit (OpCodes.Ldarg, i)
+         ilGen.Emit (OpCodes.Call, baseCtor)
+         ilGen.Emit (OpCodes.Ret)
+         baseArgTypes
+       | cs ->
+         failwithf "Type %A used as metatype base must have exactly one ctor with %d params.  Got: %A"
+          baseType basePars.Length cs
+    values
+    |> List.iter (fun (name, field, baseType, _) ->
+       //let field = typeBuilder.GetField name
+       let meth =
+         typeBuilder.DefineMethod
+          (name,
+           MethodAttributes.Public,
+           baseType,
+           [||])
+       let ilGen = meth.GetILGenerator ()
+       ilGen.Emit (OpCodes.Ldsfld, field)
+       ilGen.Emit (OpCodes.Ret))
     let metaType = typeBuilder.CreateType ()
     values
-    |> List.iter (fun (name, value) ->
+    |> List.iter (fun (name, _, _, value) ->
        let rec find (t: Type) =
          match t.GetField name with // Only public is ok here.
           | null ->
@@ -81,22 +112,24 @@ type Builder =
               failwithf "Field %s of type %A :> %A is not static"
                name metaType baseType
        find metaType)
-    (metaType.GetConstructor [||]).Invoke [||]
+    let ctor = metaType.GetConstructor baseArgTypes
+    ctor.Invoke basePars
 
-  static member metaValue name (value: Object) : Builder<unit> =
+  static member metaValue name fb baseType (value: Object) : Builder<unit> =
     fun (typeBuilder, values) ->
-      ((name, value)::values, ())
+      ((name, fb, baseType, value)::values, ())
 
-  static member metaField baseType (definition: Builder<unit>) : Builder<unit> =
+  static member metaField baseType basePars (definition: Builder<unit>) : Builder<unit> =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let name = uniqueName ()
-    typeBuilder.DefineField
-     (name,
-      baseType,
-      FieldAttributes.Static ||| FieldAttributes.Public) |> ignore
+    let fb =
+      typeBuilder.DefineField
+       (name,
+        baseType,
+        FieldAttributes.Static ||| FieldAttributes.Public)
     Builder.metaValue
-     name
-     (Builder.metaType baseType definition)
+     name fb baseType
+     (Builder.metaType baseType basePars definition)
 
   static member emit op = fun (ilgen: ILGenerator) ->
     ilgen.Emit op ; ilgen
@@ -221,7 +254,9 @@ module Products =
         Builder.emit (OpCodes.Ret))
 
   let asProductField t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
-    Builder.metaField (typedefof<AsProduct<_, _>>.MakeGenericType [|t; products.[0]|])
+    Builder.metaField
+     (typedefof<AsProduct<_, _>>.MakeGenericType [|t; products.[0]|])
+     [||]
      (defineExtractAndCreate t emitCtor props products)
 
 /////////////////////////////////////////////////////////////////////////
@@ -230,7 +265,9 @@ module Unions =
   let choices ts = build typedefof<Choice<_, _>> ts
 
   let asChoiceField t (choices: array<Type>) =
-    Builder.metaField (typedefof<AsChoice<_, _>>.MakeGenericType [|t; choices.[0]|])
+    Builder.metaField
+     (typedefof<AsChoice<_, _>>.MakeGenericType [|t; choices.[0]|])
+     [||]
      (Builder.result ())
 
 /////////////////////////////////////////////////////////////////////////
@@ -250,10 +287,8 @@ type [<InferenceRules>] Rules () =
 
     match
       Builder.metaType typeof<Record<'r>>
-       (Builder.metaValue "Arity" fields.Length         >>= fun () ->
-        Builder.metaValue "IsMutable"
-         (fields |> Array.exists (fun p -> p.CanWrite)) >>= fun () ->
-        Products.asProductField t
+       [|box fields.Length; box (fields |> Array.exists (fun p -> p.CanWrite))|]
+       (Products.asProductField t
          (Builder.emit
            (OpCodes.Newobj,
             FSharpValue.PreComputeRecordConstructorInfo
@@ -265,11 +300,9 @@ type [<InferenceRules>] Rules () =
             typedefof<Field<_, _, _>>.MakeGenericType
              [|t; fields.[i].PropertyType; products.[i]|]
           Builder.metaField fieldType
+           [|box i; fields.[i].Name; box fields.[i].CanWrite|]
            (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
-            Builder.overrideSetMethodWhenCanWrite "Set" fields.[i] >>= fun () ->
-            Builder.metaValue "Index" i                    >>= fun () ->
-            Builder.metaValue "Name" fields.[i].Name       >>= fun () ->
-            Builder.metaValue "IsMutable" fields.[i].CanWrite))) with
+            Builder.overrideSetMethodWhenCanWrite "Set" fields.[i]))) with
      | :? Record<'r> as r ->
        r
      | _ -> failwith "Bug"
@@ -300,9 +333,8 @@ type [<InferenceRules>] Rules () =
       |> Unions.choices
 
     match
-      Builder.metaType typeof<Union<'u>>
-       (Builder.metaValue "Arity" cases.Length >>= fun () ->
-        (match FSharpValue.PreComputeUnionTagMemberInfo
+      Builder.metaType typeof<Union<'u>> [|box cases.Length|]
+       ((match FSharpValue.PreComputeUnionTagMemberInfo
                 (t, BindingFlags.Public ||| BindingFlags.NonPublic) with
           | :? PropertyInfo as prop ->
             Builder.overrideGetMethod "Tag" t prop
@@ -318,10 +350,8 @@ type [<InferenceRules>] Rules () =
           Builder.metaField
            (typedefof<Case<_, _, _>>.MakeGenericType
              [|t; caseProducts.[i].[0]; choices.[i]|])
-           (Builder.metaValue "Name" cases.[i].Name         >>= fun () ->
-            Builder.metaValue "Arity" caseFields.[i].Length >>= fun () ->
-            Builder.metaValue "Tag" i                       >>= fun () ->
-            Products.defineExtractAndCreate
+           [|box cases.[i].Name; box caseFields.[i].Length; box i|]
+           (Products.defineExtractAndCreate
              t
              (Builder.emit
                (OpCodes.Call,
@@ -337,9 +367,8 @@ type [<InferenceRules>] Rules () =
                  choices.[i];
                  caseFields.[i].[j].PropertyType;
                  caseProducts.[i].[j]|])
-             (Builder.metaValue "Name" caseFields.[i].[j].Name >>= fun () ->
-              Builder.metaValue "Index" j >>= fun () ->
-              Builder.overrideGetMethod "Get" t caseFields.[i].[j])))) with
+             [|box j; box caseFields.[i].[j].Name|]
+             (Builder.overrideGetMethod "Get" t caseFields.[i].[j])))) with
      | :? Union<'u> as u ->
        u
      | _ -> failwith "Bug"
@@ -361,9 +390,8 @@ type [<InferenceRules>] Rules () =
     let products = Products.products elems
 
     match
-      Builder.metaType typeof<Tuple<'t>>
-       (Builder.metaValue "Arity" elems.Length >>= fun () ->
-        Products.asProductField t
+      Builder.metaType typeof<Rep.Tuple<'t>> [|box elems.Length|]
+       (Products.asProductField t
          (Builder.emit
            (OpCodes.Newobj,
             match FSharpValue.PreComputeTupleConstructorInfo t with
@@ -375,9 +403,8 @@ type [<InferenceRules>] Rules () =
          let elemType =
            typedefof<Elem<_, _, _>>.MakeGenericType
             [|t; elems.[i]; products.[i]|]
-         Builder.metaField elemType
-          (Builder.overrideGetMethod "Get" t props.[i] >>= fun () ->
-           Builder.metaValue "Index" i))) with
+         Builder.metaField elemType [|box i|]
+          (Builder.overrideGetMethod "Get" t props.[i]))) with
      | :? Rep.Tuple<'t> as t ->
        t
      | _ -> failwith "Bug"

@@ -1,8 +1,6 @@
-﻿#if FSHARP_NON_INTERACTIVE
-namespace Infers.Rep
+﻿namespace Infers.Rep
 
 open Infers
-#endif
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -91,7 +89,11 @@ type [<AbstractClass>] Label<'u, 'cs, 'l, 'ls> =
 
   /// The name of the label.
   val Name: string
-
+  (*
+type LabelTest (x, y) =
+  inherit Label<int, int, int, int>(x, y)
+  override t.Get (_) = failwith "XXX"
+  *)
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# record type `'r`.

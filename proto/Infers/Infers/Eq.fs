@@ -1,12 +1,10 @@
-﻿#if FSHARP_NON_INTERACTIVE
-module Infers.Eq
+﻿module Infers.Eq
 
+open Microsoft.FSharp.Core.LanguagePrimitives
+open System
 open Infers.Util
 open Infers.Rep
 open Infers.Engine
-#endif
-open System
-open Microsoft.FSharp.Core.LanguagePrimitives
 
 type t<'a> = Func<'a, 'a, bool>
 type c<'u, 'cs, 'l, 'ls> = C of t<'u>

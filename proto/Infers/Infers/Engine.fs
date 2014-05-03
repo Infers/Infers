@@ -1,6 +1,4 @@
-﻿#if FSHARP_NON_INTERACTIVE
-module Infers.Engine
-#endif
+﻿module Infers.Engine
 
 open System
 open System.Reflection
@@ -19,7 +17,10 @@ type InfRule (infRule: MethodInfo, infRules: obj) =
    try (if infRule.ContainsGenericParameters
         then infRule.MakeGenericMethod genArgTypes
         else infRule).Invoke (infRules, argObjs) |> Some
-   with Backtrack -> None
+   with :? TargetInvocationException as e
+          when (match e.InnerException with
+                 | Backtrack -> true
+                 | _ -> false) -> None
 
 module InfRuleSet =
   let ofSeq infRules =
@@ -39,7 +40,7 @@ module InfRuleSet =
          if hasInferenceRules ty then
            Seq.concat
             [ty.GetMethods BindingFlags.AnyDeclaredInstance
-             |> TypeManip.orderMethodsBySpecificFirst
+             |> orderMethodsBySpecificFirst
              |> Seq.map (fun infRule -> InfRule (infRule, infRules))
              loop ty.BaseType]
          else
