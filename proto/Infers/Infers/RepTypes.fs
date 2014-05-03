@@ -33,8 +33,15 @@ type [<AbstractClass>] AsChoice<'u, 'c> () = class
 
 /////////////////////////////////////////////////////////////////////////
 
+type [<AllowNullLiteral>] Rep<'x> () = class
+  end
+
+/////////////////////////////////////////////////////////////////////////
+
 /// Type representation for the F# tuple type `'t`.
 type [<AbstractClass; InferenceRules>] Tuple<'t> =
+  inherit Rep<'t>
+
   new (arity) = {Arity = arity}
 
   /// The number of elements the tuple type `'t` has.
@@ -57,6 +64,8 @@ type [<AbstractClass>] Elem<'t, 'e, 'p> =
 
 /// Type representation for the F# discriminated union type `'u`.
 type [<AbstractClass; InferenceRules>] Union<'u> =
+  inherit Rep<'u>
+
   new (arity) = {Arity = arity}
 
   /// The number of cases the discriminated union type `'u` has.
@@ -89,15 +98,13 @@ type [<AbstractClass>] Label<'u, 'cs, 'l, 'ls> =
 
   /// The name of the label.
   val Name: string
-  (*
-type LabelTest (x, y) =
-  inherit Label<int, int, int, int>(x, y)
-  override t.Get (_) = failwith "XXX"
-  *)
+
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# record type `'r`.
 type [<AbstractClass; InferenceRules>] Record<'r> =
+  inherit Rep<'r>
+
   new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
 
   /// The number of fields the record type `'r` has.

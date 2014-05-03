@@ -143,8 +143,13 @@ type [<InferenceRules>] Rules () =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =
-  match Engine.tryGenerate false [Rules (); Rep.Rules ()] with
-   | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
+  match StaticMap<Rules, option<t<'a>>>.Get () with
+   | None ->
+     match Engine.tryGenerate false [Rules (); Rep.Rules ()] with
+      | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
+      | Some pu ->
+        StaticMap<Rules, option<t<'a>>>.Set (Some pu)
+        pu
    | Some pu ->
      pu
 
