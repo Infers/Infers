@@ -124,3 +124,5 @@ type [<AbstractClass>] Field<'r, 'f, 'p> =
 
   /// Sets the value of the field assuming this is a mutable field.
   abstract Set: 'r * 'f -> unit
+  default f.Set (_: 'r, _: 'f) = notImplemented ()
+
