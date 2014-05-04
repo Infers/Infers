@@ -3,7 +3,6 @@
 open System
 open System.IO
 open Infers.Rep
-open Infers.Engine
 
 val pickle: BinaryWriter -> 'a -> unit
 val unpickle: BinaryReader -> 'a

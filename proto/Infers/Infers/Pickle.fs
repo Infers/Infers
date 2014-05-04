@@ -4,7 +4,6 @@ open Microsoft.FSharp.Core.Operators.Unchecked
 open System
 open System.IO
 open Infers.Rep
-open Infers.Engine
 open Infers.Util
 
 type [<AbstractClass>] t<'a> () =
@@ -145,7 +144,7 @@ type [<InferenceRules>] Rules () =
 let inline pu () : t<'a> =
   match StaticMap<Rules, option<t<'a>>>.Get () with
    | None ->
-     match Engine.tryGenerate false [Rules (); Rep.Rules ()] with
+     match Engine.TryGenerate [Rules () :> obj; Rep.Rules () :> obj] with
       | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
       | Some pu ->
         StaticMap<Rules, option<t<'a>>>.Set (Some pu)

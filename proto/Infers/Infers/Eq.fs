@@ -4,7 +4,6 @@ open Microsoft.FSharp.Core.LanguagePrimitives
 open System
 open Infers.Util
 open Infers.Rep
-open Infers.Engine
 
 type t<'a> = Func<'a, 'a, bool>
 type c<'u, 'cs, 'l, 'ls> = C of t<'u>
@@ -83,7 +82,8 @@ type [<InferenceRules>] Rules () =
 let inline mk () : t<'a> =
   match StaticMap<Rules, t<'a>>.Get () with
    | null ->
-     match Engine.tryGenerate false [Rules (); Rep.Rules (); Rec.Rules ()] with
+     match Engine.TryGenerate
+            [Rules () :> obj; Rep.Rules () :> obj; Rec.Rules () :> obj] with
        | None -> failwithf "Eq: Unsupported type: %A" typeof<'a>
        | Some eq ->
          StaticMap<Rules, t<'a>>.Set eq

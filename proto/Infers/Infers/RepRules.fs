@@ -8,7 +8,6 @@ open System.Reflection
 open System.Reflection.Emit
 open System.Threading
 open Infers
-open Infers.Engine
 
 /////////////////////////////////////////////////////////////////////////
 
