@@ -28,27 +28,28 @@ module InfRuleSet =
    |> Seq.fold (fun rulesSet rules -> HashEqSet.add rules rulesSet)
       HashEqSet.empty
 
-  let hasInferenceRules (ty: Type) =
-    match ty.GetCustomAttributes (typeof<InferenceRules>, true) with
-     | [||] -> false
-     | _ -> true
+  let getInferenceRules (ty: Type) =
+    ty.GetCustomAttributes<InferenceRules> true
+    |> Seq.tryPick Some
 
   let rules infRuleSet =
     HashEqSet.toSeq infRuleSet
     |> Seq.collect (fun infRules ->
        let rec loop ty =
-         if hasInferenceRules ty then
-           Seq.concat
-            [ty.GetMethods BindingFlags.AnyDeclaredInstance
-             |> orderMethodsBySpecificFirst
-             |> Seq.map (fun infRule -> InfRule (infRule, infRules))
-             loop ty.BaseType]
-         else
-           Seq.empty
+         match getInferenceRules ty with
+          | None -> Seq.empty
+          | Some attr -> 
+            Seq.concat
+             [ty.GetMethods (if attr.NonPublic
+                             then BindingFlags.AnyDeclaredInstance
+                             else BindingFlags.PublicDeclaredInstance)
+              |> orderMethodsBySpecificFirst
+              |> Seq.map (fun infRule -> InfRule (infRule, infRules))
+              loop ty.BaseType]
        infRules.GetType () |> loop)
 
   let maybeAddRules (o: obj) infRuleSet =
-    if hasInferenceRules (o.GetType ())
+    if o.GetType () |> getInferenceRules |> Option.isSome
     then HashEqSet.add o infRuleSet
     else infRuleSet
 

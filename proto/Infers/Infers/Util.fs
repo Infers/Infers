@@ -102,10 +102,7 @@ type [<Sealed>] StaticMap<'k, 'v> () =
 /////////////////////////////////////////////////////////////////////////
 
 module BindingFlags =
-  let Any =
-    BindingFlags.Public
-    ||| BindingFlags.NonPublic
-  let AnyDeclaredInstance =
-    BindingFlags.DeclaredOnly
-    ||| Any
-    ||| BindingFlags.Instance
+  let Any = BindingFlags.Public ||| BindingFlags.NonPublic
+  let DeclaredInstance = BindingFlags.DeclaredOnly ||| BindingFlags.Instance
+  let AnyDeclaredInstance = Any ||| DeclaredInstance
+  let PublicDeclaredInstance = BindingFlags.Public ||| DeclaredInstance

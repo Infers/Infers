@@ -4,7 +4,11 @@ open System
 
 /// A type that has the `InferenceRules` attribute is assumed to contain
 /// inference rule methods that are used by the inference engine.
-type InferenceRules () = inherit Attribute ()
+type InferenceRules =
+  inherit Attribute
+  val NonPublic: bool
+  new () = {inherit Attribute (); NonPublic = false}
+  new (nonPublic) = {inherit Attribute (); NonPublic = nonPublic}
 
 /// Untyped interface for typed proxies.  Not to be used by user code.
 type [<AbstractClass>] RecObj () =
