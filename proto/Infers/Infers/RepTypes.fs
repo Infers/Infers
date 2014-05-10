@@ -28,7 +28,11 @@ type [<AbstractClass>] AsProduct<'t, 'p> () =
 /// Representation of a discriminated union type `'u` as nested choices of
 /// type `'c`.
 type [<AbstractClass>] AsChoice<'u, 'c> () = class
-  // XXX Missing design & implementation
+  /// 
+//  abstract ToChoice: 'u -> 'c
+
+  ///
+//  abstract OfChoice: 'c -> 't
   end
 
 /////////////////////////////////////////////////////////////////////////
@@ -51,7 +55,7 @@ type [<AbstractClass; InferenceRules>] Tuple<'t> =
 //member _: Elem<'t, 'e, 'p>
 //...
 
-type [<AbstractClass>] Elem<'t, 'e, 'p> =
+type [<AbstractClass>] Elem<'t, 'e> =
   new (index) = {Index = index}
 
   /// The index of the element.
@@ -59,6 +63,9 @@ type [<AbstractClass>] Elem<'t, 'e, 'p> =
 
   /// Returns the value of the element.
   abstract Get: 't -> 'e
+
+type [<AbstractClass>] Elem<'t, 'e, 'p> (index) =
+  inherit Elem<'t, 'e> (index)
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -117,19 +124,21 @@ type [<AbstractClass; InferenceRules>] Record<'r> =
 //member _: Field<'r, 'x, 'p>
 
 /// Representation of a field of type `'f` of the record type `'r`.
-type [<AbstractClass>] Field<'r, 'f, 'p> =
-  inherit Elem<'r, 'f, 'p>
+type [<AbstractClass>] Field<'r, 'f> =
+  inherit Elem<'r, 'f>
 
   new (index, name, isMutable) =
-    {inherit Elem<'r, 'f, 'p> (index); Name = name; IsMutable = isMutable}
+    {inherit Elem<'r, 'f> (index); Name = name; IsMutable = isMutable}
 
   /// The name of the field.
   val Name: string
 
   /// Whether the field is mutable.
-  val IsMutable: bool 
+  val IsMutable: bool
 
   /// Sets the value of the field assuming this is a mutable field.
   abstract Set: 'r * 'f -> unit
   default f.Set (_: 'r, _: 'f) = notImplemented ()
 
+type [<AbstractClass>] Field<'r, 'f, 'p> (index, name, isMutable) =
+  inherit Field<'r, 'f> (index, name, isMutable)
