@@ -10,8 +10,17 @@ type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 type p<'p, 'e, 'es>
 
-type [<InferenceRules>] Rules =
-  new: unit -> Rules
+type [<InferenceRules>] Eq =
+  new: unit -> Eq
+
+  // Rules --------------------------------------------------------------
+
+  member recFn: RecFn
+  member rep: Rep
+
+  // Rec ----------------------------------------------------------------
+
+  member fix: RecFn -> Rec<t<'x>>
 
   // Base Types ---------------------------------------------------------
 
@@ -57,7 +66,7 @@ type [<InferenceRules>] Rules =
                * u<'u,        'c,       Choice<'c, 'cs>>
               -> u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>>
 
-  member union: Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
+  member union: Rep * Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
 
   // Tuples and Records -------------------------------------------------
 
@@ -66,8 +75,8 @@ type [<InferenceRules>] Rules =
                -> p<'r, And<'f, 'fs>, And<'f, 'fs>>
 
   member elem: Elem<'t, 'e, 'p> * t<'e> -> p<'t, 'e, 'p>
-  member tuple: Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
+  member tuple: Rep * Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
 
   member field: Field<'r, 'f, 'p> * t<'f> -> p<'r, 'f, 'p>
-  member record: Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p>
+  member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p>
               -> t<'r> when 'r: not struct

@@ -18,8 +18,8 @@ type [<AbstractClass>] p<'p, 'e, 'es> =
 type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 
-type [<InferenceRules>] Rules =
-  new: unit -> Rules
+type [<InferenceRules>] Pickle =
+  new: unit -> Pickle
 
   member unit: t<unit>
 

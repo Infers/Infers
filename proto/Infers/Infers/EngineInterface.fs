@@ -2,27 +2,24 @@
 
 open System
 
-/// A type that has the `InferenceRules` attribute is assumed to contain
-/// inference rule methods that are used by the inference engine.
 type InferenceRules =
   inherit Attribute
   val NonPublic: bool
   new () = {inherit Attribute (); NonPublic = false}
   new (nonPublic) = {inherit Attribute (); NonPublic = nonPublic}
 
-/// Untyped interface for typed proxies.  Not to be used by user code.
-type [<AbstractClass>] RecObj () =
-  abstract GetObj: unit -> obj
-  abstract SetObj: obj -> unit
-
-/// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> () =
-  inherit RecObj ()
   abstract Get: unit -> 'x
   abstract Set: 'x -> unit
-  override this.GetObj () = box (this.Get ())
-  override this.SetObj x = this.Set (unbox<'x> x)
+  // XXX This generates warning FS0050 as the IRecObj interface does not appear
+  // in the signature.  This is an internal implementation detail that users
+  // should never need to care about and makes it possible to invoke the typed,
+  // user defined Get and Set functions dynamically without having to use
+  // reflection.  If there is a better way to achieve this in F#, then I'd love
+  // to know about it, because being able to have this kind of internal
+  // functionality is a fairly common need.
+  interface IRecObj with
+   override this.GetObj () = box (this.Get ())
+   override this.SetObj x = this.Set (unbox<'x> x)
 
-/// Exception that can be raised by an otherwise matched rule to make the
-/// inference engine to treat the rule as a non-match and backtrack.
 exception Backtrack

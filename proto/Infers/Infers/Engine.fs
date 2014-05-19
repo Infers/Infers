@@ -91,18 +91,17 @@ module IDDFS =
        let (knownObjs, tie) =
          match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
                |> Seq.tryPick Some with
-          | None ->
-            (HashEqMap.add desiredTy
-              (fun () -> raise Backtrack)
-              knownObjs,
-             K >> HashEqMap.add desiredTy)
-          | Some (recObj, _, knownObjs) ->
-            let recObj = recObj :?> RecObj
+          | Some (:? IRecObj as recObj, _, knownObjs) ->
             (HashEqMap.add desiredTy
               (fun () -> recObj.GetObj ()) knownObjs,
              fun complete knownObjs ->
                recObj.SetObj complete
                HashEqMap.add desiredTy (K complete) knownObjs)
+          | _ ->
+            (HashEqMap.add desiredTy
+              (fun () -> raise Backtrack)
+              knownObjs,
+             K >> HashEqMap.add desiredTy)
        let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
          match parTypes with
           | [] ->

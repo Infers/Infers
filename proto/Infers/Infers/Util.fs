@@ -106,3 +106,9 @@ module BindingFlags =
   let DeclaredInstance = BindingFlags.DeclaredOnly ||| BindingFlags.Instance
   let AnyDeclaredInstance = Any ||| DeclaredInstance
   let PublicDeclaredInstance = BindingFlags.Public ||| DeclaredInstance
+
+/////////////////////////////////////////////////////////////////////////
+
+type IRecObj =
+  abstract GetObj: unit -> obj
+  abstract SetObj: obj -> unit

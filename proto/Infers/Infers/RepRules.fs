@@ -267,7 +267,7 @@ module Unions =
 
 /////////////////////////////////////////////////////////////////////////
 
-type [<InferenceRules>] Rules () =
+type [<InferenceRules>] Rep () =
   member rr.record () : Record<'r> =
     match StaticMap<Builder, Rep<'r>>.Get () with
      | null ->

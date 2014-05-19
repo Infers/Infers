@@ -12,8 +12,12 @@ type p<'p, 'e, 'es> = P of t<'p>
 
 let inline via map eq x y = eq (map x) (map y)
 
-type [<InferenceRules>] Rules () =
-  
+type [<InferenceRules>] Eq () =
+  member e.recFn = RecFn ()
+  member e.rep = Rep ()
+
+  member e.fix (r: RecFn) : Rec<t<'x>> = r.func2 ()
+
   member e.unit: t<unit> = toFunc (fun () () -> true)
 
   member e.bool: t<bool> = toFunc (=)
@@ -56,7 +60,7 @@ type [<InferenceRules>] Rules () =
   member e.choice (U cs: u<'u, 'cs, 'cs>, U c: u<'u, 'c, Choice<'c, 'cs>>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
     U (c @ cs)
 
-  member e.union (m: Union<'u>, _: AsChoice<'u, 'c>, U u: u<'u, 'c, 'c>) : t<'u> =
+  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, U u: u<'u, 'c, 'c>) : t<'u> =
     let u = Array.ofList u
     toFunc <| fun l r ->
       let i = m.Tag l
@@ -71,22 +75,21 @@ type [<InferenceRules>] Rules () =
 
   member e.elem (m: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
     P (toFunc (fun x y -> via m.Get (toFun t) x y))
-  member e.tuple (_: Rep.Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
+  member e.tuple (_: Rep, _: Rep.Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
     p
 
   member e.field (m: Field<'r, 'f, 'p>, t: t<'f>) : p<'r, 'f, 'p> =
     P (toFunc (via m.Get (toFun t)))
-  member e.record (m: Record<'r>, _: AsProduct<'r, 'p>, P p: p<'r, 'p, 'p>) : t<'r> =
+  member e.record (_: Rep, m: Record<'r>, _: AsProduct<'r, 'p>, P p: p<'r, 'p, 'p>) : t<'r> =
     if m.IsMutable then toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =
-  match StaticMap<Rules, t<'a>>.Get () with
+  match StaticMap<Eq, t<'a>>.Get () with
    | null ->
-     match Engine.TryGenerate
-            [Rules () :> obj; Rep.Rules () :> obj; Rec.Rules () :> obj] with
+     match Engine.TryGenerate (Eq ()) with
        | None -> failwithf "Eq: Unsupported type: %A" typeof<'a>
        | Some eq ->
-         StaticMap<Rules, t<'a>>.Set eq
+         StaticMap<Eq, t<'a>>.Set eq
          eq
    | eq ->
      eq

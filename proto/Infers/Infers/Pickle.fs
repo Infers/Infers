@@ -81,7 +81,7 @@ let inline mkUnion (m: Union<'u>) (U u: u<'u, 'c, 'c>) =
   else
     mk (fun r -> r.ReadInt32 ()) (fun w i -> w.Write i)
 
-type [<InferenceRules>] Rules () =
+type [<InferenceRules>] Pickle () =
   member e.unit: t<unit> = mkConst ()
 
   member e.pu () : Rec<t<'x>> =
@@ -142,12 +142,12 @@ type [<InferenceRules>] Rules () =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =
-  match StaticMap<Rules, option<t<'a>>>.Get () with
+  match StaticMap<Pickle, option<t<'a>>>.Get () with
    | None ->
-     match Engine.TryGenerate [Rules () :> obj; Rep.Rules () :> obj] with
+     match Engine.TryGenerate [Pickle () :> obj; Rep () :> obj] with
       | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
       | Some pu ->
-        StaticMap<Rules, option<t<'a>>>.Set (Some pu)
+        StaticMap<Pickle, option<t<'a>>>.Set (Some pu)
         pu
    | Some pu ->
      pu

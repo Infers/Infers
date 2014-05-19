@@ -20,18 +20,20 @@
     <Optimize>false</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;FSHARP_NON_INTERACTIVE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\Infers.XML</DocumentationFile>
+    <NoWarn>0050</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;FSHARP_NON_INTERACTIVE</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\Infers.XML</DocumentationFile>
+    <NoWarn>0050</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
@@ -40,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Util.fs" />
     <Compile Include="TypeManip.fs" />
+    <Compile Include="EngineInterface.fsi" />
     <Compile Include="EngineInterface.fs" />
     <Compile Include="Engine.fsi" />
     <Compile Include="Engine.fs" />
