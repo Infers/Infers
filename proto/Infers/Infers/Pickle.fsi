@@ -21,6 +21,10 @@ type u<'u, 'c, 'cs>
 type [<InferenceRules>] Pickle =
   new: unit -> Pickle
 
+  member rep: Rep
+
+  member fix: unit -> Rec<t<'x>>
+
   member unit: t<unit>
 
   member bool: t<bool>
@@ -57,14 +61,14 @@ type [<InferenceRules>] Pickle =
                * u<'u,        'c,       Choice<'c, 'cs>>
               -> u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>>
 
-  member union: Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
+  member union: Rep * Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
 
   member product: p<'r,         'fs,          'fs>
                 * p<'r,     'f,       And<'f, 'fs>>
                -> p<'r, And<'f, 'fs>, And<'f, 'fs>>
 
   member elem: Elem<'t, 'e, 'p> * t<'e> -> p<'t, 'e, 'p>
-  member tuple: Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
+  member tuple: Rep * Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
 
   member field: Field<'r, 'f, 'p> * t<'f> -> p<'r, 'f, 'p>
-  member record: Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p> -> t<'r>
+  member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p> -> t<'r>

@@ -84,7 +84,9 @@ let inline mkUnion (m: Union<'u>) (U u: u<'u, 'c, 'c>) =
 type [<InferenceRules>] Pickle () =
   member e.unit: t<unit> = mkConst ()
 
-  member e.pu () : Rec<t<'x>> =
+  member e.rep = Rep ()
+
+  member e.fix () : Rec<t<'x>> =
     let r = r<'x>()
     {new Rec<t<'x>> () with
       override p.Get () = r :> t<'x>
@@ -125,7 +127,7 @@ type [<InferenceRules>] Pickle () =
   member e.choice (U cs: u<'u, 'cs, 'cs>, U c: u<'u, 'c, Choice<'c, 'cs>>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
     U (c @ cs)
 
-  member e.union (m: Union<'u>, _: AsChoice<'u, 'c>, u: u<'u, 'c, 'c>) : t<'u> =
+  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, u: u<'u, 'c, 'c>) : t<'u> =
     mkUnion m u
 
   member e.product (fs: p<'r, 'fs, 'fs>, f:  p<'r, 'f, And<'f, 'fs>>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
@@ -133,18 +135,18 @@ type [<InferenceRules>] Pickle () =
     
   member e.elem (_: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
     mkElemOrField t
-  member e.tuple (_: Tuple<'t>, m: AsProduct<'t, 'p>, p: p<'t, 'p, 'p>) : t<'t> =
+  member e.tuple (_: Rep, _: Tuple<'t>, m: AsProduct<'t, 'p>, p: p<'t, 'p, 'p>) : t<'t> =
     mkTupleOrNonRecursiveRecord m p
 
   member e.field (_: Field<'r, 'f, 'p>, t: t<'f>) : p<'r, 'f, 'p> =
     mkElemOrField t
-  member e.record (_: Record<'r>, m: AsProduct<'r, 'p>, p: p<'r, 'p, 'p>) : t<'r> =
+  member e.record (_: Rep, _: Record<'r>, m: AsProduct<'r, 'p>, p: p<'r, 'p, 'p>) : t<'r> =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =
   match StaticMap<Pickle, option<t<'a>>>.Get () with
    | None ->
-     match Engine.TryGenerate [Pickle () :> obj; Rep () :> obj] with
+     match Engine.TryGenerate (Pickle ()) with
       | None -> failwithf "Pickle: Unsupported type %A" typeof<'a>
       | Some pu ->
         StaticMap<Pickle, option<t<'a>>>.Set (Some pu)
