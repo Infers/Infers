@@ -6,97 +6,93 @@ open System.Reflection
 
 /////////////////////////////////////////////////////////////////////////
 
-let (|Var|App|Array|) (t: Type) =
+type TyCon =
+  | Arr of rank: int
+  | Def of def: Type
+
+type Ty =
+  | Var of Type
+  | App of TyCon * array<Ty>
+
+let rec toTy (t: Type) =
   if t.IsArray then
-    Array (t.GetArrayRank (), t.GetElementType ())
+    App (Arr (t.GetArrayRank ()), [|toTy (t.GetElementType ())|])
   elif t.IsGenericParameter then
     Var t
   elif t.IsGenericType then
-    App (t.GetGenericTypeDefinition (), t.GetGenericArguments ())
+    App (Def (t.GetGenericTypeDefinition ()),
+         t.GetGenericArguments () |> Array.map toTy)
   else
-    App (t, [||])
+    App (Def t, [||])
 
-/////////////////////////////////////////////////////////////////////////
-
-let rec containsVars t =
-  match t with
-   | Var v -> true
-   | App (_, ts) -> Array.exists containsVars ts
-   | Array (_, t) -> containsVars t
-
-let rec resolveTop v2t t =
-  match t with
-   | Var v ->
-     match HashEqMap.tryFind v v2t with
-      | None -> t
-      | Some t -> resolveTop v2t t
-   | _ ->
-     t
-
-let rec resolve v2t t =
-  match resolveTop v2t t with
-   | Var v -> v
-   | Array (r, t) ->
-     let t = resolveTop v2t t
+let rec ofTy ty =
+  match ty with
+   | Var t -> t
+   | App (Arr r, [|ty|]) -> 
+     let t = ofTy ty
      if r = 1
      then t.MakeArrayType ()
      else t.MakeArrayType r
-   | App (c, [||]) -> c
-   | App (c, ps) -> c.MakeGenericType (Array.map (resolve v2t) ps)
+   | App (Arr _, _) -> failwithf "Bug: %A" ty
+   | App (Def t, [||]) -> t
+   | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map ofTy)
 
-let rec occurs v2t v t =
-  match t with
+/////////////////////////////////////////////////////////////////////////
+
+let rec containsVars (ty: Ty) =
+  match ty with
+   | Var v -> true
+   | App (_, tys) -> Array.exists containsVars tys
+
+let rec resolveTop v2ty ty =
+  match ty with
+   | Var v ->
+     match HashEqMap.tryFind v v2ty with
+      | None -> ty
+      | Some ty -> resolveTop v2ty ty
+   | _ ->
+     ty
+
+let rec resolve v2ty ty =
+  match resolveTop v2ty ty with
+   | Var v -> Var v
+   | App (tc, tys) ->
+     App (tc, tys |> Array.map (resolve v2ty))
+
+let rec occurs v2ty v ty =
+  match ty with
    | Var v' -> v = v'
-   | Array (_, t) -> occurs v2t v t
-   | App (_, ts) ->
-     ts
-     |> Array.exists (occurs v2t v << resolveTop v2t)
+   | App (_, tys) ->
+     tys
+     |> Array.exists (occurs v2ty v << resolveTop v2ty)
 
-let rec tryMatch formal actual v2t =
-  match (resolveTop v2t formal, resolveTop v2t actual) with
-   | (Var v, t) | (t, Var v) when not (occurs v2t v t) ->
-     Some (HashEqMap.add v t v2t)
-   | (Array (r1, t1), Array (r2, t2)) when r1 = r2 ->
-     tryMatch t1 t2 v2t
+let rec tryMatch formal actual v2ty =
+  match (resolveTop v2ty formal, resolveTop v2ty actual) with
+   | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
+     Some (HashEqMap.add v ty v2ty)
    | (App (formal, pars), App (actual, args)) when formal = actual ->
      assert (pars.Length = args.Length)
-     let rec loop i v2t =
+     let rec loop i v2ty =
        if i < pars.Length then
-         tryMatch pars.[i] args.[i] v2t
+         tryMatch pars.[i] args.[i] v2ty
          |> Option.bind (loop (i+1))
        else
-         Some v2t
-     loop 0 v2t
+         Some v2ty
+     loop 0 v2ty
    | _ ->
      None
 
 /////////////////////////////////////////////////////////////////////////
 
-let prepare (m: MethodInfo) (v2t: HashEqMap<Type, Type>) : MethodInfo =
+let prepare (m: MethodInfo) (v2ty: HashEqMap<Type, Ty>) : MethodInfo =
   if m.ContainsGenericParameters then
-    m.MakeGenericMethod (m.GetGenericArguments () |> Array.map (resolve v2t))
+    m.MakeGenericMethod
+     (m.GetGenericArguments ()
+      |> Array.map (toTy >> resolve v2ty >> ofTy))
   else
     m
 
 let tryInvoke meth formalType actualType this actuals =
   tryMatch formalType actualType HashEqMap.empty
-  |> Option.map (fun v2t ->
-     (prepare meth v2t).Invoke (this, actuals))
-
-type PartialOrder<'T> =
-  | PartialOrder of ('T -> 'T -> bool)
-
-let specificFirst =
-  let cmp a b =
-    let h = tryMatch a b HashEqMap.empty
-    h.IsSome
-  PartialOrder cmp
-
-let orderMethodsBySpecificFirst (methods: seq<MethodInfo>) =
-  let (PartialOrder sp) = specificFirst
-  methods
-  |> Seq.mapi (fun i x -> (i, x))
-  |> Seq.toArray
-  |> Array.sortWith (fun (i, a) (j, b) ->
-      if sp a.ReturnType b.ReturnType then -1 else compare i j)
-  |> Seq.map snd
+  |> Option.map (fun v2ty ->
+     (prepare meth v2ty).Invoke (this, actuals))

@@ -6,16 +6,20 @@ open System.Reflection
 /////////////////////////////////////////////////////////////////////////
 
 type InfRule (infRule: MethodInfo, infRules: obj) =
-  member ir.ReturnType = infRule.ReturnType
-  member ir.ParTypes =
-   infRule.GetParameters () |> Array.map (fun p -> p.ParameterType)
-  member ir.GenericArgTypes =
-   if infRule.ContainsGenericParameters
-   then infRule.GetGenericArguments ()
-   else [||]
-  member ir.Invoke (genArgTypes, argObjs) =
+  let returnType = toTy infRule.ReturnType
+  let parTypes =
+    lazy (infRule.GetParameters ()
+          |> Array.map (fun p -> toTy p.ParameterType))
+  let genArgs =
+    lazy (if infRule.ContainsGenericParameters
+          then infRule.GetGenericArguments () |> Array.map toTy
+          else [||])
+  member ir.ReturnType = returnType
+  member ir.ParTypes = parTypes.Force ()
+  member ir.GenericArgTypes = genArgs.Force ()
+  member ir.Invoke (genArgTys, argObjs) =
    try (if infRule.ContainsGenericParameters
-        then infRule.MakeGenericMethod genArgTypes
+        then infRule.MakeGenericMethod (Array.map ofTy genArgTys)
         else infRule).Invoke (infRules, argObjs) |> Some
    with :? TargetInvocationException as e
           when (match e.InnerException with
@@ -32,19 +36,37 @@ module InfRuleSet =
     ty.GetCustomAttributes<InferenceRules> true
     |> Seq.tryPick Some
 
+  type PartialOrder<'T> =
+    | PartialOrder of ('T -> 'T -> bool)
+
+  let specificFirst =
+    let cmp a b =
+      let h = tryMatch a b HashEqMap.empty
+      h.IsSome
+    PartialOrder cmp
+
+  let orderRulesBySpecificFirst (methods: seq<InfRule>) =
+    let (PartialOrder sp) = specificFirst
+    methods
+    |> Seq.mapi (fun i x -> (i, x))
+    |> Seq.toArray
+    |> Array.sortWith (fun (i, a) (j, b) ->
+        if sp a.ReturnType b.ReturnType then -1 else compare i j)
+    |> Seq.map snd
+
   let rules infRuleSet =
     HashEqSet.toSeq infRuleSet
     |> Seq.collect (fun infRules ->
        let rec loop ty =
          match getInferenceRules ty with
           | None -> Seq.empty
-          | Some attr -> 
+          | Some attr ->
             Seq.concat
              [ty.GetMethods (if attr.NonPublic
                              then BindingFlags.AnyDeclaredInstance
                              else BindingFlags.PublicDeclaredInstance)
-              |> orderMethodsBySpecificFirst
               |> Seq.map (fun infRule -> InfRule (infRule, infRules))
+              |> orderRulesBySpecificFirst
               loop ty.BaseType]
        infRules.GetType () |> loop)
 
@@ -66,8 +88,8 @@ module IDDFS =
                       (nesting: int)
                       (limit: int)
                       (infRuleSet: HashEqSet<obj>)
-                      (knownObjs: HashEqMap<Type, unit -> obj>)
-                      (desiredTy: Type) : seq<_ * _ * _> =
+                      (knownObjs: HashEqMap<Ty, unit -> obj>)
+                      (desiredTy: Ty) : seq<_ * _ * _> =
     let inline tell u2msg =
       if explain then
         printfn "%s%s" (String.replicate nesting " ") (u2msg ())
@@ -93,21 +115,20 @@ module IDDFS =
              (fun () -> raise Backtrack)
              knownObjs,
             K >> HashEqMap.add desiredTy)
-         if desiredTy.IsGenericType &&
-            desiredTy.GetGenericTypeDefinition () = typedefof<Rec<_>> then
-           noRec ()
-         else
-           let recTy = typedefof<Rec<_>>.MakeGenericType [|desiredTy|]
-           match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
-                 |> Seq.tryPick Some with
-            | Some (:? IRecObj as recObj, _, knownObjs) ->
-              (HashEqMap.add desiredTy
-                (fun () -> recObj.GetObj ()) knownObjs,
-               fun complete knownObjs ->
-                 recObj.SetObj complete
-                 HashEqMap.add desiredTy (K complete) knownObjs)
-            | _ ->
-              noRec ()
+         match desiredTy with
+          | App (Def t, _) when t = typedefof<Rec<_>> -> noRec ()
+          | _ ->
+            let recTy = App (Def typedefof<Rec<_>>, [|desiredTy|])
+            match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
+                  |> Seq.tryPick Some with
+             | Some (:? IRecObj as recObj, _, knownObjs) ->
+               (HashEqMap.add desiredTy
+                 (fun () -> recObj.GetObj ()) knownObjs,
+                fun complete knownObjs ->
+                  recObj.SetObj complete
+                  HashEqMap.add desiredTy (K complete) knownObjs)
+             | _ ->
+               noRec ()
        let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
          match parTypes with
           | [] ->
@@ -141,14 +162,15 @@ type [<Sealed>] Engine =
                              maxDepth: int,
                              rules: seq<obj>) : option<'a> =
     assert (0 <= initialDepth && initialDepth <= maxDepth)
-    if containsVars typeof<'a> then
+    let desiredTy = toTy typeof<'a>
+    if containsVars desiredTy then
       failwith "Infers can only generate monomorphic values"
     iddfsGenerate
      explain
      initialDepth
      maxDepth
      (InfRuleSet.ofSeq rules)
-     typeof<'a>
+     desiredTy
     |> Seq.tryPick (fun (x, _, _) ->
        Some (unbox<'a> x))
 
