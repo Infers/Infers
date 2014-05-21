@@ -3,7 +3,7 @@
 open System ;;
 open Infers ;;
 
-Eq.eq (1,1) (1,1) ;;
+//Eq.eq (1,1) (1,1) ;;
 
 #if FALSE
 let (>>=) xO x2yO = Option.bind x2yO xO

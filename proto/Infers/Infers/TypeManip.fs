@@ -103,63 +103,66 @@ type TyTree<'r> =
           apps: HashEqMap<TyCon, TyTree<'r>> *
           vars: TyTree<'r>
 
-let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> =
-  match formal with
-   | Lf results ->
-     Seq.ofList results
-   | Br (at, apps, vars) ->
-     let all () =
-       Seq.concat
-        [HashEqMap.toSeq apps
-         |> Seq.collect (fun (_, formal) ->
-            filter formal actual)
-         filter vars actual]
-     match getAt at actual with
-      | None ->
-        all ()
-      | Some (App (tc, args)) ->
-        match HashEqMap.tryFind tc apps with
-         | None ->
-           Seq.empty
-         | Some formal ->
-           filter formal actual
-      | Some (Var _) ->
-        all ()
+module TyTree =
+  let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> =
+    match formal with
+     | Lf results ->
+       Seq.ofList results
+     | Br (at, apps, vars) ->
+       let all () =
+         Seq.concat
+          [HashEqMap.toSeq apps
+           |> Seq.collect (fun (_, formal) ->
+              filter formal actual)
+           filter vars actual]
+       match getAt at actual with
+        | None ->
+          all ()
+        | Some (App (tc, args)) ->
+          match HashEqMap.tryFind tc apps with
+           | None ->
+             filter vars actual
+           | Some formal ->
+             filter formal actual
+        | Some (Var _) ->
+          all ()
 
-let rec build (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) : TyTree<'r> =
-  match tyrs with
-   | [] -> Lf []
-   | [(_, r)] -> Lf [r]
-   | tyrs ->
-     match ats with
-      | [] -> Lf (List.map snd tyrs)
-      | at::ats ->
-        tyrs
-        |> List.fold
-            (fun (apps, vars) (ty, r) ->
-              match getAt at ty with
-               | None -> failwith "Bug"
-               | Some (Var _) ->
-                 (apps, (ty, r) :: vars)
-               | Some (App (tc, args)) ->
-                 (HashEqMap.addOrUpdate tc
-                   (fun _ -> (args.Length, [(ty, r)]))
-                   (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
-                   apps,
-                  vars))
-            (HashEqMap.empty, [])
-        |> fun (apps, vars) ->
-           if 0 = HashEqMap.count apps then
-             build ats vars
-           else
-             Br (at,
-                 apps
-                 |> HashEqMap.map
-                     (fun (n, tyds) ->
-                        build
-                         (List.init n (fun i -> i::at) @ ats)
-                         tyds),
-                 build ats vars)
+  let rec build' (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) : TyTree<'r> =
+    match tyrs with
+     | [] -> Lf []
+     | [(_, r)] -> Lf [r]
+     | tyrs ->
+       match ats with
+        | [] -> Lf (List.map snd tyrs)
+        | at::ats ->
+          tyrs
+          |> List.fold
+              (fun (apps, vars) (ty, r) ->
+                match getAt at ty with
+                 | None -> failwith "Bug"
+                 | Some (Var _) ->
+                   (apps, (ty, r) :: vars)
+                 | Some (App (tc, args)) ->
+                   (HashEqMap.addOrUpdate tc
+                     (fun _ -> (args.Length, [(ty, r)]))
+                     (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
+                     apps,
+                    vars))
+              (HashEqMap.empty, [])
+          |> fun (apps, vars) ->
+             if 0 = HashEqMap.count apps then
+               build' ats vars
+             else
+               Br (at,
+                   apps
+                   |> HashEqMap.map
+                       (fun (n, tyds) ->
+                          build'
+                           (List.init n (fun i -> i::at) @ ats)
+                           tyds),
+                   build' ats vars)
+
+  let build tyrs = build' [[]] tyrs
 
 /////////////////////////////////////////////////////////////////////////
 
