@@ -88,6 +88,19 @@ module HashEqMap =
        |> Option.bind (fun (_, v) ->
           Some v))
 
+  let addOrUpdate k onAdd onUpdate m =
+    add k
+     (match tryFind k m with
+       | None -> onAdd k
+       | Some v -> onUpdate k v)
+     m
+
+  let map (v2w: 'v -> 'w) (T m: t<'k, 'v>) : t<'k, 'w> =
+    T (Map.map (fun _ kvs -> List.map (fun (k, v) -> (k, v2w v)) kvs) m)
+
+  let count (T m) =
+    Map.toSeq m |> Seq.map (snd >> List.length) |> Seq.sum
+
   let toSeq (T m) = Map.toSeq m |> Seq.collect snd
 
 type HashEqMap<'k, 'v> when 'k: equality = HashEqMap.t<'k, 'v>
