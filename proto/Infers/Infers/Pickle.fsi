@@ -4,7 +4,12 @@ open System
 open System.IO
 open Infers.Rep
 
+/// Pickling operation defined over a wide range of types as specified by the
+/// `Pickle` inference rules.
 val pickle: BinaryWriter -> 'a -> unit
+
+/// Unpickling operation defined over a wide range of types as specified by the
+/// `Pickle` inference rules.
 val unpickle: BinaryReader -> 'a
 
 type [<AbstractClass>] t<'a> =
@@ -20,7 +25,11 @@ type u<'c, 'cs, 'u>
 type [<InferenceRules>] Pickle =
   new: unit -> Pickle
 
+  // Rules ---------------------------------------------------------------------
+
   member rep: Rep
+
+  // Rec -----------------------------------------------------------------------
 
   member fix: unit -> Rec<t<'x>>
 

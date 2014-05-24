@@ -3,6 +3,8 @@
 open System
 open Infers.Rep
 
+/// Equality predicate defined over a wide range of types as specified by the
+/// `Eq` inference rules.
 val eq: 'a -> 'a -> bool
 
 type t<'a> = Func<'a, 'a, bool>
