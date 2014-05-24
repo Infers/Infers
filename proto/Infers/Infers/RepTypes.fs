@@ -8,11 +8,11 @@ type [<Struct>] And<'x, 'xs> =
   val mutable Elem: 'x
   val mutable Rest: 'xs
 
-type [<AbstractClass; InferenceRules>] AsProduct<'t, 'p> () =
+type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
   abstract Extract: 't * byref<'p> -> unit
   abstract Create: byref<'p> -> 't
 
-type [<AbstractClass; InferenceRules>] AsChoice<'u, 'c> () = class
+type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> () = class
   end
 
 type [<AllowNullLiteral; InferenceRules>] Rep<'x> () = class
@@ -28,7 +28,7 @@ type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
   new (arity) = {inherit Product<'t> (arity, false)}
 
-type [<AbstractClass>] Elem<'t, 'e, 'p> =
+type [<AbstractClass>] Elem<'e, 'p, 't> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
@@ -39,26 +39,26 @@ type [<AbstractClass>] Union<'u> =
   val Arity: int
   abstract Tag: 'u -> int
 
-type [<AbstractClass>] Case<'u, 'lp, 'sc> =
-  inherit AsProduct<'u, 'lp>
+type [<AbstractClass>] Case<'lp, 'sc, 'u> =
+  inherit AsProduct<'lp, 'u>
   new (name, arity, tag) = {Name = name; Arity = arity; Tag = tag}
   val Name: string
   val Arity: int
   val Tag: int
 
-type [<AbstractClass>] Label<'u, 'sc, 'l, 'sp> =
-  inherit Elem<'u, 'l, 'sp>
-  new (index, name) = {inherit Elem<'u, 'l, 'sp> (index); Name = name}
+type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
+  inherit Elem<'l, 'sp, 'u>
+  new (index, name) = {inherit Elem<'l, 'sp, 'u> (index); Name = name}
   val Name: string
 
 type [<AbstractClass>] Record<'r> =
   inherit Product<'r>
   new (arity, isMutable) = {inherit Product<'r>(arity, isMutable)}
 
-type [<AbstractClass>] Field<'r, 'f, 'p> =
-  inherit Elem<'r, 'f, 'p>
+type [<AbstractClass>] Field<'f, 'p, 'r> =
+  inherit Elem<'f, 'p, 'r>
   new (index, name, isMutable) =
-    {inherit Elem<'r, 'f, 'p> (index); Name = name; IsMutable = isMutable}
+    {inherit Elem<'f, 'p, 'r> (index); Name = name; IsMutable = isMutable}
   val Name: string
   val IsMutable: bool
   abstract Set: 'r * 'f -> unit

@@ -16,7 +16,7 @@ type [<InferenceRules>] Rep =
   member tuple: unit -> Tuple<'t>
 
   /// Trivially view a field as an elem.
-  member asElem: Field<'r, 'f, 'sp> -> Elem<'r, 'f, 'sp>
+  member asElem: Field<'f, 'sp, 'r> -> Elem<'f, 'sp, 'r>
 
   /// Trivially view a label as an elem.
-  member asElem: Label<'u, 'sc, 'l, 'sp> -> Elem<'u, 'l, 'sp>
+  member asElem: Label<'l, 'sp, 'sc, 'u> -> Elem<'l, 'sp, 'u>

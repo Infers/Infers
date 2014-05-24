@@ -6,8 +6,8 @@ open Infers.Util
 open Infers.Rep
 
 type t<'a> = Func<'a, 'a, bool>
-type u<'u, 'c, 'cs> = U of list<option<t<'u>>>
-type p<'p, 'e, 'es> = P of t<'p>
+type u<'c, 'cs, 'u> = U of list<option<t<'u>>>
+type p<'e, 'es, 'p> = P of t<'p>
 
 let inline via map eq x y = eq (map x) (map y)
 
@@ -45,15 +45,15 @@ type [<InferenceRules>] Eq () =
   member e.ref () : t<ref<'a>> = toFunc PhysicalEquality
   member e.array () : t<array<'a>> = toFunc PhysicalEquality
 
-  member e.case (_: Case<'u, Empty, 'cs>) : u<'u, Empty, 'cs> =
+  member e.case (_: Case<Empty, 'cs, 'u>) : u<Empty, 'cs, 'u> =
     U [None]
-  member t.case (_: Case<'u, 'ls, 'cs>, P ls: p<'u, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
+  member t.case (_: Case<'ls, 'cs, 'u>, P ls: p<'ls, 'ls, 'u>) : u<'ls, 'cs, 'u> =
     U [Some ls]
 
-  member e.choice (U c: u<'u, 'c, Choice<'c, 'cs>>, U cs: u<'u, 'cs, 'cs>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
+  member e.choice (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
     U (c @ cs)
 
-  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, U u: u<'u, 'c, 'c>) : t<'u> =
+  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'c, 'u>, U u: u<'c, 'c, 'u>) : t<'u> =
     let u = Array.ofList u
     toFunc <| fun l r ->
       let i = m.Tag l
@@ -63,16 +63,16 @@ type [<InferenceRules>] Eq () =
        | None -> true
        | Some f -> toFun f l r
 
-  member e.product (P f: p<'r, 'f, And<'f, 'fs>>, P fs: p<'r, 'fs, 'fs>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
+  member e.product (P f: p<'f, And<'f, 'fs>, 'r>, P fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
     P (toFunc (fun x y -> toFun f x y && toFun fs x y))
 
-  member e.elem (m: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
+  member e.elem (m: Elem<'e, 'p, 't>, t: t<'e>) : p<'e, 'p, 't> =
     P (toFunc (fun x y -> via m.Get (toFun t) x y))
 
-  member e.tuple (_: Rep, _: Rep.Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
+  member e.tuple (_: Rep, _: Rep.Tuple<'t>, _: AsProduct<'p, 't>, P p: p<'p, 'p, 't>) : t<'t> =
     p
 
-  member e.record (_: Rep, m: Record<'r>, _: AsProduct<'r, 'p>, P p: p<'r, 'p, 'p>) : t<'r> =
+  member e.record (_: Rep, m: Record<'r>, _: AsProduct<'p, 'r>, P p: p<'p, 'p, 'r>) : t<'r> =
     if m.IsMutable then toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =

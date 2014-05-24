@@ -16,7 +16,7 @@ type r<'a> () =
   override t.Pickle (w, x) = t.impl.Pickle (w, x)
   override t.Unpickle r = t.impl.Unpickle r
 
-type [<AbstractClass>] p<'p, 'e, 'es> () =
+type [<AbstractClass>] p<'e, 'es, 'p> () =
   abstract Pickle: BinaryWriter * byref<'e> -> unit
   abstract Unpickle: BinaryReader * byref<'e> -> unit
 
@@ -26,7 +26,7 @@ let inline mk (unpickle: BinaryReader -> 'a)
     override t.Pickle (w, x) = pickle w x
     override t.Unpickle (r) = unpickle r}
 
-type u<'u, 'c, 'cs> = U of list<t<'u>>
+type u<'c, 'cs, 'u> = U of list<t<'u>>
 
 let inline mkConst x = mk (fun _ -> x) (fun _ _ -> ())
 
@@ -42,12 +42,12 @@ let inline mkSeq ofArray (e: t<'a>) =
         xs |> Seq.iter (fun x -> e.Pickle (w, x)))
 
 let inline mkElemOrField (t: t<'e>) =
-  {new p<'t, 'e, 'p> () with
+  {new p<'e, 'p, 't> () with
     override p.Pickle (w, e) = t.Pickle (w, e)
     override p.Unpickle (r, e) = e <- t.Unpickle (r)}
 
-let inline mkProduct (fs: p<'r, 'fs, 'fs>) (f: p<'r, 'f, And<'f, 'fs>>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
-  {new p<'r, And<'f, 'fs>, And<'f, 'fs>> () with
+let inline mkProduct (fs: p<'fs, 'fs, 'r>) (f: p<'f, And<'f, 'fs>, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
+  {new p<And<'f, 'fs>, And<'f, 'fs>, 'r> () with
     override p.Pickle (w, ffs) =
      f.Pickle (w, &ffs.Elem)
      fs.Pickle (w, &ffs.Rest)
@@ -55,7 +55,7 @@ let inline mkProduct (fs: p<'r, 'fs, 'fs>) (f: p<'r, 'f, And<'f, 'fs>>) : p<'r, 
      f.Unpickle (r, &ffs.Elem)
      fs.Unpickle (r, &ffs.Rest)}
 
-let inline mkTupleOrNonRecursiveRecord (m: AsProduct<'t, 'p>) (p: p<'t, 'p, 'p>) =
+let inline mkTupleOrNonRecursiveRecord (m: AsProduct<'p, 't>) (p: p<'p, 'p, 't>) =
   mk (fun r ->
         let mutable px = defaultof<_>
         p.Unpickle (r, &px)
@@ -65,7 +65,7 @@ let inline mkTupleOrNonRecursiveRecord (m: AsProduct<'t, 'p>) (p: p<'t, 'p, 'p>)
         m.Extract (x, &px)
         p.Pickle (w, &px))
 
-let inline mkUnion (m: Union<'u>) (U u: u<'u, 'c, 'c>) =
+let inline mkUnion (m: Union<'u>) (U u: u<'c, 'c, 'u>) =
   let cs = Array.ofList u
   let inline mk readTag writeTag =
     mk (fun r ->
@@ -113,27 +113,27 @@ type [<InferenceRules>] Pickle () =
 
   member e.array (t: t<'a>) : t<array<'a>> = mkSeq id t
 
-  member e.case (m: Case<'u, Empty, 'cs>) : u<'u, Empty, 'cs> =
+  member e.case (m: Case<Empty, 'cs, 'u>) : u<Empty, 'cs, 'u> =
     U [mkConst (let mutable n = defaultof<_> in m.Create (&n))]
-  member e.case (m: Case<'u, 'ls, 'cs>, p: p<'u, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
+  member e.case (m: Case<'ls, 'cs, 'u>, p: p<'ls, 'ls, 'u>) : u<'ls, 'cs, 'u> =
     U [mkTupleOrNonRecursiveRecord m p]
 
-  member e.choice (U c: u<'u, 'c, Choice<'c, 'cs>>, U cs: u<'u, 'cs, 'cs>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
+  member e.choice (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
     U (c @ cs)
 
-  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, u: u<'u, 'c, 'c>) : t<'u> =
+  member e.union (_: Rep, m: Union<'u>, _: AsChoice<'c, 'u>, u: u<'c, 'c, 'u>) : t<'u> =
     mkUnion m u
 
-  member e.product (f: p<'r, 'f, And<'f, 'fs>>, fs: p<'r, 'fs, 'fs>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
+  member e.product (f: p<'f, And<'f, 'fs>, 'r>, fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
     mkProduct fs f
     
-  member e.elem (_: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
+  member e.elem (_: Elem<'e, 'p, 't>, t: t<'e>) : p<'e, 'p, 't> =
     mkElemOrField t
 
-  member e.tuple (_: Rep, _: Tuple<'t>, m: AsProduct<'t, 'p>, p: p<'t, 'p, 'p>) : t<'t> =
+  member e.tuple (_: Rep, _: Tuple<'t>, m: AsProduct<'p, 't>, p: p<'p, 'p, 't>) : t<'t> =
     mkTupleOrNonRecursiveRecord m p
 
-  member e.record (_: Rep, _: Record<'r>, m: AsProduct<'r, 'p>, p: p<'r, 'p, 'p>) : t<'r> =
+  member e.record (_: Rep, _: Record<'r>, m: AsProduct<'p, 'r>, p: p<'p, 'p, 'r>) : t<'r> =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =

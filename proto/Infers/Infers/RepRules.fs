@@ -254,7 +254,7 @@ module Products =
                      (products: array<Type>)
                      (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsProduct<_, _>>.MakeGenericType [|t; products.[0]|])
+     (typedefof<AsProduct<_, _>>.MakeGenericType [|products.[0]; t|])
      [||]
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
       defineRest)
@@ -268,7 +268,7 @@ module Unions =
                     (choices: array<Type>)
                     (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsChoice<_, _>>.MakeGenericType [|t; choices.[0]|])
+     (typedefof<AsChoice<_, _>>.MakeGenericType [|choices.[0]; t|])
      [||]
      defineRest
 
@@ -302,7 +302,7 @@ type [<InferenceRules>] Rep () =
             (Builder.forTo 0 (fields.Length-1) (fun i ->
                let fieldType =
                  typedefof<Field<_, _, _>>.MakeGenericType
-                  [|t; fields.[i].PropertyType; products.[i]|]
+                  [|fields.[i].PropertyType; products.[i]; t|]
                Builder.metaField fieldType
                 [|box i; fields.[i].Name; box fields.[i].CanWrite|]
                 (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
@@ -360,7 +360,7 @@ type [<InferenceRules>] Rep () =
             (Builder.forTo 0 (cases.Length-1) (fun i ->
               Builder.metaField
                (typedefof<Case<_, _, _>>.MakeGenericType
-                 [|t; caseProducts.[i].[0]; choices.[i]|])
+                 [|caseProducts.[i].[0]; choices.[i]; t|])
                [|box cases.[i].Name; box caseFields.[i].Length; box i|]
                (Products.defineExtractAndCreate
                  t
@@ -374,10 +374,10 @@ type [<InferenceRules>] Rep () =
                 Builder.forTo 0 (caseFields.[i].Length-1) (fun j ->
                  Builder.metaField
                   (typedefof<Label<_,_,_,_>>.MakeGenericType
-                    [|t;
+                    [|caseFields.[i].[j].PropertyType;
+                      caseProducts.[i].[j];
                       choices.[i];
-                      caseFields.[i].[j].PropertyType;
-                      caseProducts.[i].[j]|])
+                      t|])
                   [|box j; box caseFields.[i].[j].Name|]
                   (Builder.overrideGetMethod "Get" t caseFields.[i].[j])))))) with
         | :? Union<'u> as rep ->
@@ -421,7 +421,7 @@ type [<InferenceRules>] Rep () =
             (Builder.forTo 0 (elems.Length-1) (fun i ->
               let elemType =
                 typedefof<Elem<_, _, _>>.MakeGenericType
-                 [|t; elems.[i]; products.[i]|]
+                 [|elems.[i]; products.[i]; t|]
               Builder.metaField elemType [|box i|]
                (Builder.overrideGetMethod "Get" t props.[i])))) with
         | :? Rep.Tuple<'t> as rep ->
@@ -434,5 +434,5 @@ type [<InferenceRules>] Rep () =
      | _ ->
        raise Backtrack
 
-  member rr.asElem (f: Field<'r, 'f, 'p>) = f :> Elem<'r, 'f, 'p>
-  member rr.asElem (l: Label<'u, 'cs, 'l, 'ls>) = l :> Elem<'u, 'l, 'ls>
+  member rr.asElem (f: Field<'f, 'p, 'r>) = f :> Elem<'f, 'p, 'r>
+  member rr.asElem (l: Label<'l, 'sp, 'sc, 'u>) = l :> Elem<'l, 'sp, 'u>

@@ -6,8 +6,8 @@ open Infers.Rep
 val eq: 'a -> 'a -> bool
 
 type t<'a> = Func<'a, 'a, bool>
-type u<'u, 'c, 'cs>
-type p<'p, 'e, 'es>
+type u<'c, 'cs, 'u>
+type p<'e, 'es, 'p>
 
 type [<InferenceRules>] Eq =
   new: unit -> Eq
@@ -50,24 +50,24 @@ type [<InferenceRules>] Eq =
 
   // Discriminated Unions ------------------------------------------------------
 
-  member case: Case<'u, Empty, 'cs>                   -> u<'u, Empty, 'cs>
-  member case: Case<'u,   'ls, 'cs> * p<'u, 'ls, 'ls> -> u<'u,   'ls, 'cs>
+  member case: Case<Empty, 'cs, 'u>                   -> u<Empty, 'cs, 'u>
+  member case: Case<  'ls, 'cs, 'u> * p<'ls, 'ls, 'u> -> u<  'ls, 'cs, 'u>
 
-  member choice: u<'u,        'c,       Choice<'c, 'cs>>
-               * u<'u,            'cs,             'cs>
-              -> u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>>
+  member choice: u<       'c      , Choice<'c, 'cs>, 'u>
+               * u<           'cs ,            'cs , 'u>
+              -> u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u>
 
-  member union: Rep * Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
+  member union: Rep * Union<'u> * AsChoice<'c, 'u> * u<'c, 'c, 'u> -> t<'u>
 
   // Tuples and Records --------------------------------------------------------
 
-  member product: p<'r,     'f,       And<'f, 'fs>>
-                * p<'r,         'fs,          'fs>
-               -> p<'r, And<'f, 'fs>, And<'f, 'fs>>
+  member product: p<    'f      , And<'f, 'fs>, 'r>
+                * p<        'fs ,         'fs , 'r>
+               -> p<And<'f, 'fs>, And<'f, 'fs>, 'r>
 
-  member elem: Elem<'t, 'e, 'p> * t<'e> -> p<'t, 'e, 'p>
+  member elem: Elem<'e, 'p, 't> * t<'e> -> p<'e, 'p, 't>
 
-  member tuple: Rep * Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
+  member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * p<'p, 'p, 't> -> t<'t>
 
-  member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p> -> t<'r>
+  member record: Rep * Record<'r> * AsProduct<'p, 'r> * p<'p, 'p, 'r> -> t<'r>
    when 'r: not struct

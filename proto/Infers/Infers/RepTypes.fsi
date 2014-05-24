@@ -41,14 +41,14 @@ type [<Struct>] And<'x, 'xs> =
 /// product.  Depending on the type `'t` those members are of one of the
 /// following forms:
 ///
-///> member _:  Elem<'t,      'e, 'sp>
-///> member _: Label<'u, 'sc, 'l, 'sp>
-///> member _: Field<'r,      'f, 'sp>
+///> member _:  Elem<'e, 'sp,      't>
+///> member _: Label<'l, 'sp, 'sc, 'u>
+///> member _: Field<'f, 'sp,      'r>
 ///
 /// Those members are visible to inference rules, but they cannot be given a
 /// signature in F#.
 #endif
-type [<AbstractClass; InferenceRules>] AsProduct<'t, 'p> =
+type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
   /// Copies fields of type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
@@ -65,17 +65,17 @@ type [<AbstractClass; InferenceRules>] AsProduct<'t, 'p> =
 /// A choice object also contains members for accessing individual cases of the
 /// choice.  Those members are of the form
 ///
-///> member _: Case<'u, 'lp, 'sc>
+///> member _: Case<'lp, 'sc, 'u>
 ///
 /// where `'lp` is a representation of the case as product and `'sc` is a nested
 /// choice that identifies the particular case.
 #endif
-type [<AbstractClass; InferenceRules>] AsChoice<'u, 'c> = class
+type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> = class
   /// 
 //  abstract ToChoice: 'u -> 'c
 
   ///
-//  abstract OfChoice: 'c -> 't
+//  abstract OfChoice: 'c -> 'u
   end
 
 /////////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ type [<AllowNullLiteral; InferenceRules>] Rep<'x> = class
 ///
 /// A product object also contains a member of the form
 ///
-///> member _: AsProduct<'t, 'p>
+///> member _: AsProduct<'p, 't>
 ///
 /// where the type `'p` is a representation of the product as a nested record.
 /// The member is visible to inference rules, but it cannot be given a signature
@@ -110,7 +110,7 @@ type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
 
 /// Representation of an element of type `'e` of a tuple of type `'t`.
-type [<AbstractClass>] Elem<'t, 'e, 'p> =
+type [<AbstractClass>] Elem<'e, 'p, 't> =
   /// The index of the element.
   val Index: int
 
@@ -123,7 +123,7 @@ type [<AbstractClass>] Elem<'t, 'e, 'p> =
 ///
 /// A union object also contains a member of the form
 ///
-///> member _: AsChoice<'u, 'c>
+///> member _: AsChoice<'c, 'u>
 ///
 /// where type `'c` is a representation of the union as nested binary choices.
 /// The member is visible to inference rules, but it cannot be given a signature
@@ -138,8 +138,8 @@ type [<AbstractClass>] Union<'u> =
   abstract Tag: 'u -> int
 
 /// Representation of a case of the F# discriminated union type `'u`.
-type [<AbstractClass>] Case<'u, 'lp, 'sc> =
-  inherit AsProduct<'u, 'lp>
+type [<AbstractClass>] Case<'lp, 'sc, 'u> =
+  inherit AsProduct<'lp, 'u>
 
   /// The name of the case.
   val Name: string
@@ -152,8 +152,8 @@ type [<AbstractClass>] Case<'u, 'lp, 'sc> =
 
 /// Representation of a possibly labelled element of type `'l` of a case of the
 /// F# discriminated union type `'u`.
-type [<AbstractClass>] Label<'u, 'sc, 'l, 'sp> =
-  inherit Elem<'u, 'l, 'sp>
+type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
+  inherit Elem<'l, 'sp, 'u>
 
   /// The name of the label.
   val Name: string
@@ -165,8 +165,8 @@ type [<AbstractClass>] Record<'r> =
   inherit Product<'r>
 
 /// Representation of a field of type `'f` of the record type `'r`.
-type [<AbstractClass>] Field<'r, 'f, 'sp> =
-  inherit Elem<'r, 'f, 'sp>
+type [<AbstractClass>] Field<'f, 'sp, 'r> =
+  inherit Elem<'f, 'sp, 'r>
 
   /// The name of the field.
   val Name: string
