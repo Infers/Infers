@@ -15,20 +15,25 @@ type [<AbstractClass; InferenceRules>] AsProduct<'t, 'p> () =
 type [<AbstractClass; InferenceRules>] AsChoice<'u, 'c> () = class
   end
 
-type [<AllowNullLiteral>] Rep<'x> () = class
+type [<AllowNullLiteral; InferenceRules>] Rep<'x> () = class
   end
 
-type [<AbstractClass; InferenceRules>] Tuple<'t> =
-  inherit Rep<'t>
-  new (arity) = {Arity = arity}
+type [<AbstractClass>] Product<'r> =
+  inherit Rep<'r>
+  new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
   val Arity: int
+  val IsMutable: bool
+
+type [<AbstractClass>] Tuple<'t> =
+  inherit Product<'t>
+  new (arity) = {inherit Product<'t> (arity, false)}
 
 type [<AbstractClass>] Elem<'t, 'e, 'p> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
 
-type [<AbstractClass; InferenceRules>] Union<'u> =
+type [<AbstractClass>] Union<'u> =
   inherit Rep<'u>
   new (arity) = {Arity = arity}
   val Arity: int
@@ -46,11 +51,9 @@ type [<AbstractClass>] Label<'u, 'sc, 'l, 'sp> =
   new (index, name) = {inherit Elem<'u, 'l, 'sp> (index); Name = name}
   val Name: string
 
-type [<AbstractClass; InferenceRules>] Record<'r> =
-  inherit Rep<'r>
-  new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
-  val Arity: int
-  val IsMutable: bool
+type [<AbstractClass>] Record<'r> =
+  inherit Product<'r>
+  new (arity, isMutable) = {inherit Product<'r>(arity, isMutable)}
 
 type [<AbstractClass>] Field<'r, 'f, 'p> =
   inherit Elem<'r, 'f, 'p>
