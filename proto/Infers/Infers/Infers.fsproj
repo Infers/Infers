@@ -50,6 +50,7 @@
     <Compile Include="Inj.fs" />
     <Compile Include="Rec.fsi" />
     <Compile Include="Rec.fs" />
+    <Compile Include="RepTypes.fsi" />
     <Compile Include="RepTypes.fs" />
     <Compile Include="RepRules.fsi" />
     <Compile Include="RepRules.fs" />
