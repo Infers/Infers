@@ -6,23 +6,22 @@ open Infers.Rep
 val eq: 'a -> 'a -> bool
 
 type t<'a> = Func<'a, 'a, bool>
-type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 type p<'p, 'e, 'es>
 
 type [<InferenceRules>] Eq =
   new: unit -> Eq
 
-  // Rules --------------------------------------------------------------
+  // Rules ---------------------------------------------------------------------
 
   member recFn: RecFn
   member rep: Rep
 
-  // Rec ----------------------------------------------------------------
+  // Rec -----------------------------------------------------------------------
 
   member fix: RecFn -> Rec<t<'x>>
 
-  // Base Types ---------------------------------------------------------
+  // Base Types ----------------------------------------------------------------
 
   member unit: t<unit>
 
@@ -38,45 +37,37 @@ type [<InferenceRules>] Eq =
   member uint32: t<uint32>
   member uint64: t<uint64>
 
-  member char: t<char>
-  member string: t<string>
-
-  // Floating Point Types -----------------------------------------------
-
   member float32: t<float32>
   member float64: t<float>
 
-  // Refs and Arrays ----------------------------------------------------
+  member char: t<char>
+  member string: t<string>
+
+  // Refs and Arrays -----------------------------------------------------------
 
   member ref: unit -> t<ref<'a>>
   member array: unit -> t<array<'a>>
 
-  // Discriminated Unions -----------------------------------------------
+  // Discriminated Unions ------------------------------------------------------
 
-  member label: Label<'u, 'cs, 'l, 'ls> * t<'l> -> c<'u, 'cs, 'l, 'ls>
+  member case: Case<'u, Empty, 'cs>                   -> u<'u, Empty, 'cs>
+  member case: Case<'u,   'ls, 'cs> * p<'u, 'ls, 'ls> -> u<'u,   'ls, 'cs>
 
-  member labels: c<'u, 'cs,         'ls,          'ls>
-               * c<'u, 'cs,     'l,       And<'l, 'ls>>
-              -> c<'u, 'cs, And<'l, 'ls>, And<'l, 'ls>>
-
-  member case: Case<'u, Empty, 'cs>                        -> u<'u, Empty, 'cs>
-  member case: Case<'u,   'ls, 'cs> * c<'u, 'cs, 'ls, 'ls> -> u<'u,   'ls, 'cs>
-
-  member choice: u<'u,            'cs,             'cs>
-               * u<'u,        'c,       Choice<'c, 'cs>>
+  member choice: u<'u,        'c,       Choice<'c, 'cs>>
+               * u<'u,            'cs,             'cs>
               -> u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>>
 
   member union: Rep * Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
 
-  // Tuples and Records -------------------------------------------------
+  // Tuples and Records --------------------------------------------------------
 
-  member product: p<'r,         'fs,          'fs>
-                * p<'r,     'f,       And<'f, 'fs>>
+  member product: p<'r,     'f,       And<'f, 'fs>>
+                * p<'r,         'fs,          'fs>
                -> p<'r, And<'f, 'fs>, And<'f, 'fs>>
 
   member elem: Elem<'t, 'e, 'p> * t<'e> -> p<'t, 'e, 'p>
+
   member tuple: Rep * Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
 
-  member field: Field<'r, 'f, 'p> * t<'f> -> p<'r, 'f, 'p>
-  member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p>
-              -> t<'r> when 'r: not struct
+  member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p> -> t<'r>
+   when 'r: not struct

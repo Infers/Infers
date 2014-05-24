@@ -26,7 +26,6 @@ let inline mk (unpickle: BinaryReader -> 'a)
     override t.Pickle (w, x) = pickle w x
     override t.Unpickle (r) = unpickle r}
 
-type c<'u, 'cs, 'l, 'ls> = C of p<'u, 'l, 'ls>
 type u<'u, 'c, 'cs> = U of list<t<'u>>
 
 let inline mkConst x = mk (fun _ -> x) (fun _ _ -> ())
@@ -111,35 +110,29 @@ type [<InferenceRules>] Pickle () =
   member e.string: t<string> = mk (fun r -> r.ReadString ()) (fun w x -> w.Write x)
 
   member e.list (t: t<'a>) : t<list<'a>> = mkSeq List.ofArray t
+
   member e.array (t: t<'a>) : t<array<'a>> = mkSeq id t
-
-  member e.label (_: Label<'u, 'cs, 'l, 'ls>, t: t<'l>) : c<'u, 'cs, 'l, 'ls> =
-    C (mkElemOrField t)
-
-  member e.labels (C ls: c<'u, 'cs, 'ls, 'ls>, C l: c<'u, 'cs, 'l, And<'l, 'ls>>) : c<'u, 'cs, And<'l, 'ls>, And<'l, 'ls>> =
-    C (mkProduct ls l)
 
   member e.case (m: Case<'u, Empty, 'cs>) : u<'u, Empty, 'cs> =
     U [mkConst (let mutable n = defaultof<_> in m.Create (&n))]
-  member e.case (m: Case<'u, 'ls, 'cs>, C c: c<'u, 'cs, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
-    U [mkTupleOrNonRecursiveRecord m c]
+  member e.case (m: Case<'u, 'ls, 'cs>, p: p<'u, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
+    U [mkTupleOrNonRecursiveRecord m p]
 
-  member e.choice (U cs: u<'u, 'cs, 'cs>, U c: u<'u, 'c, Choice<'c, 'cs>>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
+  member e.choice (U c: u<'u, 'c, Choice<'c, 'cs>>, U cs: u<'u, 'cs, 'cs>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
     U (c @ cs)
 
   member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, u: u<'u, 'c, 'c>) : t<'u> =
     mkUnion m u
 
-  member e.product (fs: p<'r, 'fs, 'fs>, f:  p<'r, 'f, And<'f, 'fs>>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
+  member e.product (f: p<'r, 'f, And<'f, 'fs>>, fs: p<'r, 'fs, 'fs>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
     mkProduct fs f
     
   member e.elem (_: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
     mkElemOrField t
+
   member e.tuple (_: Rep, _: Tuple<'t>, m: AsProduct<'t, 'p>, p: p<'t, 'p, 'p>) : t<'t> =
     mkTupleOrNonRecursiveRecord m p
 
-  member e.field (_: Field<'r, 'f, 'p>, t: t<'f>) : p<'r, 'f, 'p> =
-    mkElemOrField t
   member e.record (_: Rep, _: Record<'r>, m: AsProduct<'r, 'p>, p: p<'r, 'p, 'p>) : t<'r> =
     mkTupleOrNonRecursiveRecord m p
 

@@ -4,7 +4,7 @@ open Infers
 
 /////////////////////////////////////////////////////////////////////////
 
-/// Represents an empty product as a special case.
+/// Represents an empty product as a special case for union cases.
 type Empty = struct end
 
 /// Represents a product of the types `'x` and `'xs`.
@@ -15,7 +15,18 @@ type [<Struct>] And<'x, 'xs> =
 /////////////////////////////////////////////////////////////////////////
 
 /// Representation of the type `'t` as nested structs of type `'p`.
-type [<AbstractClass>] AsProduct<'t, 'p> () =
+///
+/// A product object also contains members for accessing the elements of the
+/// product.  Depending on the type `'t` those members are of one of the
+/// following forms:
+///
+///> member _: Elem<'t, 'e, 'sp>
+///> member _: Label<'u, 'sc, 'lp, 'sp>
+///> member _: Field<'r, 'f, 'sp>
+///
+/// Those members are visible to inference rules, but they cannot be given a
+/// signature in F#.
+type [<AbstractClass; InferenceRules>] AsProduct<'t, 'p> () =
   /// Copies fields of type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
@@ -27,7 +38,15 @@ type [<AbstractClass>] AsProduct<'t, 'p> () =
 
 /// Representation of a discriminated union type `'u` as nested choices of
 /// type `'c`.
-type [<AbstractClass>] AsChoice<'u, 'c> () = class
+///
+/// A choice object also contains mebers for accessing individual cases of the
+/// choice.  Those members are of the form
+///
+///> member _: Case<'u, 'lp, 'sc>
+///
+/// where `'lp` is a representation of the case as product and `'sc` is a nested
+/// choice that identifies the particular case.
+type [<AbstractClass; InferenceRules>] AsChoice<'u, 'c> () = class
   /// 
 //  abstract ToChoice: 'u -> 'c
 
@@ -43,6 +62,14 @@ type [<AllowNullLiteral>] Rep<'x> () = class
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# tuple type `'t`.
+///
+/// A tuple object also contains a member of the form
+///
+///> member _: AsProduct<'t, 'p>
+///
+/// where the type `'p` is a representation of the tuple as a nested record.
+/// The member is visible to inference rules, but it cannot be given a
+/// signature in F#.
 type [<AbstractClass; InferenceRules>] Tuple<'t> =
   inherit Rep<'t>
 
@@ -51,11 +78,8 @@ type [<AbstractClass; InferenceRules>] Tuple<'t> =
   /// The number of elements the tuple type `'t` has.
   val Arity: int
 
-//member _: AsProduct<'t, 'p>
-//member _: Elem<'t, 'e, 'p>
-//...
-
-type [<AbstractClass>] Elem<'t, 'e> =
+/// Representation of an element of type `'e` of a tuple of type `'t`.
+type [<AbstractClass>] Elem<'t, 'e, 'p> =
   new (index) = {Index = index}
 
   /// The index of the element.
@@ -64,12 +88,17 @@ type [<AbstractClass>] Elem<'t, 'e> =
   /// Returns the value of the element.
   abstract Get: 't -> 'e
 
-type [<AbstractClass>] Elem<'t, 'e, 'p> (index) =
-  inherit Elem<'t, 'e> (index)
-
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# discriminated union type `'u`.
+///
+/// A union object also contains a member of the form
+///
+///> member _: AsChoice<'u, 'c>
+///
+/// where type `'c` is a representation of the union as nested binary choices.
+/// The member is visible to inference rules, but it cannot be given a signature
+/// in F#.
 type [<AbstractClass; InferenceRules>] Union<'u> =
   inherit Rep<'u>
 
@@ -82,8 +111,8 @@ type [<AbstractClass; InferenceRules>] Union<'u> =
   abstract Tag: 'u -> int
 
 /// Representation of a case of the F# discriminated union type `'u`.
-type [<AbstractClass>] Case<'u, 'ls, 'cs> =
-  inherit AsProduct<'u, 'ls>
+type [<AbstractClass>] Case<'u, 'lp, 'sc> =
+  inherit AsProduct<'u, 'lp>
 
   new (name, arity, tag) = {Name = name; Arity = arity; Tag = tag}
 
@@ -98,10 +127,10 @@ type [<AbstractClass>] Case<'u, 'ls, 'cs> =
 
 /// Representation of a possibly labelled element of type `'l` of a case of the
 /// F# discriminated union type `'u`.
-type [<AbstractClass>] Label<'u, 'cs, 'l, 'ls> =
-  inherit Elem<'u, 'l, 'ls>
+type [<AbstractClass>] Label<'u, 'sc, 'l, 'sp> =
+  inherit Elem<'u, 'l, 'sp>
 
-  new (index, name) = {inherit Elem<'u, 'l, 'ls> (index); Name = name}
+  new (index, name) = {inherit Elem<'u, 'l, 'sp> (index); Name = name}
 
   /// The name of the label.
   val Name: string
@@ -121,14 +150,13 @@ type [<AbstractClass; InferenceRules>] Record<'r> =
   val IsMutable: bool
 
 //member _: AsProduct<'r, 'p>
-//member _: Field<'r, 'x, 'p>
 
 /// Representation of a field of type `'f` of the record type `'r`.
-type [<AbstractClass>] Field<'r, 'f> =
-  inherit Elem<'r, 'f>
+type [<AbstractClass>] Field<'r, 'f, 'p> =
+  inherit Elem<'r, 'f, 'p>
 
   new (index, name, isMutable) =
-    {inherit Elem<'r, 'f> (index); Name = name; IsMutable = isMutable}
+    {inherit Elem<'r, 'f, 'p> (index); Name = name; IsMutable = isMutable}
 
   /// The name of the field.
   val Name: string
@@ -139,6 +167,3 @@ type [<AbstractClass>] Field<'r, 'f> =
   /// Sets the value of the field assuming this is a mutable field.
   abstract Set: 'r * 'f -> unit
   default f.Set (_: 'r, _: 'f) = notImplemented ()
-
-type [<AbstractClass>] Field<'r, 'f, 'p> (index, name, isMutable) =
-  inherit Field<'r, 'f> (index, name, isMutable)

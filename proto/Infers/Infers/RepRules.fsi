@@ -14,3 +14,9 @@ type [<InferenceRules>] Rep =
 
   /// Attempts to constructs a tuple type representation for the type `'t`.
   member tuple: unit -> Tuple<'t>
+
+  /// Trivially view a field as an elem.
+  member asElem: Field<'r, 'f, 'sp> -> Elem<'r, 'f, 'sp>
+
+  /// Trivially view a label as an elem.
+  member asElem: Label<'u, 'sc, 'l, 'sp> -> Elem<'u, 'l, 'sp>

@@ -6,7 +6,6 @@ open Infers.Util
 open Infers.Rep
 
 type t<'a> = Func<'a, 'a, bool>
-type c<'u, 'cs, 'l, 'ls> = C of t<'u>
 type u<'u, 'c, 'cs> = U of list<option<t<'u>>>
 type p<'p, 'e, 'es> = P of t<'p>
 
@@ -46,18 +45,12 @@ type [<InferenceRules>] Eq () =
   member e.ref () : t<ref<'a>> = toFunc PhysicalEquality
   member e.array () : t<array<'a>> = toFunc PhysicalEquality
 
-  member e.labels (C ls: c<'u, 'cs, 'ls, 'ls>, C l: c<'u, 'cs, 'l, And<'l, 'ls>>) : c<'u, 'cs, And<'l, 'ls>, And<'l, 'ls>> =
-    C (toFunc (fun x y -> toFun l x y && toFun ls x y))
-
-  member e.label (m: Label<'u, 'cs, 'l, 'ls>, t: t<'l>) : c<'u, 'cs, 'l, 'ls> =
-    C (toFunc (fun x y -> via m.Get (toFun t) x y))
-
   member e.case (_: Case<'u, Empty, 'cs>) : u<'u, Empty, 'cs> =
     U [None]
-  member t.case (_: Case<'u, 'ls, 'cs>, C ls: c<'u, 'cs, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
+  member t.case (_: Case<'u, 'ls, 'cs>, P ls: p<'u, 'ls, 'ls>) : u<'u, 'ls, 'cs> =
     U [Some ls]
 
-  member e.choice (U cs: u<'u, 'cs, 'cs>, U c: u<'u, 'c, Choice<'c, 'cs>>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
+  member e.choice (U c: u<'u, 'c, Choice<'c, 'cs>>, U cs: u<'u, 'cs, 'cs>) : u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>> =
     U (c @ cs)
 
   member e.union (_: Rep, m: Union<'u>, _: AsChoice<'u, 'c>, U u: u<'u, 'c, 'c>) : t<'u> =
@@ -70,16 +63,15 @@ type [<InferenceRules>] Eq () =
        | None -> true
        | Some f -> toFun f l r
 
-  member e.product (P fs: p<'r, 'fs, 'fs>, P f: p<'r, 'f, And<'f, 'fs>>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
+  member e.product (P f: p<'r, 'f, And<'f, 'fs>>, P fs: p<'r, 'fs, 'fs>) : p<'r, And<'f, 'fs>, And<'f, 'fs>> =
     P (toFunc (fun x y -> toFun f x y && toFun fs x y))
 
   member e.elem (m: Elem<'t, 'e, 'p>, t: t<'e>) : p<'t, 'e, 'p> =
     P (toFunc (fun x y -> via m.Get (toFun t) x y))
+
   member e.tuple (_: Rep, _: Rep.Tuple<'t>, _: AsProduct<'t, 'p>, P p: p<'t, 'p, 'p>) : t<'t> =
     p
 
-  member e.field (m: Field<'r, 'f, 'p>, t: t<'f>) : p<'r, 'f, 'p> =
-    P (toFunc (via m.Get (toFun t)))
   member e.record (_: Rep, m: Record<'r>, _: AsProduct<'r, 'p>, P p: p<'r, 'p, 'p>) : t<'r> =
     if m.IsMutable then toFunc PhysicalEquality else p
 

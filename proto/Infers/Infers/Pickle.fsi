@@ -15,7 +15,6 @@ type [<AbstractClass>] p<'p, 'e, 'es> =
   abstract Pickle: BinaryWriter * byref<'e> -> unit
   abstract Unpickle: BinaryReader * byref<'e> -> unit
 
-type c<'u, 'cs, 'l, 'ls>
 type u<'u, 'c, 'cs>
 
 type [<InferenceRules>] Pickle =
@@ -24,6 +23,8 @@ type [<InferenceRules>] Pickle =
   member rep: Rep
 
   member fix: unit -> Rec<t<'x>>
+
+  // Base Types ----------------------------------------------------------------
 
   member unit: t<unit>
 
@@ -45,30 +46,35 @@ type [<InferenceRules>] Pickle =
   member char: t<char>
   member string: t<string>
 
+  // Special optimizations -----------------------------------------------------
+
   member list: t<'a> -> t<list<'a>>
+  //member bytes: t<array<byte>>
+
+  // Refs and Arrays -----------------------------------------------------------
+
+  //member ref: t<'a> -> t<ref<'a>>
   member array: t<'a> -> t<array<'a>>
 
-  member label: Label<'u, 'cs, 'l, 'ls> * t<'l> -> c<'u, 'cs, 'l, 'ls>
+  // Discriminated Unions ------------------------------------------------------
 
-  member labels: c<'u, 'cs,         'ls,          'ls>
-               * c<'u, 'cs,     'l,       And<'l, 'ls>>
-              -> c<'u, 'cs, And<'l, 'ls>, And<'l, 'ls>>
+  member case: Case<'u, Empty, 'cs>                   -> u<'u, Empty, 'cs>
+  member case: Case<'u,   'ls, 'cs> * p<'u, 'ls, 'ls> -> u<'u,   'ls, 'cs>
 
-  member case: Case<'u, Empty, 'cs>                        -> u<'u, Empty, 'cs>
-  member case: Case<'u,   'ls, 'cs> * c<'u, 'cs, 'ls, 'ls> -> u<'u,   'ls, 'cs>
-
-  member choice: u<'u,            'cs,             'cs>
-               * u<'u,        'c,       Choice<'c, 'cs>>
+  member choice: u<'u,        'c,       Choice<'c, 'cs>>
+               * u<'u,            'cs,             'cs>
               -> u<'u, Choice<'c, 'cs>, Choice<'c, 'cs>>
 
   member union: Rep * Union<'u> * AsChoice<'u, 'c> * u<'u, 'c, 'c> -> t<'u>
 
-  member product: p<'r,         'fs,          'fs>
-                * p<'r,     'f,       And<'f, 'fs>>
+  // Tuples and Records --------------------------------------------------------
+
+  member product: p<'r,     'f,       And<'f, 'fs>>
+                * p<'r,         'fs,          'fs>
                -> p<'r, And<'f, 'fs>, And<'f, 'fs>>
 
   member elem: Elem<'t, 'e, 'p> * t<'e> -> p<'t, 'e, 'p>
+
   member tuple: Rep * Tuple<'t> * AsProduct<'t, 'p> * p<'t, 'p, 'p> -> t<'t>
 
-  member field: Field<'r, 'f, 'p> * t<'f> -> p<'r, 'f, 'p>
   member record: Rep * Record<'r> * AsProduct<'r, 'p> * p<'r, 'p, 'p> -> t<'r>
