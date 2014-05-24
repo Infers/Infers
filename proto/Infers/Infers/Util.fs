@@ -21,6 +21,10 @@ let inline K x _ = x
 
 /////////////////////////////////////////////////////////////////////////
 
+let inline force (x: Lazy<_>) = x.Force ()
+
+/////////////////////////////////////////////////////////////////////////
+
 let notImplemented () = raise (NotImplementedException ())
 
 /////////////////////////////////////////////////////////////////////////
@@ -97,6 +101,9 @@ module HashEqMap =
 
   let map (v2w: 'v -> 'w) (T m: t<'k, 'v>) : t<'k, 'w> =
     T (Map.map (fun _ kvs -> List.map (fun (k, v) -> (k, v2w v)) kvs) m)
+
+  let isEmpty (T m) =
+    Map.isEmpty m
 
   let count (T m) =
     Map.toSeq m |> Seq.map (snd >> List.length) |> Seq.sum

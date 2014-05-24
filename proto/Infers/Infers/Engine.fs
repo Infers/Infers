@@ -11,9 +11,9 @@ type InfRule (infRule: MethodInfo, infRules: obj) =
     lazy (infRule.GetParameters ()
           |> Array.map (fun p -> toTy p.ParameterType))
   let genArgs =
-    lazy (if infRule.ContainsGenericParameters
-          then infRule.GetGenericArguments () |> Array.map toTy
-          else [||])
+    lazy if infRule.ContainsGenericParameters
+         then infRule.GetGenericArguments () |> Array.map toTy
+         else [||]
   member ir.ReturnType = returnType
   member ir.ParTypes = parTypes.Force ()
   member ir.GenericArgTypes = genArgs.Force ()
@@ -38,16 +38,17 @@ module InfRuleSet =
       match getInferenceRules ty with
        | None -> Seq.empty
        | Some attr ->
-         Seq.concat
-           [ty.GetMethods (if attr.NonPublic
-                           then BindingFlags.AnyDeclaredInstance
-                           else BindingFlags.PublicDeclaredInstance)
-            |> Seq.map (fun infRule -> InfRule (infRule, infRules))
-            collectRules ty.BaseType]
+         let bindingFlags =
+           if attr.NonPublic
+           then BindingFlags.AnyDeclaredInstance
+           else BindingFlags.PublicDeclaredInstance
+         [ty.GetMethods bindingFlags
+          |> Seq.map (fun infRule -> InfRule (infRule, infRules))
+          collectRules ty.BaseType]
+         |> Seq.concat
     infRules.GetType ()
     |> collectRules
     |> Seq.map (fun rule -> (rule.ReturnType, rule))
-    |> List.ofSeq
     |> TyTree.build
 
   let ofSeq infRules : InfRuleSet =
@@ -60,45 +61,10 @@ module InfRuleSet =
           rulesMap)
        HashEqMap.empty
 
-  type PartialOrder<'T> =
-    | PartialOrder of ('T -> 'T -> bool)
-
-  let specificFirst =
-    let cmp a b =
-      let h = tryMatch a b HashEqMap.empty
-      h.IsSome
-    PartialOrder cmp
-
-  let orderRulesBySpecificFirst (methods: seq<InfRule>) =
-    let (PartialOrder sp) = specificFirst
-    methods
-    |> Seq.mapi (fun i x -> (i, x))
-    |> Seq.toArray
-    |> Array.sortWith (fun (i, a) (j, b) ->
-        if sp a.ReturnType b.ReturnType then -1 else compare i j)
-    |> Seq.map snd
-
-  let rules (infRuleSet: InfRuleSet) =
-    HashEqMap.toSeq infRuleSet
-    |> Seq.collect (fun (infRules, _) ->
-       let rec loop ty =
-         match getInferenceRules ty with
-          | None -> Seq.empty
-          | Some attr ->
-            Seq.concat
-             [ty.GetMethods (if attr.NonPublic
-                             then BindingFlags.AnyDeclaredInstance
-                             else BindingFlags.PublicDeclaredInstance)
-              |> Seq.map (fun infRule -> InfRule (infRule, infRules))
-              |> orderRulesBySpecificFirst
-              loop ty.BaseType]
-       infRules.GetType () |> loop)
-
   let rulesFor (infRuleSet: InfRuleSet) (desiredTy: Ty) =
     HashEqMap.toSeq infRuleSet
     |> Seq.collect (fun (_, infRulesTree) ->
        TyTree.filter infRulesTree desiredTy)
-    |> orderRulesBySpecificFirst
 
   let maybeAddRules (o: obj) (infRuleSet: InfRuleSet) =
     if o.GetType () |> getInferenceRules |> Option.isSome
@@ -113,6 +79,11 @@ module IDDFS =
   let (>>=) xO x2yO = Seq.collect x2yO xO
   let (|>>) xO x2y = Seq.map x2y xO
   let guard b = if b then result () else Seq.empty
+
+  let isRec ty =
+    match ty with
+     | App (Def t, _) when t = typedefof<Rec<_>> -> true
+     | _ -> false
 
   let rec dfsGenerate (explain: bool)
                       (nesting: int)
@@ -133,9 +104,10 @@ module IDDFS =
      | None ->
        guard (nesting < limit) >>= fun () ->
        let nesting = nesting + 1
-       //InfRuleSet.rules infRuleSet >>= fun infRule ->
        InfRuleSet.rulesFor infRuleSet desiredTy >>= fun infRule ->
-       tell <| fun () -> sprintf "trying: %A :- %A" (ofTy infRule.ReturnType) (Array.map ofTy infRule.ParTypes)
+       tell <| fun () ->
+         sprintf "trying: %A :- %A"
+          (ofTy infRule.ReturnType) (Array.map ofTy infRule.ParTypes)
        tryMatch infRule.ReturnType desiredTy HashEqMap.empty |> Option.toSeq >>= fun v2t ->
        let desiredTy = resolve v2t desiredTy
        guard (not (containsVars desiredTy)) >>= fun () ->
@@ -143,27 +115,22 @@ module IDDFS =
        let parTypes = infRule.ParTypes
        let (knownObjs, tie) =
          let noRec () =
-           (HashEqMap.add desiredTy
-             (fun () -> raise Backtrack)
-             knownObjs,
+           (HashEqMap.add desiredTy (fun () -> raise Backtrack) knownObjs,
             K >> HashEqMap.add desiredTy)
-         if parTypes.Length = 0 then
+         if parTypes.Length = 0 || isRec desiredTy then
            noRec ()
          else
-           match desiredTy with
-            | App (Def t, _) when t = typedefof<Rec<_>> -> noRec ()
+           let recTy = App (Def typedefof<Rec<_>>, [|desiredTy|])
+           match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
+                 |> Seq.tryPick Some with
+            | Some (:? IRecObj as recObj, _, knownObjs) ->
+              (HashEqMap.add desiredTy
+                (fun () -> recObj.GetObj ()) knownObjs,
+               fun complete knownObjs ->
+                 recObj.SetObj complete
+                 HashEqMap.add desiredTy (K complete) knownObjs)
             | _ ->
-              let recTy = App (Def typedefof<Rec<_>>, [|desiredTy|])
-              match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
-                    |> Seq.tryPick Some with
-               | Some (:? IRecObj as recObj, _, knownObjs) ->
-                 (HashEqMap.add desiredTy
-                   (fun () -> recObj.GetObj ()) knownObjs,
-                  fun complete knownObjs ->
-                    recObj.SetObj complete
-                    HashEqMap.add desiredTy (K complete) knownObjs)
-               | _ ->
-                 noRec ()
+              noRec ()
        let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
          match parTypes with
           | [] ->

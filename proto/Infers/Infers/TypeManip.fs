@@ -97,72 +97,73 @@ let rec getAt is ty =
       | _ ->
         None
 
-type TyTree<'r> =
-  | Lf of list<'r>
-  | Br of at: TyCursor *
-          apps: HashEqMap<TyCon, TyTree<'r>> *
-          vars: TyTree<'r>
+type TyTreeFun<'r> =
+  | Empty
+  | One of 'r
+  | Many of array<'r>
+  | Branch of at: TyCursor *
+              apps: HashEqMap<TyCon, TyTree<'r>> *
+              vars: TyTree<'r>
+and TyTree<'r> = Lazy<TyTreeFun<'r>>
 
 module TyTree =
+  let rec build' (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) : TyTree<'r> =
+    lazy match tyrs with
+          | [] -> Empty
+          | [(_, r)] -> One r
+          | tyrs ->
+            match ats with
+             | [] -> Many (tyrs |> Array.ofList |> Array.map snd)
+             | at::ats ->
+               tyrs
+               |> List.fold
+                   (fun (apps, vars) (ty, r) ->
+                     match getAt at ty with
+                      | None -> failwith "Bug"
+                      | Some (Var _) ->
+                        (apps, (ty, r) :: vars)
+                      | Some (App (tc, args)) ->
+                        (HashEqMap.addOrUpdate tc
+                          (fun _ -> (args.Length, [(ty, r)]))
+                          (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
+                          apps,
+                         vars))
+                   (HashEqMap.empty, [])
+               |> fun (apps, vars) ->
+                  let vars = build' ats vars
+                  if HashEqMap.isEmpty apps then
+                    force vars
+                  else
+                    (at,
+                     apps
+                     |> HashEqMap.map
+                         (fun (n, tyds) ->
+                            build'
+                             (List.init n (fun i -> i::at) @ ats)
+                             tyds),
+                     vars) |> Branch
+
+  let build tyrs = build' [[]] (List.ofSeq tyrs)
+
   let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> =
-    match formal with
-     | Lf results ->
-       Seq.ofList results
-     | Br (at, apps, vars) ->
-       let all () =
-         Seq.concat
-          [HashEqMap.toSeq apps
-           |> Seq.collect (fun (_, formal) ->
-              filter formal actual)
-           filter vars actual]
+    match force formal with
+     | Empty -> Seq.empty
+     | One r -> Seq.singleton r
+     | Many rs -> rs :> seq<_>
+     | Branch (at, apps, vars) ->
        match getAt at actual with
-        | None ->
-          all ()
+        | None | Some (Var _) -> seq {
+            yield! HashEqMap.toSeq apps
+                   |> Seq.collect (fun (_, formal) ->
+                      filter formal actual)
+            yield! filter vars actual
+          }
         | Some (App (tc, args)) ->
           match HashEqMap.tryFind tc apps with
            | None ->
              filter vars actual
            | Some formal ->
              filter formal actual
-        | Some (Var _) ->
-          all ()
-
-  let rec build' (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) : TyTree<'r> =
-    match tyrs with
-     | [] -> Lf []
-     | [(_, r)] -> Lf [r]
-     | tyrs ->
-       match ats with
-        | [] -> Lf (List.map snd tyrs)
-        | at::ats ->
-          tyrs
-          |> List.fold
-              (fun (apps, vars) (ty, r) ->
-                match getAt at ty with
-                 | None -> failwith "Bug"
-                 | Some (Var _) ->
-                   (apps, (ty, r) :: vars)
-                 | Some (App (tc, args)) ->
-                   (HashEqMap.addOrUpdate tc
-                     (fun _ -> (args.Length, [(ty, r)]))
-                     (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
-                     apps,
-                    vars))
-              (HashEqMap.empty, [])
-          |> fun (apps, vars) ->
-             if 0 = HashEqMap.count apps then
-               build' ats vars
-             else
-               Br (at,
-                   apps
-                   |> HashEqMap.map
-                       (fun (n, tyds) ->
-                          build'
-                           (List.init n (fun i -> i::at) @ ats)
-                           tyds),
-                   build' ats vars)
-
-  let build tyrs = build' [[]] tyrs
 
 /////////////////////////////////////////////////////////////////////////
 
