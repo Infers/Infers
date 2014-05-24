@@ -434,5 +434,16 @@ type [<InferenceRules>] Rep () =
      | _ ->
        raise Backtrack
 
+  member rr.product () : Product<'p> =
+    match StaticMap<Builder, Rep<'p>>.Get () with
+     | null ->
+       try rr.tuple () :> Product<'p>
+       with Backtrack ->
+         rr.record () :> Product<'p>
+     | :? Rep.Product<'p> as rep ->
+       rep
+     | _ ->
+       raise Backtrack
+
   member rr.asElem (f: Field<'f, 'p, 'r>) = f :> Elem<'f, 'p, 'r>
   member rr.asElem (l: Label<'l, 'sp, 'sc, 'u>) = l :> Elem<'l, 'sp, 'u>

@@ -118,22 +118,19 @@ type [<InferenceRules>] Pickle () =
   member e.case (m: Case<'ls, 'cs, 'u>, p: p<'ls, 'ls, 'u>) : u<'ls, 'cs, 'u> =
     U [mkTupleOrNonRecursiveRecord m p]
 
-  member e.choice (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
+  member e.plus (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
     U (c @ cs)
 
   member e.union (_: Rep, m: Union<'u>, _: AsChoice<'c, 'u>, u: u<'c, 'c, 'u>) : t<'u> =
     mkUnion m u
 
-  member e.product (f: p<'f, And<'f, 'fs>, 'r>, fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
+  member e.times (f: p<'f, And<'f, 'fs>, 'r>, fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
     mkProduct fs f
     
   member e.elem (_: Elem<'e, 'p, 't>, t: t<'e>) : p<'e, 'p, 't> =
     mkElemOrField t
 
-  member e.tuple (_: Rep, _: Tuple<'t>, m: AsProduct<'p, 't>, p: p<'p, 'p, 't>) : t<'t> =
-    mkTupleOrNonRecursiveRecord m p
-
-  member e.record (_: Rep, _: Record<'r>, m: AsProduct<'p, 'r>, p: p<'p, 'p, 'r>) : t<'r> =
+  member e.product (_: Rep, _: Product<'t>, m: AsProduct<'p, 't>, p: p<'p, 'p, 't>) : t<'t> =
     mkTupleOrNonRecursiveRecord m p
 
 let inline pu () : t<'a> =

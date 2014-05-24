@@ -50,7 +50,7 @@ type [<InferenceRules>] Eq () =
   member t.case (_: Case<'ls, 'cs, 'u>, P ls: p<'ls, 'ls, 'u>) : u<'ls, 'cs, 'u> =
     U [Some ls]
 
-  member e.choice (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
+  member e.plus (U c: u<'c, Choice<'c, 'cs>, 'u>, U cs: u<'cs, 'cs, 'u>) : u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
     U (c @ cs)
 
   member e.union (_: Rep, m: Union<'u>, _: AsChoice<'c, 'u>, U u: u<'c, 'c, 'u>) : t<'u> =
@@ -63,16 +63,13 @@ type [<InferenceRules>] Eq () =
        | None -> true
        | Some f -> toFun f l r
 
-  member e.product (P f: p<'f, And<'f, 'fs>, 'r>, P fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
-    P (toFunc (fun x y -> toFun f x y && toFun fs x y))
-
   member e.elem (m: Elem<'e, 'p, 't>, t: t<'e>) : p<'e, 'p, 't> =
     P (toFunc (fun x y -> via m.Get (toFun t) x y))
 
-  member e.tuple (_: Rep, _: Rep.Tuple<'t>, _: AsProduct<'p, 't>, P p: p<'p, 'p, 't>) : t<'t> =
-    p
+  member e.times (P f: p<'f, And<'f, 'fs>, 'r>, P fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
+    P (toFunc (fun x y -> toFun f x y && toFun fs x y))
 
-  member e.record (_: Rep, m: Record<'r>, _: AsProduct<'p, 'r>, P p: p<'p, 'p, 'r>) : t<'r> =
+  member e.product (_: Rep, m: Rep.Product<'t>, _: AsProduct<'p, 't>, P p: p<'p, 'p, 't>) : t<'t> =
     if m.IsMutable then toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =

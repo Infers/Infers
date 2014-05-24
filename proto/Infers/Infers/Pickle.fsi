@@ -61,20 +61,18 @@ type [<InferenceRules>] Pickle =
   member case: Case<Empty, 'cs, 'u>                   -> u<Empty, 'cs, 'u>
   member case: Case<  'ls, 'cs, 'u> * p<'ls, 'ls, 'u> -> u<  'ls, 'cs, 'u>
 
-  member choice: u<       'c      , Choice<'c, 'cs>, 'u>
-               * u<           'cs ,            'cs , 'u>
-              -> u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u>
+  member plus: u<       'c      , Choice<'c, 'cs>, 'u>
+             * u<           'cs ,            'cs , 'u>
+            -> u<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u>
 
   member union: Rep * Union<'u> * AsChoice<'c, 'u> * u<'c, 'c, 'u> -> t<'u>
 
   // Tuples and Records --------------------------------------------------------
 
-  member product: p<    'f      , And<'f, 'fs>, 'r>
-                * p<        'fs ,         'fs , 'r>
-               -> p<And<'f, 'fs>, And<'f, 'fs>, 'r>
-
   member elem: Elem<'e, 'p, 't> * t<'e> -> p<'e, 'p, 't>
 
-  member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * p<'p, 'p, 't> -> t<'t>
+  member times: p<    'f      , And<'f, 'fs>, 'r>
+              * p<        'fs ,         'fs , 'r>
+             -> p<And<'f, 'fs>, And<'f, 'fs>, 'r>
 
-  member record: Rep * Record<'r> * AsProduct<'p, 'r> * p<'p, 'p, 'r> -> t<'r>
+  member product: Rep * Product<'t> * AsProduct<'p, 't> * p<'p, 'p, 't> -> t<'t>

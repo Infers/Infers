@@ -9,6 +9,9 @@ type [<InferenceRules>] Rep =
   /// Attempts to constructs a union type representation for the type `'u`.
   member union: unit -> Union<'u>
 
+  /// Attempts to construct a product type representation for the type `'p`.
+  member product: unit -> Product<'p>
+
   /// Attempts to constructs a record type representation for the type `'r`.
   member record: unit -> Record<'r>
 
