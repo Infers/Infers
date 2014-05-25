@@ -76,8 +76,8 @@ type [<InferenceRules>] Pickle =
 
   member elem: Elem<'e, 'p, 't> * t<'e> -> p<'e, 'p, 't>
 
-  member times: p<    'f      , And<'f, 'fs>, 'r>
-              * p<        'fs ,         'fs , 'r>
-             -> p<And<'f, 'fs>, And<'f, 'fs>, 'r>
+  member times: p<    'e      , And<'e, 'es>, 't>
+              * p<        'es ,         'es , 't>
+             -> p<And<'e, 'es>, And<'e, 'es>, 't>
 
   member product: Rep * Product<'t> * AsProduct<'p, 't> * p<'p, 'p, 't> -> t<'t>
