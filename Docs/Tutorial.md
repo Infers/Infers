@@ -291,17 +291,19 @@ type [<InferenceRules>] Rep =
 As can be seen, the `Rep` class has a default constructor.  As a convenience,
 the Infers engine automatically considers default constructors in addition to
 ordinary rule methods when it tries to come up with a way to build a value of a
-desired type.  So, after match a type to the return type of the `tuple` method
-of our `Show` class, the first parameter, of type `Rep`, is easy: just use the
-default constructor.
+desired type.  So, after matching a type to the return type of the `tuple`
+method of our `Show` class, the first parameter, of type `Rep`, is
+easy&mdash;just use the default constructor.
 
 As can be seen above, the `Rep` class also has the `InferenceRules` attribute.
-After successfully constructing a value, the Infers engine tests whether the
-type defines the `InferenceRules` attribute.  If it does, then the engine adds
-the rules defined in the object to the set of available rules to consider.
-
 When working to generate the parameters required by a rule, Infers always works
-from left to right.  We took advantage of this when defining the `tuple` rule
+from left to right.  After successfully constructing a parameter value, the
+Infers engine tests whether the type defines the `InferenceRules` attribute.  If
+it does, then the engine adds the rules defined in the object to the set of
+available rules to consider while working on the rest of parameters for the
+current rule.
+
+We took advantage of this feature when defining the `tuple` rule
 
 ```fsharp
 member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
@@ -314,6 +316,12 @@ defined by the `Rep` class into scope.  This is how Infers learns about the
 ```fsharp
 member tuple: unit -> Tuple<'t>
 ```
+
+It is important to understand that the `Rep` class isn't really a part of the
+Infers engine, so to speak.  The `Rep` class is an independent module designed
+to work with the Infers engine, utilizing reflection and run-time code
+generation, to allow the definition of efficient datatype generic functions.
+You could write similar classes yourself to help with other kinds of problems.
 
 #### Backtracking
 
