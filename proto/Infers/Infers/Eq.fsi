@@ -14,11 +14,6 @@ type p<'e, 'es, 'p>
 type [<InferenceRules>] Eq =
   new: unit -> Eq
 
-  // Rules ---------------------------------------------------------------------
-
-  member recFn: RecFn
-  member rep: Rep
-
   // Rec -----------------------------------------------------------------------
 
   member fix: RecFn -> Rec<t<'x>>

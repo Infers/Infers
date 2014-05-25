@@ -12,9 +12,6 @@ type p<'e, 'es, 'p> = P of t<'p>
 let inline via map eq x y = eq (map x) (map y)
 
 type [<InferenceRules>] Eq () =
-  member e.recFn = RecFn ()
-  member e.rep = Rep ()
-
   member e.fix (r: RecFn) : Rec<t<'x>> = r.func2 ()
 
   member e.unit: t<unit> = Fun.toFunc (fun () () -> true)

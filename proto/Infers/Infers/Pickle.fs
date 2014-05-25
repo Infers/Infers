@@ -83,8 +83,6 @@ let inline mkUnion (m: Union<'u>) (U u: u<'c, 'c, 'u>) =
 type [<InferenceRules>] Pickle () =
   member e.unit: t<unit> = mkConst ()
 
-  member e.rep = Rep ()
-
   member e.fix () : Rec<t<'x>> =
     let r = r<'x>()
     {new Rec<t<'x>> () with

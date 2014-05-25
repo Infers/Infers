@@ -25,10 +25,6 @@ type u<'c, 'cs, 'u>
 type [<InferenceRules>] Pickle =
   new: unit -> Pickle
 
-  // Rules ---------------------------------------------------------------------
-
-  member rep: Rep
-
   // Rec -----------------------------------------------------------------------
 
   member fix: unit -> Rec<t<'x>>

@@ -48,8 +48,8 @@ type Ty =
 /// is not given a substitution.
 let rec containsVars ty =
   match ty with
-    | Var v -> true
-    | App (_, tys) -> Array.exists containsVars tys
+   | Var v -> true
+   | App (_, tys) -> Array.exists containsVars tys
 
 /// Resolves the root of the type with respect to the given substition of type
 /// variables to types.
@@ -144,14 +144,14 @@ type MoreSpecific =
 /// specific type with respect to unification and returns that type if so.
 let moreSpecific lhs rhs =
   match tryMatch lhs rhs with
-  | None -> Unmatchable
-  | Some v2ty ->
-    assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
-    match (areEqual (resolve v2ty lhs) lhs, areEqual (resolve v2ty rhs) rhs) with
-     | ( true,  true) -> Equal
-     | ( true, false) -> Lhs
-     | (false,  true) -> Rhs
-     | (false, false) -> Incomparable
+   | None -> Unmatchable
+   | Some v2ty ->
+     assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
+     match (areEqual (resolve v2ty lhs) lhs, areEqual (resolve v2ty rhs) rhs) with
+      | ( true,  true) -> Equal
+      | ( true, false) -> Lhs
+      | (false,  true) -> Rhs
+      | (false, false) -> Incomparable
 
 /// Reorder the type associations in the given array so that types that unify
 /// with a smaller set of types are before types that unify with larger sets of

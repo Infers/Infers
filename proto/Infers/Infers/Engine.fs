@@ -5,7 +5,13 @@ open System.Reflection
 
 /////////////////////////////////////////////////////////////////////////
 
-type InfRule (infRule: MethodInfo, infRules: obj) =
+type InfRule =
+  abstract ReturnType: Ty
+  abstract ParTypes: array<Ty>
+  abstract GenericArgTypes: array<Ty>
+  abstract Invoke: array<Ty> * array<obj> -> option<obj>
+
+type InfRuleMethod (infRule: MethodInfo, infRules: obj) =
   let returnType = Ty.ofType infRule.ReturnType
   let parTypes =
     lazy (infRule.GetParameters ()
@@ -14,17 +20,18 @@ type InfRule (infRule: MethodInfo, infRules: obj) =
     lazy if infRule.ContainsGenericParameters
          then infRule.GetGenericArguments () |> Array.map Ty.ofType
          else [||]
-  member ir.ReturnType = returnType
-  member ir.ParTypes = parTypes.Force ()
-  member ir.GenericArgTypes = genArgs.Force ()
-  member ir.Invoke (genArgTys, argObjs) =
-   try (if infRule.ContainsGenericParameters
-        then infRule.MakeGenericMethod (Array.map Ty.toType genArgTys)
-        else infRule).Invoke (infRules, argObjs) |> Some
-   with :? TargetInvocationException as e
-          when (match e.InnerException with
-                 | Backtrack -> true
-                 | _ -> false) -> None
+  interface InfRule with
+   member ir.ReturnType = returnType
+   member ir.ParTypes = parTypes.Force ()
+   member ir.GenericArgTypes = genArgs.Force ()
+   member ir.Invoke (genArgTys, argObjs) =
+    try (if infRule.ContainsGenericParameters
+         then infRule.MakeGenericMethod (Array.map Ty.toType genArgTys)
+         else infRule).Invoke (infRules, argObjs) |> Some
+    with :? TargetInvocationException as e
+           when (match e.InnerException with
+                  | Backtrack -> true
+                  | _ -> false) -> None
 
 module InfRuleSet =
   type InfRuleSet = HashEqMap<obj, TyTree<InfRule>>
@@ -43,7 +50,8 @@ module InfRuleSet =
            then BindingFlags.AnyDeclaredInstance
            else BindingFlags.PublicDeclaredInstance
          [ty.GetMethods bindingFlags
-          |> Seq.map (fun infRule -> InfRule (infRule, infRules))
+          |> Seq.map (fun infRule ->
+             InfRuleMethod (infRule, infRules) :> InfRule)
           collectRules ty.BaseType]
          |> Seq.concat
     infRules.GetType ()
@@ -61,10 +69,21 @@ module InfRuleSet =
           rulesMap)
        HashEqMap.empty
 
-  let rulesFor (infRuleSet: InfRuleSet) (desiredTy: Ty) =
-    HashEqMap.toSeq infRuleSet
-    |> Seq.collect (fun (_, infRulesTree) ->
-       TyTree.filter infRulesTree desiredTy)
+  let rulesFor (infRuleSet: InfRuleSet) (desiredTy: Ty) = seq {
+    yield! HashEqMap.toSeq infRuleSet
+           |> Seq.collect (fun (_, infRulesTree) ->
+              TyTree.filter infRulesTree desiredTy)
+    let t = Ty.toType desiredTy
+    match t.GetConstructor [||] with
+     | null -> ()
+     | ctor ->
+       yield {new InfRule with
+         member this.ReturnType = desiredTy
+         member this.ParTypes = [||]
+         member this.GenericArgTypes = [||]
+         member this.Invoke (_: array<Ty>, _: array<obj>) =
+           Some (ctor.Invoke [||])}
+  }
 
   let maybeAddRules (o: obj) (infRuleSet: InfRuleSet) =
     if o.GetType () |> getInferenceRules |> Option.isSome
