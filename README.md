@@ -13,3 +13,6 @@ Infers can be useful, for example, in situations where one might wish to use
 something like [type classes](http://en.wikipedia.org/wiki/Type_class) or when
 one might want to do *datatype generic* programming.  Other kinds of
 applications are also quite possible.
+
+To gain an understanding on what Infers can do, you might want start with the
+[Infers Tutorial](Docs/Tutorial.md).
