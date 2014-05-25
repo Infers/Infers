@@ -11,6 +11,15 @@ type [<Struct>] And<'x, 'xs> =
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
   abstract Extract: 't * byref<'p> -> unit
   abstract Create: byref<'p> -> 't
+  abstract ToProduct: 't -> 'p
+  abstract OfProduct: 'p -> 't
+  default this.ToProduct (t: 't) : 'p =
+    let mutable p = Unchecked.defaultof<_>
+    this.Extract (t, &p)
+    p
+  default this.OfProduct (p: 'p) : 't =
+    let mutable p = p
+    this.Create (&p)
 
 type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> () = class
   end

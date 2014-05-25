@@ -56,6 +56,12 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
   /// `'p`.
   abstract Create: byref<'p> -> 't
 
+  /// Convenience function to convert from product type to nested product.
+  abstract ToProduct: 't -> 'p
+
+  /// Convenience function to convert from nested product to product type.
+  abstract OfProduct: 'p -> 't
+
 /////////////////////////////////////////////////////////////////////////
 
 /// Representation of a discriminated union type `'u` as nested choices of
