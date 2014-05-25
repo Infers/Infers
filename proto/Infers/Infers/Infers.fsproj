@@ -48,8 +48,8 @@
     <Compile Include="Engine.fs" />
     <Compile Include="Inj.fsi" />
     <Compile Include="Inj.fs" />
-    <Compile Include="Rec.fsi" />
-    <Compile Include="Rec.fs" />
+    <Compile Include="RecFn.fsi" />
+    <Compile Include="RecFn.fs" />
     <Compile Include="RepTypes.fsi" />
     <Compile Include="RepTypes.fs" />
     <Compile Include="RepRules.fsi" />

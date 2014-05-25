@@ -86,6 +86,7 @@ type [<AllowNullLiteral; InferenceRules>] Rep<'x> = class
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# product type (tuple or record) `'t`.
+#if DOC
 ///
 /// A product object also contains a member of the form
 ///
@@ -94,6 +95,7 @@ type [<AllowNullLiteral; InferenceRules>] Rep<'x> = class
 /// where the type `'p` is a representation of the product as a nested record.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
+#endif
 type [<AbstractClass>] Product<'t> =
   inherit Rep<'t>
 
@@ -120,6 +122,7 @@ type [<AbstractClass>] Elem<'e, 'p, 't> =
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# discriminated union type `'u`.
+#if DOC
 ///
 /// A union object also contains a member of the form
 ///
@@ -128,6 +131,7 @@ type [<AbstractClass>] Elem<'e, 'p, 't> =
 /// where type `'c` is a representation of the union as nested binary choices.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
+#endif
 type [<AbstractClass>] Union<'u> =
   inherit Rep<'u>
 

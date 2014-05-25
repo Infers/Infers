@@ -4,6 +4,7 @@ open Infers
 
 /// Inference rules for generic type representations.
 type [<InferenceRules>] Rep =
+  /// Default constructor.
   new: unit -> Rep
 
   /// Attempts to constructs a union type representation for the type `'u`.
