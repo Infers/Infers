@@ -17,33 +17,33 @@ type [<InferenceRules>] Eq () =
 
   member e.fix (r: RecFn) : Rec<t<'x>> = r.func2 ()
 
-  member e.unit: t<unit> = toFunc (fun () () -> true)
+  member e.unit: t<unit> = Fun.toFunc (fun () () -> true)
 
-  member e.bool: t<bool> = toFunc (=)
+  member e.bool: t<bool> = Fun.toFunc (=)
 
-  member e.int8: t<int8> = toFunc (=)
-  member e.int16: t<int16> = toFunc (=)
-  member e.int32: t<int32> = toFunc (=)
-  member e.int64: t<int64> = toFunc (=)
+  member e.int8: t<int8> = Fun.toFunc (=)
+  member e.int16: t<int16> = Fun.toFunc (=)
+  member e.int32: t<int32> = Fun.toFunc (=)
+  member e.int64: t<int64> = Fun.toFunc (=)
 
-  member e.uint8: t<uint8> = toFunc (=)
-  member e.uint16: t<uint16> = toFunc (=)
-  member e.uint32: t<uint32> = toFunc (=)
-  member e.uint64: t<uint64> = toFunc (=)
+  member e.uint8: t<uint8> = Fun.toFunc (=)
+  member e.uint16: t<uint16> = Fun.toFunc (=)
+  member e.uint32: t<uint32> = Fun.toFunc (=)
+  member e.uint64: t<uint64> = Fun.toFunc (=)
 
   member e.float32: t<float32> =
-    toFunc <| fun x y ->
+    Fun.toFunc <| fun x y ->
     via (fun (x: float32) ->
             BitConverter.ToInt32 (BitConverter.GetBytes x, 0))
         (=) x y
   member e.float64: t<float> =
-    toFunc (fun x y -> via BitConverter.DoubleToInt64Bits (=) x y)
+    Fun.toFunc (fun x y -> via BitConverter.DoubleToInt64Bits (=) x y)
 
-  member e.char: t<char> = toFunc (=)
-  member e.string: t<string> = toFunc (=)
+  member e.char: t<char> = Fun.toFunc (=)
+  member e.string: t<string> = Fun.toFunc (=)
 
-  member e.ref () : t<ref<'a>> = toFunc PhysicalEquality
-  member e.array () : t<array<'a>> = toFunc PhysicalEquality
+  member e.ref () : t<ref<'a>> = Fun.toFunc PhysicalEquality
+  member e.array () : t<array<'a>> = Fun.toFunc PhysicalEquality
 
   member e.case (_: Case<Empty, 'cs, 'u>) : u<Empty, 'cs, 'u> =
     U [None]
@@ -55,22 +55,22 @@ type [<InferenceRules>] Eq () =
 
   member e.union (_: Rep, m: Union<'u>, _: AsChoice<'c, 'u>, U u: u<'c, 'c, 'u>) : t<'u> =
     let u = Array.ofList u
-    toFunc <| fun l r ->
+    Fun.toFunc <| fun l r ->
       let i = m.Tag l
       let j = m.Tag r
       i = j &&
       match u.[i] with
        | None -> true
-       | Some f -> toFun f l r
+       | Some f -> Fun.ofFunc f l r
 
   member e.elem (m: Elem<'e, 'p, 't>, t: t<'e>) : p<'e, 'p, 't> =
-    P (toFunc (fun x y -> via m.Get (toFun t) x y))
+    P (Fun.toFunc (fun x y -> via m.Get (Fun.ofFunc t) x y))
 
   member e.times (P f: p<'f, And<'f, 'fs>, 'r>, P fs: p<'fs, 'fs, 'r>) : p<And<'f, 'fs>, And<'f, 'fs>, 'r> =
-    P (toFunc (fun x y -> toFun f x y && toFun fs x y))
+    P (Fun.toFunc (fun x y -> Fun.ofFunc f x y && Fun.ofFunc fs x y))
 
   member e.product (_: Rep, m: Rep.Product<'t>, _: AsProduct<'p, 't>, P p: p<'p, 'p, 't>) : t<'t> =
-    if m.IsMutable then toFunc PhysicalEquality else p
+    if m.IsMutable then Fun.toFunc PhysicalEquality else p
 
 let inline mk () : t<'a> =
   match StaticMap<Eq, t<'a>>.Get () with

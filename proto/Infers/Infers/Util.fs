@@ -2,137 +2,180 @@
 module internal Infers.Util
 
 open System
-open System.Reflection
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-let inline toFun (f: Func<'a, 'b, 'c>) x y = f.Invoke (x, y)
-let inline toFunc (f: 'a -> 'b -> 'c) = Func<'a, 'b, 'c>(f)
+/// Operations for converting between F# functions and .Net `Func<...>`
+/// delegates.
+type [<Sealed>] Fun =
+  static member inline ofFunc (f: Func<'a, 'b, 'c>) x y = f.Invoke (x, y)
+  static member inline toFunc (f: 'a -> 'b -> 'c) = Func<'a, 'b, 'c>(f)
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-let inline (|GotSome|GotNone|) (b, v) =
-  if b then GotSome v else GotNone
-
-/////////////////////////////////////////////////////////////////////////
-
+/// The identity function.
 let inline id x = x
-let inline K x _ = x
 
-/////////////////////////////////////////////////////////////////////////
+/// The constant function.
+let inline constant x _ = x
 
+////////////////////////////////////////////////////////////////////////////////
+
+/// `x &> ef` is equivalent to `x |> fun x -> ef x ; x` and basically allows
+/// an imperative operation to be used in a pipe.
 let inline (&>) x effect = effect x ; x
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+/// Forces a lazy computation object.
 let inline force (x: Lazy<_>) = x.Force ()
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-let notImplemented () = raise (NotImplementedException ())
+/// Raises the `NotImplemented` exception.
+let notImplemented _ = raise (NotImplementedException ())
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+/// Additional operations on options.
 module Option =
+  /// Converts an option to a sequence.
   let toSeq o = match o with None -> Seq.empty | Some x -> Seq.singleton x
+
+  /// Converts a nullable value to an option.
   let ofNull x = match x with null -> None | x -> Some x
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+/// Represents a functional set of type `'k` requiring only that `'k` provides
+/// equality and hash operations.
+type HashEqSet<'k> when 'k: equality = HES of Map<int, list<'k>>
+
+/// Operations on functional sets using hash and equality.
 module HashEqSet =
-  type t<'k> when 'k: equality = T of Map<int, list<'k>>
+  /// The empty set.
+  let empty = HES Map.empty
 
-  let empty : t<'k> = T Map.empty
-
-  let drop k ks =
+  let private drop k ks =
     if List.exists ((=) k) ks then
       List.filter ((<>) k) ks
     else
       ks
 
-  let add (k: 'k) (T s: t<'k>) =
+  /// Creates a new set containing the keys of the given set and the given key.
+  let add k (HES s)  =
     let hk = hash k
     Map.add hk
      (match Map.tryFind hk s with
        | None -> [k]
        | Some ks -> k :: drop k ks)
-     s |> T
+     s |> HES
 
-  let contains (k: 'k) (T s: t<'k>) =
+  /// Tests whether the key is in the set.
+  let contains k (HES s) =
     match Map.tryFind (hash k) s with
      | None -> false
      | Some ks -> List.exists ((=) k) ks
 
-  let toSeq (T s) = Map.toSeq s |> Seq.collect snd
+  /// Returns a sequence of the set.
+  let toSeq (HES s) = Map.toSeq s |> Seq.collect snd
 
-type HashEqSet<'k> when 'k: equality = HashEqSet.t<'k>
+////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////
+/// Represents a functional map of type `'k -> 'v` requiring only that `'k`
+/// provides equality and hash operations.
+type HashEqMap<'k, 'v> when 'k: equality = HEM of Map<int, list<'k * 'v>>
 
+/// Operations on functional maps using hash and equality.
 module HashEqMap =
-  type t<'k, 'v> when 'k: equality = T of Map<int, list<'k * 'v>>
-
-  let drop (k: 'k) (kvs: list<'k * 'v>) =
+  let private drop (k: 'k) (kvs: list<'k * 'v>) =
     if List.exists (fst >> (=) k) kvs then
       List.filter (fst >> (<>) k) kvs
     else
       kvs
 
-  let empty : t<_, _> = T Map.empty
+  /// The empty map.
+  let empty = HEM Map.empty
 
-  let add (k: 'k) (v: 'v) (T m: t<'k, 'v>) =
+  /// Creates a new map containing the key value pairs in the given map and the
+  /// given key value pair.
+  let add k v (HEM m) =
     let hk = hash k
     Map.add hk
      ((k, v)
        :: match Map.tryFind hk m with
            | None -> []
            | Some kvs -> drop k kvs)
-     m |> T
+     m |> HEM
 
-  let tryFind (k: 'k) (T m: t<'k, 'v>) : option<'v> =
+  /// Tries to find the value associated with the given key from the given map.
+  let tryFind k (HEM m) =
     Map.tryFind (hash k) m
     |> Option.bind (fun kvs ->
        List.tryFind (fst >> (=) k) kvs
        |> Option.bind (fun (_, v) ->
           Some v))
 
-  let addOrUpdate k onAdd onUpdate m =
-    add k
-     (match tryFind k m with
-       | None -> onAdd k
-       | Some v -> onUpdate k v)
-     m
+  /// Creates a new map containing the key value pairs in the given map and the
+  /// key value pair produced either by `onAdd`, in case the given map doesn't
+  /// contain the given key, or by `onUpdate`, in case the given key already
+  /// existed in the given map.
+  let addOrUpdate key onAdd onUpdate map =
+    add key
+     (match tryFind key map with
+       | None -> onAdd key
+       | Some v -> onUpdate key v)
+     map
 
-  let map (v2w: 'v -> 'w) (T m: t<'k, 'v>) : t<'k, 'w> =
-    T (Map.map (fun _ kvs -> List.map (fun (k, v) -> (k, v2w v)) kvs) m)
+  /// Transforms all values in the map with the given function producing a new
+  /// map.
+  let map v2w (HEM m) =
+    HEM (Map.map (fun _ kvs -> List.map (fun (k, v) -> (k, v2w v)) kvs) m)
 
-  let isEmpty (T m) =
+  /// Determines whether the given map is empty.
+  let isEmpty (HEM m) =
     Map.isEmpty m
 
-  let count (T m) =
+  /// Counts the number of key value pairs in the map.
+  let count (HEM m) =
     Map.toSeq m |> Seq.map (snd >> List.length) |> Seq.sum
 
-  let toSeq (T m) = Map.toSeq m |> Seq.collect snd
+  /// Returns an association sequence corresponding to the given map.
+  let toSeq (HEM m) = Map.toSeq m |> Seq.collect snd
 
-type HashEqMap<'k, 'v> when 'k: equality = HashEqMap.t<'k, 'v>
+////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////////////
-
+/// A mapping of types to values.  A single value of type `'v` can be stored for
+/// a type of `'k`.  A module typically gives some private type for `'k' and
+/// then stores unique values for many types `'v`.
 type [<Sealed>] StaticMap<'k, 'v> () =
   [<DefaultValue>] static val mutable private Value: 'v
-  static member Get () = StaticMap<'k, 'v>.Value
-  static member Set (value: 'v) = StaticMap<'k, 'v>.Value <- value
 
-/////////////////////////////////////////////////////////////////////////
+  /// Gets the value.  If the value has not been previously set, then the
+  /// value stored is the `default` value for that type.
+  static member inline Get () = StaticMap<'k, 'v>.Value
 
+  /// Sets the value.
+  static member inline Set (value: 'v) = StaticMap<'k, 'v>.Value <- value
+
+////////////////////////////////////////////////////////////////////////////////
+
+/// Additional `BindingFlags` combinations.
 module BindingFlags =
+  open System.Reflection
+
+  /// Both public and non-public members.
   let Any = BindingFlags.Public ||| BindingFlags.NonPublic
+  /// Only declared and instance members.
   let DeclaredInstance = BindingFlags.DeclaredOnly ||| BindingFlags.Instance
+  /// Only declared instance members that may be either public or non-public.
   let AnyDeclaredInstance = Any ||| DeclaredInstance
+  /// Only public declared instance members.
   let PublicDeclaredInstance = BindingFlags.Public ||| DeclaredInstance
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+/// An untyped helper interface for dealing with recursion proxies.
 type IRecObj =
   abstract GetObj: unit -> obj
   abstract SetObj: obj -> unit

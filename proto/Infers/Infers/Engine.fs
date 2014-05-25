@@ -6,20 +6,20 @@ open System.Reflection
 /////////////////////////////////////////////////////////////////////////
 
 type InfRule (infRule: MethodInfo, infRules: obj) =
-  let returnType = toTy infRule.ReturnType
+  let returnType = Ty.ofType infRule.ReturnType
   let parTypes =
     lazy (infRule.GetParameters ()
-          |> Array.map (fun p -> toTy p.ParameterType))
+          |> Array.map (fun p -> Ty.ofType p.ParameterType))
   let genArgs =
     lazy if infRule.ContainsGenericParameters
-         then infRule.GetGenericArguments () |> Array.map toTy
+         then infRule.GetGenericArguments () |> Array.map Ty.ofType
          else [||]
   member ir.ReturnType = returnType
   member ir.ParTypes = parTypes.Force ()
   member ir.GenericArgTypes = genArgs.Force ()
   member ir.Invoke (genArgTys, argObjs) =
    try (if infRule.ContainsGenericParameters
-        then infRule.MakeGenericMethod (Array.map ofTy genArgTys)
+        then infRule.MakeGenericMethod (Array.map Ty.toType genArgTys)
         else infRule).Invoke (infRules, argObjs) |> Some
    with :? TargetInvocationException as e
           when (match e.InnerException with
@@ -94,7 +94,7 @@ module IDDFS =
     let inline tell u2msg =
       if explain then
         printfn "%s%s" (String.replicate nesting " ") (u2msg ())
-    tell <| fun () -> sprintf "desired: %A" (ofTy desiredTy)
+    tell <| fun () -> sprintf "desired: %A" (Ty.toType desiredTy)
     match HashEqMap.tryFind desiredTy knownObjs
           |> Option.bind (fun u2o ->
              try Some (u2o ()) with Backtrack -> None) with
@@ -107,16 +107,16 @@ module IDDFS =
        InfRuleSet.rulesFor infRuleSet desiredTy >>= fun infRule ->
        tell <| fun () ->
          sprintf "trying: %A :- %A"
-          (ofTy infRule.ReturnType) (Array.map ofTy infRule.ParTypes)
-       tryMatch infRule.ReturnType desiredTy HashEqMap.empty |> Option.toSeq >>= fun v2t ->
+          (Ty.toType infRule.ReturnType) (Array.map Ty.toType infRule.ParTypes)
+       tryMatch infRule.ReturnType desiredTy |> Option.toSeq >>= fun v2t ->
        let desiredTy = resolve v2t desiredTy
        guard (not (containsVars desiredTy)) >>= fun () ->
-       tell <| fun () -> sprintf "match as: %A" (ofTy desiredTy)
+       tell <| fun () -> sprintf "match as: %A" (Ty.toType desiredTy)
        let parTypes = infRule.ParTypes
        let (knownObjs, tie) =
          let noRec () =
            (HashEqMap.add desiredTy (fun () -> raise Backtrack) knownObjs,
-            K >> HashEqMap.add desiredTy)
+            constant >> HashEqMap.add desiredTy)
          if parTypes.Length = 0 || isRec desiredTy then
            noRec ()
          else
@@ -128,7 +128,7 @@ module IDDFS =
                 (fun () -> recObj.GetObj ()) knownObjs,
                fun complete knownObjs ->
                  recObj.SetObj complete
-                 HashEqMap.add desiredTy (K complete) knownObjs)
+                 HashEqMap.add desiredTy (constant complete) knownObjs)
             | _ ->
               noRec ()
        let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
@@ -137,7 +137,7 @@ module IDDFS =
             let argObjs = Array.ofList (List.rev argObjs)
             infRule.Invoke (genArgTypes, argObjs)
             |> Option.toSeq |>> fun desiredObj ->
-               tell <| fun () -> sprintf "built: %A" (ofTy desiredTy)
+               tell <| fun () -> sprintf "built: %A" (Ty.toType desiredTy)
                (desiredObj, v2t, tie desiredObj knownObjs)
           | parType::parTypes ->
             dfsGenerate explain nesting limit infRuleSet knownObjs parType >>=
@@ -164,7 +164,7 @@ type [<Sealed>] Engine =
                              maxDepth: int,
                              rules: seq<obj>) : option<'a> =
     assert (0 <= initialDepth && initialDepth <= maxDepth)
-    let desiredTy = toTy typeof<'a>
+    let desiredTy = Ty.ofType typeof<'a>
     if containsVars desiredTy then
       failwith "Infers can only generate monomorphic values"
     iddfsGenerate
