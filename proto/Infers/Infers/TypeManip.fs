@@ -70,6 +70,8 @@ let rec occurs v2ty v ty =
 /// by extending the given `v2ty` mapping of type variables.
 let rec tryMatch formal actual v2ty =
   match (resolveTop v2ty formal, resolveTop v2ty actual) with
+   | (Var fv, Var av) when fv = av ->
+     Some v2ty
    | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
      Some (HashEqMap.add v ty v2ty)
    | (App (formal, pars), App (actual, args)) when formal = actual ->
@@ -97,13 +99,13 @@ let areEqual aTy bTy =
           Some (HashEqMap.add a b v2ty)
      | (App (aTc, aArgs), App (bTc, bArgs)) when aTc = bTc ->
        assert (aArgs.Length = bArgs.Length)
-       let rec args i v2i =
+       let rec args i v2ty =
          if aArgs.Length <= i then
-           Some v2i
+           Some v2ty
          else
            match types aArgs.[i] bArgs.[i] v2ty with
             | None -> None
-            | Some v2i ->
+            | Some v2ty ->
               args (i+1) v2ty
        args 0 v2ty
      | _ ->
@@ -113,19 +115,22 @@ let areEqual aTy bTy =
 type MoreSpecific =
  | Lhs
  | Rhs
- | Neither
+ | Unmatchable
+ | Equal
+ | Incomparable
 
 /// Given two types, determines whether one of the two types is clearly a more
 /// specific type with respect to unification and returns that type if so.
 let moreSpecific lhs rhs =
   match tryMatch lhs rhs HashEqMap.empty with
-  | None -> Neither
+  | None -> Unmatchable
   | Some v2ty ->
+    assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
     match (areEqual (resolve v2ty lhs) lhs, areEqual (resolve v2ty rhs) rhs) with
-     | ( true,  true) -> Neither
+     | ( true,  true) -> Equal
      | ( true, false) -> Lhs
      | (false,  true) -> Rhs
-     | (false, false) -> Neither
+     | (false, false) -> Incomparable
 
 let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
   let swap i j =
@@ -135,9 +140,8 @@ let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
   for i=0 to tyrs.Length-2 do
     let mutable j = i
     for k=i+1 to tyrs.Length-1 do
-      match moreSpecific (fst tyrs.[j]) (fst tyrs.[k]) with
-       | Lhs | Neither -> ()
-       | Rhs -> j <- k
+      if Rhs = moreSpecific (fst tyrs.[j]) (fst tyrs.[k]) then
+        j <- k
     swap i j
 
 /////////////////////////////////////////////////////////////////////////
