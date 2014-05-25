@@ -369,7 +369,9 @@ defined earlier in the form of the `Show.prod` member
 member prod: Show<'x> * Show<'xs> -> Show<And<'x, 'xs>>
 ```
 
-because the type `'p` is a nested product using the `And` type.
+because the type `'p`, in the run-time generated `AsProduct<'p, 't>`, is a
+nested product of the `And<'x, 'xs>` types, corresponding to the `'t` tuple
+type.
 
 ### Unions as nested sums
 
