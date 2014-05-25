@@ -176,19 +176,6 @@ let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
 /// `T<A, U<[B]>>`.
 type TyCursor = list<int>
 
-/// Examines the structure of the given type to determine whether the type has
-/// that position and, if so, returns the type at that position.
-let rec getAt is ty =
-  match is with
-   | [] ->
-     Some ty
-   | i::is ->
-     match getAt is ty with
-      | Some (App (_, args)) when i < args.Length ->
-        Some args.[i]
-      | _ ->
-        None
-
 /// Represents a mapping of types to values of type `'r` such that given a type,
 /// the type value pairs of the mapping can be filtered based on the given type
 /// and produced in an order from more specific to less specific types with
@@ -204,26 +191,50 @@ and TyTreeFun<'r> =
 
 /// Operations on type tress.
 module TyTree =
-  let rec private build' (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) : TyTree<'r> =
+  /// Examines the structure of the given type to determine whether the type has
+  /// that position and, if so, returns the type at that position.
+  let rec internal getAt (is: TyCursor) ty =
+    match is with
+     | [] ->
+       Some ty
+     | i::is ->
+       match getAt is ty with
+        | Some (App (_, args)) when i < args.Length ->
+          Some args.[i]
+        | _ ->
+          None
+
+  let rec private build' (ats: list<TyCursor>)
+                         (tyrs: list<Ty * 'r>) : TyTree<'r> =
+    // `tyrs` is the remaining association sequence we wish to classify.
     lazy match tyrs with
           | [] -> Empty
           | [(_, r)] -> One r
           | tyrs ->
+            // `ats` is a sequence of positions that we haven't yet classified
+            // types against.
             match ats with
              | [] ->
+               // No more positions to classify against, so we just create a
+               // leaf consisting of all the remaining values.
                tyrs
                |> Array.ofList
                &> inPlaceSelectSpecificFirst
                |> Array.map snd
                |> Many
              | at::ats ->
+               // Classify types based on the position `at`.
                tyrs
                |> List.fold
                    (fun (apps, vars) (ty, r) ->
                      match getAt at ty with
-                      | None -> failwith "Bug"
+                      | None ->
+                        // This cannot happen, because while building the tree,
+                        // we only produce positions we know to exist in the
+                        // types.
+                        failwith "Bug"
                       | Some (Var _) ->
-                        (apps, (ty, r) :: vars)
+                        (apps, (ty, r)::vars)
                       | Some (App (tc, args)) ->
                         (HashEqMap.addOrUpdate tc
                           (fun _ -> (args.Length, [(ty, r)]))
@@ -232,17 +243,26 @@ module TyTree =
                          vars))
                    (HashEqMap.empty, [])
                |> fun (apps, vars) ->
+                  // Classify types that had a type variable at the
+                  // classification position using the remaining positions.
                   let vars = build' ats vars
+
+                  // Were some types classified distinct from others at the
+                  // position `at`?
                   if HashEqMap.isEmpty apps then
+                    // No, just produce whatever we get from classifying the
+                    // types that had a variable at the examined position.
                     force vars
                   else
+                    // Yes, so we produce a branch node.
                     (at,
                      apps
                      |> HashEqMap.map
                          (fun (n, tyds) ->
-                            build'
-                             (List.init n (fun i -> i::at) @ ats)
-                             tyds),
+                            // Add the new positions in these types to the
+                            // sequence of positions to classify types against.
+                            let ats = List.init n (fun i -> i::at) @ ats
+                            build' ats tyds),
                      vars) |> Branch
 
   /// Builds a type tree corresponding to the given association sequence.
@@ -250,25 +270,28 @@ module TyTree =
 
   /// Returns a sequence values from the type tree whose associated types may
   /// unify with the given type.
-  let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> =
+  let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> = seq {
     match force formal with
-     | Empty -> Seq.empty
-     | One r -> Seq.singleton r
-     | Many rs -> rs :> seq<_>
+     | Empty -> ()
+     | One r -> yield r
+     | Many rs -> yield! rs
      | Branch (at, apps, vars) ->
+       // Does the `actual` type have some non-var type at the branch position?
        match getAt at actual with
-        | None | Some (Var _) -> seq {
-            yield! HashEqMap.toSeq apps
-                   |> Seq.collect (fun (_, formal) ->
-                      filter formal actual)
-            yield! filter vars actual
-          }
+        | None | Some (Var _) ->
+          // No, so we can't filter out `apps` types at this branch.
+          yield! HashEqMap.toSeq apps
+                 |> Seq.collect (fun (_, formal) ->
+                    filter formal actual)
         | Some (App (tc, args)) ->
+          // Yes, so we need only produce those `apps` that have the same tycon.
           match HashEqMap.tryFind tc apps with
-           | None ->
-             filter vars actual
+           | None -> ()
            | Some formal ->
-             filter formal actual
+             yield! filter formal actual
+       // We also need to produce the `vars` types.
+       yield! filter vars actual
+  }
 
 ////////////////////////////////////////////////////////////////////////////////
 
