@@ -323,16 +323,53 @@ to work with the Infers engine, utilizing reflection and run-time code
 generation, to allow the definition of efficient datatype generic functions.
 You could write similar classes yourself to help with other kinds of problems.
 
-#### Backtracking
+#### The Tuple type and Backtracking
 
-
-
-
+The `Tuple<'t>` type is also a class that defines inference rules.  Of course,
+not every type `'t` is a tuple.  The definition of the `Rep.tuple` method
+checks, using reflection, whether the `'t' type actually is a tuple or not.  If
+it isn't a tuple, then the method raise the `Backtrack` exception
 
 ```fsharp
 exception Backtrack
 ```
 
+which is understood by the Infers engine as hint to backtrack outwards to try
+another way to generate the desired type.
+
+In our case, of course, the `Rep.tuple` method ultimately succeeds, because we
+are generating tuples.  The return object of type `Tuple<'x>` is yet another
+object containing inference rules.  Its signature is somewhat opaque, however,
+because the main feature of the `Tuple<'t>` class is that it contains a run-time
+generated rule for an `AsProduct<'p, 't>` class, where the `'p` type defines the
+nested product, generated at run-time by code in the `Rep` class, and there are
+run-time generated methods to convert between a nested product and, in our case,
+the original tuple.  Here is a part of the signature of the `AsProduct<'p, 't>`
+class:
+
+```fsharp
+type AsProduct<'p, 't> =
+  // ...
+  abstract ToProduct: 't -> 'p
+  abstract OfProduct: 'p -> 't
+```
+
+To recap, the `Show.tuple` member
+
+```fsharp
+member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
+```
+
+defines a rule that allows a value of type `Show<'t>` to be generated assuming
+that one can generate a `Rep`, a `Tuple<'t>`, a `AsProduct<'p, 't>`, and a
+`Show<'p>`.  We just covered all but the `Show<'p>` value, which we essentially
+defined earlier in the form of the `Show.prod` member
+
+```fsharp
+member prod: Show<'x> * Show<'xs> -> Show<And<'x, 'xs>>
+```
+
+because the type `'p` is a nested product using the `And` type.
 
 ### Unions as nested sums
 
