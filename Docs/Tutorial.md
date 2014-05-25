@@ -29,7 +29,7 @@ type Show () =
   member show.pair (showX: Show<'x>, showY: Show<'y>) : Show<'x * 'y> =
     fun (x, y) -> "(" + showX x + ", " + showY y + ")"
   member show.list (showX: Show<'x>) : Show<list<'x>> = fun xs ->
-    "[" + String.concat ", " (List.map showX xs) + "]"
+    "[" + String.concat "; " (List.map showX xs) + "]"
 ```
 
 Suppose that we have bound an instance of `Show` to the variable `show`.
@@ -70,7 +70,7 @@ type [<InferenceRules>] Show () =
   member show.pair (showX: Show<'x>, showY: Show<'y>) : Show<'x * 'y> =
     fun (x, y) -> "(" + showX x + ", " + showY y + ")"
   member show.list (showX: Show<'x>) : Show<list<'x>> = fun xs ->
-    "[" + String.concat ", " (List.map showX xs) + "]"
+    "[" + String.concat "; " (List.map showX xs) + "]"
 ```
 
 Then we define a function that invokes the Infers engine on those rules:
@@ -90,5 +90,57 @@ val it : string = "1"
 > show (1, true) ;;
 val it : string = "(1, true)"
 > show ([1], (2, [3; 4])) ;;
-val it : string = "([1], (2, [3, 4]))"
+val it : string = "([1], (2, [3; 4]))"
 ```
+
+How does this actually work?  It helps to look at the signature of the `Show`
+class:
+
+```fsharp
+type Show =
+  new: unit -> Show
+  member bool: Show<bool>
+  member int: Show<int>
+  member list: Show<'x> -> Show<list<'x>>
+  member pair: Show<'x> * Show<'y> -> Show<'x * 'y>
+```
+
+When we ask `Engine.TryGenerate` to derive a value of some desired type, say
+`Show<list<int>>`, and give an object containing inference rules, say
+`Show ()`, it goes over the member functions of the object and tries to match
+the result types of those member functions with the desired type.
+
+In the case of `Show<list<int>>`, the engine ultimately reaches the function
+`list`
+
+```fsharp
+member list: Show<'x> -> Show<list<'x>>
+```
+
+and realizes that its result type matches the desired type, if it substitutes
+`int` for `'x`.  Making that substitution to the generic method, the engine then
+effectively ends up with a concrete version of the `list` method:
+
+```
+member list: Show<int> -> Show<list<int>>
+```
+
+The engine now knows that if it can somehow derive a value of type `Show<int>`,
+it can derive a value of the desired type by applying the concrete version of
+the `list` method.  To do that, the engine takes on a new goal: derive a value
+of type `Show<int>`.  It again goes over the members and ultimately finds the
+member `int`
+
+```fsharp
+member int: Show<int>
+```
+
+whose result exactly matches the type it was looking for and furthermore does
+not require any parameters.  The engine then calls `int` and then calls `list`
+with the returned value, obtaining a value of desired type.
+
+This is obviously a somewhat simplified description of the process, but should
+help you to understand what is going on.  In fact, the Infers engine is quite
+powerful.  Technically speaking it implements a complete resolution process for
+[Horn clauses](http://en.wikipedia.org/wiki/Horn_clause).  The engine also
+implements some heuristics to prefer more specific rules to less specific rules.
