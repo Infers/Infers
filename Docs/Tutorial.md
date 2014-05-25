@@ -228,7 +228,7 @@ type [InferenceRules] Show () =
                      _: Tuple<'t>,
                      asP: AsProduct<'p, 't>,
                      showP: Show<'p>) : Show<'t> =
-   asP.ToProduct >> showP
+   fun t -> "(" + showP (asP.ToProduct t) + ")"
 ```
 
 Let's drop the old `pair` rule.  Here is the whole `Show` class so far:
