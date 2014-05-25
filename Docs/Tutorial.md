@@ -3,6 +3,8 @@
 Infers is a library for deriving F# values from their types.  What does that
 actually mean?  Let's work on a concrete example.
 
+## Showing off
+
 We can define a family of types, or more concretely, a generic type
 
 ```fsharp
@@ -59,6 +61,8 @@ To recap, we defined a family of types `Show<'x>` and a family of functions
 Recall that Infers is a library for deriving values from their types.  Can we
 use Infers to build values of the `Show<'x>` family of type using the family of
 functions we defined.  Yes, we can.
+
+### Enter Infers
 
 First we mark the `Show` class as defining a set of `InferenceRules`.  Here is
 the modified `Show` class:
@@ -121,7 +125,7 @@ and realizes that its result type matches the desired type, if it substitutes
 `int` for `'x`.  Making that substitution to the generic method, the engine then
 effectively ends up with a concrete version of the `list` method:
 
-```
+```fsharp
 member list: Show<int> -> Show<list<int>>
 ```
 
@@ -137,10 +141,32 @@ member int: Show<int>
 
 whose result exactly matches the type it was looking for and furthermore does
 not require any parameters.  The engine then calls `int` and then calls `list`
-with the returned value, obtaining a value of desired type.
+with the returned value, obtaining a value of the desired type.
 
 This is obviously a somewhat simplified description of the process, but should
 help you to understand what is going on.  In fact, the Infers engine is quite
 powerful.  Technically speaking it implements a complete resolution process for
 [Horn clauses](http://en.wikipedia.org/wiki/Horn_clause).  The engine also
 implements some heuristics to prefer more specific rules to less specific rules.
+
+## Compared to Type Classes
+
+The way in which we used Infers in the previous section to derive values of the
+type family `Show<'x>` is similar to how a
+[type and constructor class](http://en.wikipedia.org/wiki/Type_class) could be
+used to infer values given suitable type class definitions.
+
+Compared to Infers, the type class mechanisms that can be found in various
+languages are carefully engineered to be tractable.  For example, many of those
+systems have the property that the type class resolution process terminates and
+class constraints make sure that a program that type checks will not fail at
+run-time due to inability to infer a value of some type used in the program.  On
+the other hand, this means that the power of the resolution algorithm used by
+such type class mechanisms is constrained.
+
+Infers doesn't have such nice safety properties and, on the other hand, Infers
+allows pretty much arbitrarily complex heterogeneous sets of inference rules to
+be used.
+
+## The Rep module and Datatype Generic Programming
+
