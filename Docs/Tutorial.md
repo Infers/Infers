@@ -60,7 +60,7 @@ To recap, we defined a family of types `Show<'x>` and a family of functions
 `bool`, `int`, `pair`, and `list` for building values of the type `Show<'x>`.
 Recall that Infers is a library for deriving values from their types.  Can we
 use Infers to build values of the `Show<'x>` family of type using the family of
-functions we defined.  Yes, we can.
+functions we defined?  Yes, we can.
 
 ### Enter Infers
 
@@ -327,7 +327,7 @@ You could write similar classes yourself to help with other kinds of problems.
 
 The `Tuple<'t>` type is also a class that defines inference rules.  Of course,
 not every type `'t` is a tuple.  The definition of the `Rep.tuple` method
-checks, using reflection, whether the `'t' type actually is a tuple or not.  If
+checks, using reflection, whether the `'t` type actually is a tuple or not.  If
 it isn't a tuple, then the method raise the `Backtrack` exception
 
 ```fsharp
@@ -338,7 +338,7 @@ which is understood by the Infers engine as hint to backtrack outwards to try
 another way to generate the desired type.
 
 In our case, of course, the `Rep.tuple` method ultimately succeeds, because we
-are generating tuples.  The return object of type `Tuple<'x>` is yet another
+are generating tuples.  The returned object of type `Tuple<'x>` is yet another
 object containing inference rules.  Its signature is somewhat opaque, however,
 because the main feature of the `Tuple<'t>` class is that it contains a run-time
 generated rule for an `AsProduct<'p, 't>` class, where the `'p` type defines the
