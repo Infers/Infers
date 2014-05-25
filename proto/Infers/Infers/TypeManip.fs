@@ -66,6 +66,8 @@ let rec occurs v2ty v ty =
      tys
      |> Array.exists (occurs v2ty v << resolveTop v2ty)
 
+/// Given two types, determines whether they can be unified with respect to and
+/// by extending the given `v2ty` mapping of type variables.
 let rec tryMatch formal actual v2ty =
   match (resolveTop v2ty formal, resolveTop v2ty actual) with
    | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
@@ -81,6 +83,62 @@ let rec tryMatch formal actual v2ty =
      loop 0 v2ty
    | _ ->
      None
+
+/// Given two types, determines whether they are equal, taking into
+/// consideration the implicit universal quantification of type variables.
+let areEqual aTy bTy =
+  let rec types aTy bTy v2ty =
+    match (aTy, bTy) with
+     | (Var a, Var b) ->
+       match HashEqMap.tryFind a v2ty with
+        | Some b' ->
+          if b' = b then Some v2ty else None
+        | None ->
+          Some (HashEqMap.add a b v2ty)
+     | (App (aTc, aArgs), App (bTc, bArgs)) when aTc = bTc ->
+       assert (aArgs.Length = bArgs.Length)
+       let rec args i v2i =
+         if aArgs.Length <= i then
+           Some v2i
+         else
+           match types aArgs.[i] bArgs.[i] v2ty with
+            | None -> None
+            | Some v2i ->
+              args (i+1) v2ty
+       args 0 v2ty
+     | _ ->
+       None
+  types aTy bTy HashEqMap.empty |> Option.isSome
+
+type MoreSpecific =
+ | Lhs
+ | Rhs
+ | Neither
+
+/// Given two types, determines whether one of the two types is clearly a more
+/// specific type with respect to unification and returns that type if so.
+let moreSpecific lhs rhs =
+  match tryMatch lhs rhs HashEqMap.empty with
+  | None -> Neither
+  | Some v2ty ->
+    match (areEqual (resolve v2ty lhs) lhs, areEqual (resolve v2ty rhs) rhs) with
+     | ( true,  true) -> Neither
+     | ( true, false) -> Lhs
+     | (false,  true) -> Rhs
+     | (false, false) -> Neither
+
+let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
+  let swap i j =
+    let iEl = tyrs.[i]
+    tyrs.[i] <- tyrs.[j]
+    tyrs.[j] <- iEl
+  for i=0 to tyrs.Length-2 do
+    let mutable j = i
+    for k=i+1 to tyrs.Length-1 do
+      match moreSpecific (fst tyrs.[j]) (fst tyrs.[k]) with
+       | Lhs | Neither -> ()
+       | Rhs -> j <- k
+    swap i j
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +171,12 @@ module TyTree =
           | [(_, r)] -> One r
           | tyrs ->
             match ats with
-             | [] -> Many (tyrs |> Array.ofList |> Array.map snd)
+             | [] ->
+               tyrs
+               |> Array.ofList
+               &> inPlaceSelectSpecificFirst
+               |> Array.map snd
+               |> Many
              | at::ats ->
                tyrs
                |> List.fold
