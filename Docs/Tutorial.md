@@ -97,6 +97,8 @@ val it : string = "(1, true)"
 val it : string = "([1], (2, [3; 4]))"
 ```
 
+### The resolution process, informally
+
 How does this actually work?  It helps to look at the signature of the `Show`
 class:
 
@@ -180,3 +182,81 @@ ending job.  Fortunately, the Infers library comes with an inference rule
 module, `Rep`, that can build type representations for various F# types and
 using those type representations one can define rules over the structure of
 tuple, record and union types.
+
+### Tuples
+
+The basic idea behind the `Rep` module is to view tuples and records as nested
+products and union types as nested sums.  For example, the tuple type
+
+```fsharp
+int * unit * bool * float
+```
+
+can be viewed as a nested product type
+
+```fsharp
+And<int, And<unit, And<bool, float>>>
+```
+
+where `And` is defined as the type
+
+```fsharp
+type [<Struct>] And<'x, 'xs> =
+  val mutable Elem: 'x
+  val mutable Rest: 'xs
+```
+
+It is easy to define a method to derive `Show<And<'x, 'xs>>` for arbitrary `'x`
+and `'xs`:
+
+```fsharp
+type [InferenceRules] Show () =
+  // ...
+  member show.prod (showX: Show<'x>, showXs: Show<'xs>) : Show<And<'x, 'xs>> =
+    fun xxs -> showX xxs.Elem + ", " + showXs xxs.Rest
+```
+
+And using the features of the `Rep` module, we can define a method for arbitrary
+tuples:
+
+
+```fsharp
+type [InferenceRules] Show () =
+  // ...
+  member show.tuple (_: Rep,
+                     _: Tuple<'t>,
+                     asP: AsProduct<'p, 't>,
+                     showP: Show<'p>) : Show<'t> =
+   asP.ToProduct >> showP
+```
+
+Let's drop the old `pair` rule.  Here is the whole `Show` class so far:
+
+```fsharp
+type [<InferenceRules>] Show () =
+  member show.bool: Show<bool> = sprintf "%A"
+  member show.int: Show<int> = sprintf "%d"
+  member show.list (showX: Show<'x>) : Show<list<'x>> = fun xs ->
+    "[" + String.concat "; " (List.map showX xs) + "]"
+  member show.prod (showX: Show<'x>, showXs: Show<'xs>) : Show<And<'x, 'xs>> =
+    fun xxs -> showX xxs.Elem + ", " + showXs xxs.Rest
+  member show.tuple (_: Rep,
+                     _: Tuple<'t>,
+                     asP: AsProduct<'p, 't>,
+                     showP: Show<'p>) : Show<'t> =
+   fun t -> "(" + showP (asP.ToProduct t) + ")"
+```
+
+We have now defined rules powerful enough to show arbitrary tuples:
+
+```fsharp
+> show ([1], true) ;;
+val it : string = "([1], true)"
+> show (1, (2, [3], 4, 5), true) ;;
+val it : string = "(1, (2, [3], 4, 5), true)"
+```
+
+When using Infers and the `Rep` module, the nested product can be used merely as
+a guide for the rule methods and it is possible to manipulate tuples without
+converting them to a nested product like we did above.  For simplicity, we'll
+ignore that possibility for now.
