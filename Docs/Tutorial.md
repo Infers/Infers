@@ -153,8 +153,8 @@ implements some heuristics to prefer more specific rules to less specific rules.
 
 The way in which we used Infers in the previous section to derive values of the
 type family `Show<'x>` is similar to how a
-[type and constructor class](http://en.wikipedia.org/wiki/Type_class) could be
-used to infer values given suitable type class definitions.
+[type and constructor class system](http://en.wikipedia.org/wiki/Type_class)
+could be used to infer values given suitable type class definitions.
 
 Compared to Infers, the type class mechanisms that can be found in various
 languages are carefully engineered to be tractable.  For example, many of those
@@ -166,7 +166,17 @@ such type class mechanisms is constrained.
 
 Infers doesn't have such nice safety properties and, on the other hand, Infers
 allows pretty much arbitrarily complex heterogeneous sets of inference rules to
-be used.
+be used.  Because there are very little constraints, there are likely to be
+applications of Infers that are significantly dissimilar from anything that has
+been done so far with type classes or, as described in the next section, with
+datatype generic programming techniques.
 
 ## The Rep module and Datatype Generic Programming
 
+Let's continue to extend the `Show` class we defined earlier.  One could extend
+the `Show` class with members for tuples, `'t1 * ... * 'tn`, of various lengths
+and all the standard type families like `option<'t>`, but that would be a never
+ending job.  Fortunately, the Infers library comes with an inference rule
+module, `Rep`, that can build type representations for various F# types and
+using those type representations one can define rules over the structure of
+tuple, record and union types.
