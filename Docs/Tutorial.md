@@ -173,19 +173,19 @@ applications of Infers that are significantly dissimilar from anything that has
 been done so far with type classes or, as described in the next section, with
 datatype generic programming techniques.
 
-## The Rep module and Datatype Generic Programming
+## The Rep class and Datatype Generic Programming
 
 Let's continue to extend the `Show` class we defined earlier.  One could extend
 the `Show` class with members for tuples, `'t1 * ... * 'tn`, of various lengths
 and all the standard type families like `option<'t>`, but that would be a never
-ending job.  Fortunately, the Infers library comes with an inference rule
-module, `Rep`, that can build type representations for various F# types and
-using those type representations one can define rules over the structure of
-tuple, record and union types.
+ending job.  Fortunately, the Infers library comes with an inference rule class,
+`Rep`, that can build type representations for various F# types and using those
+type representations one can define rules over the structure of tuple, record
+and union types.
 
-### Tuples
+### Tuples as nested products
 
-The basic idea behind the `Rep` module is to view tuples and records as nested
+The basic idea behind the `Rep` class is to view tuples and records as nested
 products and union types as nested sums.  For example, the tuple type
 
 ```fsharp
@@ -216,7 +216,7 @@ type [InferenceRules] Show () =
     fun xxs -> showX xxs.Elem + ", " + showXs xxs.Rest
 ```
 
-And using the features of the `Rep` module, we can define a method for arbitrary
+And using the features of the `Rep` class, we can define a method for arbitrary
 tuples:
 
 
@@ -256,7 +256,76 @@ val it : string = "([1], true)"
 val it : string = "(1, (2, [3], 4, 5), true)"
 ```
 
-When using Infers and the `Rep` module, the nested product can be used merely as
+When using Infers and the `Rep` class, the nested product can be used merely as
 a guide for the rule methods and it is possible to manipulate tuples without
 converting them to a nested product like we did above.  For simplicity, we'll
 ignore that possibility for now.
+
+### The tuple method revisited
+
+Let's take closer look at the `tuple` method to better understand what is going
+on.  Again it helps to look at the signature:
+
+```fsharp
+member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
+```
+
+What this signature tells the Infers engine is that in order to create an
+`Show<'t>` for an arbitrary `'t` it needs to generate a `Rep`, a `Tuple<'t>`, a
+`AsProduct<'p, 't>` and a `Show<'p>`.
+
+#### The Rep class
+
+The `Rep` type is actually a type that defines inference rules much like the
+`Show` class.  Here is a part of the signature of the `Rep` class:
+
+```fsharp
+type [<InferenceRules>] Rep =
+  new: unit -> Rep
+  member union: unit -> Union<'u>
+  member record: unit -> Record<'r>
+  member tuple: unit -> Tuple<'t>
+  // ...
+```
+
+As can be seen, the `Rep` class has a default constructor.  As a convenience,
+the Infers engine automatically considers default constructors in addition to
+ordinary rule methods when it tries to come up with a way to build a value of a
+desired type.  So, after match a type to the return type of the `tuple` method
+of our `Show` class, the first parameter, of type `Rep`, is easy: just use the
+default constructor.
+
+As can be seen above, the `Rep` class also has the `InferenceRules` attribute.
+After successfully constructing a value, the Infers engine tests whether the
+type defines the `InferenceRules` attribute.  If it does, then the engine adds
+the rules defined in the object to the set of available rules to consider.
+
+When working to generate the parameters required by a rule, Infers always works
+from left to right.  We took advantage of this when defining the `tuple` rule
+
+```fsharp
+member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
+```
+
+as the `Rep` parameter is actually there only to bring the additional rules
+defined by the `Rep` class into scope.  This is how Infers learns about the
+`tuple` rule defined in the `Rep` class to create a `Tuple<'t>`:
+
+```fsharp
+member tuple: unit -> Tuple<'t>
+```
+
+#### Backtracking
+
+
+
+
+
+```fsharp
+exception Backtrack
+```
+
+
+### Unions as nested sums
+
+TBD
