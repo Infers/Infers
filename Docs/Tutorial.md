@@ -97,10 +97,11 @@ val it : string = "(1, true)"
 val it : string = "([1], (2, [3; 4]))"
 ```
 
+How does this actually work?  Let's find out.
+
 ### The resolution process, informally
 
-How does this actually work?  It helps to look at the signature of the `Show`
-class:
+It helps to look at the signature of the `Show` class:
 
 ```fsharp
 type Show =
@@ -168,7 +169,7 @@ such type class mechanisms is constrained.
 
 Infers doesn't have such nice safety properties and, on the other hand, Infers
 allows pretty much arbitrarily complex heterogeneous sets of inference rules to
-be used.  Because there are very little constraints, there are likely to be
+be used.  Because there are very few constraints, there are likely to be
 applications of Infers that are significantly dissimilar from anything that has
 been done so far with type classes or, as described in the next section, with
 datatype generic programming techniques.
