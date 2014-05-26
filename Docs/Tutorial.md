@@ -12,7 +12,7 @@ type Show<'x> = 'x -> string
 ```
 
 for functions that convert their input to a string.  Let's gradually create a
-class with a family of such functions defined as member, starting with members
+class with a family of such functions defined as members, starting with members
 for `Show<bool>` and `Show<int>` for converting booleans and integers to
 strings:
 
@@ -156,6 +156,11 @@ whose result exactly matches the type it was looking for and furthermore does
 not require any parameters.  The engine then calls `int` and then calls `list`
 with the returned value, obtaining a value of the desired type.
 
+We've named our rules using names like `int` and `list`, that basically
+correspond to the type constructor those rules support.  The Infers engine
+actually completely ignores the names of methods defining rules and only looks
+at their type signatures.
+
 This is obviously a somewhat simplified description of the process, but should
 help you to understand what is going on.  In fact, the Infers engine is quite
 powerful.  Technically speaking it implements a complete resolution process for
@@ -272,20 +277,20 @@ val it : string = "(1, (2, [3], 4, 5), true)"
 ```
 
 Actually, in the above interaction, the first call `show ([1], true)` uses the
-previously defined `pair` rule, while second call uses the new `tuple` rule
+previously defined `pair` rule, while the second call uses the new `tuple` rule
 twice.  Why is this so?  The Infers engine tries to order the rules from more
 specific to less specific by considering how general the result types of rules
 are.  The result type of `pair` is `Show<'x * 'y>`, while the result type of
 `tuple` is `Show<'t>`.  Any type that unifies with `Show<'x * 'y>` also unifies
 with `Show<'t>`, but not vice verse, so Infers prefers the `pair` rule to the
 `tuple` rule.  This can be used to specialize rules for specific type families.
-Of course, the `tuple` rule subsumes the `pair` rule, so we'll drop the `pair`
-rule in the remainder.
+Of course, in this case, the `tuple` rule subsumes the `pair` rule, so we'll
+drop the `pair` rule in the remainder.
 
 When using Infers and the `Rep` class, the nested product types, using `And<'x,
 'xs>` types, can be used merely as *guides* for the rule methods and it is
 possible to manipulate tuples without converting them to a nested product like
-we did above.  For simplicity, we'll ignore that possibility for now.
+we did above.  For simplicity, we'll ignore that possibility for the moment.
 
 ### The tuple method revisited
 
