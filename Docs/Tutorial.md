@@ -12,8 +12,9 @@ type Show<'x> = 'x -> string
 ```
 
 for functions that convert their input to a string.  Let's gradually create a
-class with a family of such functions starting with `Show<bool>` and `Show<int>`
-for converting booleans and integers to strings:
+class with a family of such functions defined as member, starting with members
+for `Show<bool>` and `Show<int>` for converting booleans and integers to
+strings:
 
 ```fsharp
 type Show () =
@@ -21,9 +22,9 @@ type Show () =
   member show.int: Show<int> = sprintf "%d"
 ```
 
-As any functional programmer knows, we can build more complicated show functions
-using higher-order functions.  Here are such higher-order functions for pairs
-and lists:
+As any functional programmer knows, we like to show off the ability to build
+more complicated functions using higher-order functions.  Here are such
+higher-order functions for pairs and lists:
 
 ```fsharp
 type Show () =
@@ -59,7 +60,7 @@ val it : string = "[(1, true)]"
 To recap, we defined a family of types `Show<'x>` and a family of functions
 `bool`, `int`, `pair`, and `list` for building values of the type `Show<'x>`.
 Recall that Infers is a library for deriving values from their types.  Can we
-use Infers to build values of the `Show<'x>` family of type using the family of
+use Infers to build values of the `Show<'x>` family of types using the family of
 functions we defined?  Yes, we can.
 
 ### Enter Infers
@@ -77,7 +78,16 @@ type [<InferenceRules>] Show () =
     "[" + String.concat "; " (List.map showX xs) + "]"
 ```
 
-Then we define a function that invokes the Infers engine on those rules:
+From the point of view of Infers, the above class definition now contains
+logical *rules* for deriving *proofs* to *theorems* specified as F# types.
+Those rules are just the members, `bool`, `int`, `pair`, and `list`, that we
+defined earlier.  In a way, Infers is a direct application of the
+[Curry-Howard Correspondence](http://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence).
+
+Using Infers, or more specifically, the `Engine.TryGenerate` method, which is
+one entry point to the Infers resolution engine, we can define a function that
+tries to derive values of the `Show<'x>` family of types using the rules in the
+`Show` class:
 
 ```fsharp
 let show (x: 'x) : string =
@@ -113,12 +123,12 @@ type Show =
 ```
 
 When we ask `Engine.TryGenerate` to derive a value of some desired type, say
-`Show<list<int>>`, and give an object containing inference rules, say
-`Show ()`, it goes over the member functions of the object and tries to match
-the result types of those member functions with the desired type.
+`Show<list<int>>`, and give an object containing inference rules, say `Show ()`,
+the resolution engine goes over the members, or rules, of the object and tries
+to match the result types, or conclusions, of those member functions with the
+desired type.
 
-In the case of `Show<list<int>>`, the engine ultimately reaches the function
-`list`
+In the case of `Show<list<int>>`, the engine ultimately reaches the `list` rule
 
 ```fsharp
 member list: Show<'x> -> Show<list<'x>>
@@ -126,7 +136,7 @@ member list: Show<'x> -> Show<list<'x>>
 
 and realizes that its result type matches the desired type, if it substitutes
 `int` for `'x`.  Making that substitution to the generic method, the engine then
-effectively ends up with a concrete version of the `list` method:
+effectively ends up with a concrete version of the `list` rule:
 
 ```fsharp
 member list: Show<int> -> Show<list<int>>
@@ -135,8 +145,8 @@ member list: Show<int> -> Show<list<int>>
 The engine now knows that if it can somehow derive a value of type `Show<int>`,
 it can derive a value of the desired type by applying the concrete version of
 the `list` method.  To do that, the engine takes on a new goal: derive a value
-of type `Show<int>`.  It again goes over the members and ultimately finds the
-member `int`
+of type `Show<int>`.  It again goes over the rules and ultimately finds the
+`int` rule
 
 ```fsharp
 member int: Show<int>
@@ -150,7 +160,9 @@ This is obviously a somewhat simplified description of the process, but should
 help you to understand what is going on.  In fact, the Infers engine is quite
 powerful.  Technically speaking it implements a complete resolution process for
 [Horn clauses](http://en.wikipedia.org/wiki/Horn_clause).  The engine also
-implements some heuristics to prefer more specific rules to less specific rules.
+implements some heuristics to prefer more specific rules to less specific rules
+so that given an overlapping set of rules, Infers first tries the more specific
+rules, assuming it can order those overlapping rules.
 
 ## Compared to Type Classes
 
@@ -171,13 +183,13 @@ Infers doesn't have such nice safety properties and, on the other hand, Infers
 allows pretty much arbitrarily complex heterogeneous sets of inference rules to
 be used.  Because there are very few constraints, there are likely to be
 applications of Infers that are significantly dissimilar from anything that has
-been done so far with type classes or, as described in the next section, with
+been done so far with type classes, or, as described in the next section, with
 datatype generic programming techniques.
 
 ## The Rep class and Datatype Generic Programming
 
 Let's continue to extend the `Show` class we defined earlier.  One could extend
-the `Show` class with members for tuples, `'t1 * ... * 'tn`, of various lengths
+the `Show` class with rules for tuples, `'t1 * ... * 'tn`, of various lengths
 and all the standard type families like `option<'t>`, but that would be a never
 ending job.  Fortunately, the Infers library comes with an inference rule class,
 `Rep`, that can build type representations for various F# types and using those
@@ -231,12 +243,14 @@ type [InferenceRules] Show () =
    fun t -> "(" + showP (asP.ToProduct t) + ")"
 ```
 
-Let's drop the old `pair` rule.  Here is the whole `Show` class so far:
+Here is the whole `Show` class so far:
 
 ```fsharp
 type [<InferenceRules>] Show () =
   member show.bool: Show<bool> = sprintf "%A"
   member show.int: Show<int> = sprintf "%d"
+  member show.pair (showX: Show<'x>, showY: Show<'y>) : Show<'x * 'y> =
+    fun (x, y) -> "(" + showX x + ", " + showY y + ")"
   member show.list (showX: Show<'x>) : Show<list<'x>> = fun xs ->
     "[" + String.concat "; " (List.map showX xs) + "]"
   member show.prod (showX: Show<'x>, showXs: Show<'xs>) : Show<And<'x, 'xs>> =
@@ -257,27 +271,38 @@ val it : string = "([1], true)"
 val it : string = "(1, (2, [3], 4, 5), true)"
 ```
 
-When using Infers and the `Rep` class, the nested product can be used merely as
-a guide for the rule methods and it is possible to manipulate tuples without
-converting them to a nested product like we did above.  For simplicity, we'll
-ignore that possibility for now.
+Actually, in the above interaction, the first call `show ([1], true)` uses the
+previously defined `pair` rule, while second call uses the new `tuple` rule
+twice.  Why is this so?  The Infers engine tries to order the rules from more
+specific to less specific by considering how general the result types of rules
+are.  The result type of `pair` is `Show<'x * 'y>`, while the result type of
+`tuple` is `Show<'t>`.  Any type that unifies with `Show<'x * 'y>` also unifies
+with `Show<'t>`, but not vice verse, so Infers prefers the `pair` rule to the
+`tuple` rule.  This can be used to specialize rules for specific type families.
+Of course, the `tuple` rule subsumes the `pair` rule, so we'll drop the `pair`
+rule in the remainder.
+
+When using Infers and the `Rep` class, the nested product types, using `And<'x,
+'xs>` types, can be used merely as *guides* for the rule methods and it is
+possible to manipulate tuples without converting them to a nested product like
+we did above.  For simplicity, we'll ignore that possibility for now.
 
 ### The tuple method revisited
 
-Let's take closer look at the `tuple` method to better understand what is going
+Let's take closer look at the `tuple` rule to better understand what is going
 on.  Again it helps to look at the signature:
 
 ```fsharp
 member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
 ```
 
-What this signature tells the Infers engine is that in order to create an
+What this signature tells the Infers engine is that in order to create a
 `Show<'t>` for an arbitrary `'t` it needs to generate a `Rep`, a `Tuple<'t>`, a
-`AsProduct<'p, 't>` and a `Show<'p>`.
+`AsProduct<'p, 't>`, and a `Show<'p>`.
 
 #### The Rep class
 
-The `Rep` type is actually a type that defines inference rules much like the
+The `Rep` type is actually a class that defines inference rules much like the
 `Show` class.  Here is a part of the signature of the `Rep` class:
 
 ```fsharp
@@ -301,7 +326,7 @@ When working to generate the parameters required by a rule, Infers always works
 from left to right.  After successfully constructing a parameter value, the
 Infers engine tests whether the type defines the `InferenceRules` attribute.  If
 it does, then the engine adds the rules defined in the object to the set of
-available rules to consider while working on the rest of parameters for the
+available rules to consider while working on the rest of the parameters for the
 current rule.
 
 We took advantage of this feature when defining the `tuple` rule
@@ -312,11 +337,13 @@ member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
 
 as the `Rep` parameter is actually there only to bring the additional rules
 defined by the `Rep` class into scope.  This is how Infers learns about the
-`tuple` rule defined in the `Rep` class to create a `Tuple<'t>`:
+`tuple` rule
 
 ```fsharp
 member tuple: unit -> Tuple<'t>
 ```
+
+defined in the `Rep` class to create a `Tuple<'t>`.
 
 It is important to understand that the `Rep` class isn't really a part of the
 Infers engine, so to speak.  The `Rep` class is an independent module designed
@@ -335,15 +362,15 @@ it isn't a tuple, then the method raisea the `Backtrack` exception
 exception Backtrack
 ```
 
-which is understood by the Infers engine as hint to backtrack outwards to try
-another way to generate the desired type.
+which is understood by the Infers engine as an order to backtrack outwards to
+try another way to generate the desired type.
 
-In our case, of course, the `Rep.tuple` method ultimately succeeds, because we
-are generating tuples.  The returned object of type `Tuple<'x>` is yet another
-object containing inference rules.  Its signature is somewhat opaque, however,
-because the main feature of the `Tuple<'t>` class is that it contains a run-time
-generated rule for an `AsProduct<'p, 't>` class, where the `'p` type defines the
-nested product, generated at run-time by code in the `Rep` class, and there are
+In our case, of course, the `Rep.tuple` rule ultimately succeeds, because we are
+generating types containing tuples.  The returned object of type `Tuple<'t>` is
+yet another object containing inference rules.  Its signature is somewhat
+opaque, however, because the main feature of the `Tuple<'t>` class is that it
+contains a run-time generated rule for a `AsProduct<'p, 't>` class, where the
+`'p` type defines the nested product, generated at run-time, and there are
 run-time generated methods to convert between a nested product and, in our case,
 the original tuple.  Here is a part of the signature of the `AsProduct<'p, 't>`
 class:
@@ -355,16 +382,16 @@ type AsProduct<'p, 't> =
   abstract OfProduct: 'p -> 't
 ```
 
-To recap, the `Show.tuple` member
+To recap, the `Show.tuple` method
 
 ```fsharp
 member tuple: Rep * Tuple<'t> * AsProduct<'p, 't> * Show<'p> -> Show<'t>
 ```
 
-defines a rule that allows a value of type `Show<'t>` to be generated assuming
-that one can generate a `Rep`, a `Tuple<'t>`, a `AsProduct<'p, 't>`, and a
-`Show<'p>`.  We just covered all but the `Show<'p>` value, which we essentially
-defined earlier in the form of the `Show.prod` member
+defines a rule that allows a value of type `Show<'t>` to be derived assuming
+that one can derive a `Rep`, a `Tuple<'t>`, a `AsProduct<'p, 't>`, and a
+`Show<'p>`.  We just covered all except the `Show<'p>` value, which we defined
+earlier in the form of the `Show.prod` member
 
 ```fsharp
 member prod: Show<'x> * Show<'xs> -> Show<And<'x, 'xs>>
@@ -377,7 +404,7 @@ type.
 ### Unions as nested choices or sums
 
 At this point we have a basic understanding of Infers and the `Rep` module.
-Let's next work through rules to show unions, such as:
+Let's next work through somewhat more involved rules to show unions, such as:
 
 ```
 type Example =
@@ -391,9 +418,9 @@ nested choices of nested products.  The structure of the above `Example` type
 could be encoded as follows:
 
 ```fsharp
-Choice< And<string, string>,
-       Choice< string,
-               Empty > >
+Choice< And<string, string>,  // Concrete of string * string
+        Choice< string,       // Abstract of string
+                Empty > >     // Blank
 ```
 
 Above, `Empty` is just an empty struct type used as a special case for empty
