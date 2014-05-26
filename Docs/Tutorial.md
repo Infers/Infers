@@ -329,7 +329,7 @@ You could write similar classes yourself to help with other kinds of problems.
 The `Tuple<'t>` type is also a class that defines inference rules.  Of course,
 not every type `'t` is a tuple.  The definition of the `Rep.tuple` method
 checks, using reflection, whether the `'t` type actually is a tuple or not.  If
-it isn't a tuple, then the method raise the `Backtrack` exception
+it isn't a tuple, then the method raisea the `Backtrack` exception
 
 ```fsharp
 exception Backtrack
@@ -374,6 +374,136 @@ because the type `'p`, in the run-time generated `AsProduct<'p, 't>`, is a
 nested product of the `And<'x, 'xs>` types, corresponding to the `'t` tuple
 type.
 
-### Unions as nested sums
+### Unions as nested choices or sums
+
+At this point we have a basic understanding of Infers and the `Rep` module.
+Let's next work through rules to show unions, such as:
+
+```
+type Example =
+  | Concrete of title: string * description: string
+  | Abstract of title: string
+  | Blank
+```
+
+Much like with tuples, we can represent the structure of arbitrary unions using
+nested choices of nested products.  The structure of the above `Example` type
+could be encoded as follows:
+
+```fsharp
+Choice< And<string, string>,
+       Choice< string,
+               Empty > >
+```
+
+Above, `Empty` is just an empty struct type used as a special case for empty
+products.
+
+Using the `Rep` module, the signature of a basic rule for showing unions would
+look like:
+
+```fsharp
+member union: Rep
+            * Union<'u>
+            * AsChoice<'c, 'u>
+            * ShowUnion<'c, 'c, 'u>
+           -> Show<'u>
+```
+
+Comparing to the previously defined `Show.tuple` rule, this looks quite similar.
+Like with tuples using nested products, the `'c` type in the above will get
+bound to a run-time generated nested choice of products.  The only surprise is
+the new `ShowUnion<'c, 'c, 'u>` type, which is we define as follows:
+
+```fsharp
+type ShowUnion<'c, 'cs, 'u> =
+  SU of list<Show<'u>>
+```
+
+The idea is that an instance of the type `ShowUnion<'c, 'cs, 'u>` defines a list
+of functions for showing union cases encoded by the nested choice type `'c`
+within the (larger) nested choice `'cs`, which is a part of a nested choice
+representation of the union type `'u`.  For example, if we were deriving a show
+function for the `Example` type, we would end up generating a
+
+```fsharp
+ShowUnion<string, Choice<string, Empty>, Example>
+```
+
+which would be a singleton list, containing a show function for the `Abstract`
+case of the `Example` type.  As another example,
+
+```fsharp
+ShowUnion<Choice<string, Empty>, Choice<string, Empty>, Example>
+```
+
+would be a list containing two show functions, one for the `Abstract` case and
+another for the `Blank` case.
+
+The reason for constructing these lists is that after we have constructed
+functions for all the individual cases of the union, we can then efficiently
+select the function from the list corresponding to a desired case give the
+integer tag of the case.
+
+
+
+```fsharp
+member plus: ShowUnion<       'c      , Choice<'c, 'cs>, 'u>
+           * ShowUnion<           'cs ,            'cs , 'u>
+          -> ShowUnion<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u>
+```
+
+
+```fsharp
+member case: Case<Empty, 'cs, 'u>             -> ShowUnion<Empty, 'cs, 'u>
+member case: Case<  'ls, 'cs, 'u> * Show<'ls> -> ShowUnion<  'ls, 'cs, 'u>
+```
+
+
+Collecting together all the rules we've defined so far, we have the following
+definition of the `Show` class:
+
+```fsharp
+type [<InferenceRules>] Show () =
+  member show.string: Show<string> = sprintf "%A"
+
+  member show.bool: Show<bool> = sprintf "%A"
+  member show.int: Show<int> = sprintf "%d"
+
+  member show.list (showX: Show<'x>) : Show<list<'x>> = fun xs ->
+    "[" + String.concat "; " (List.map showX xs) + "]"
+
+  member show.prod (showX: Show<'x>, showXs: Show<'xs>) : Show<And<'x, 'xs>> =
+    fun xxs -> showX xxs.Elem + ", " + showXs xxs.Rest
+  member show.tuple (_: Rep,
+                     _: Tuple<'t>,
+                     asP: AsProduct<'p, 't>,
+                     showP: Show<'p>) : Show<'t> =
+   fun t -> "(" + showP (asP.ToProduct t) + ")"
+
+  member show.case (case: Case<Empty, 'cs, 'u>) : ShowUnion<Empty, 'cs, 'u> =
+    SU [fun u -> case.Name]
+  member show.case (case: Case<'ls, 'cs, 'u>, showP: Show<'ls>)
+                  : ShowUnion<'ls, 'cs, 'u> =
+    SU [fun u -> case.Name + " (" + showP (case.ToProduct u) + ")"]
+
+  member show.plus (SU showC: ShowUnion<'c, Choice<'c, 'cs>, 'u>,
+                    SU showCs: ShowUnion<'cs, 'cs, 'u>)
+                  : ShowUnion<Choice<'c, 'cs>, Choice<'c, 'cs>, 'u> =
+    SU (showC @ showCs)
+
+  member show.union (_: Rep,
+                     union: Union<'u>,
+                     _: AsChoice<'c, 'u>,
+                     SU showC: ShowUnion<'c, 'c, 'u>)
+                   : Show<'u> =
+    let showC = Array.ofList showC
+    fun u -> showC.[union.Tag u] u
+```
+
+In addition to arbitrary tuples, it can now show arbitrary (non-recursive)
+unions.
+
+### Recursive types and values
 
 TBD
