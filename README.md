@@ -14,5 +14,13 @@ something like [type classes](http://en.wikipedia.org/wiki/Type_class) or when
 one might want to do *datatype generic* programming.  Other kinds of
 applications are also quite possible.
 
+## Download
+
+An experimental build of [Infers](http://www.nuget.org/packages/Infers/) is
+available via [NuGet](http://www.nuget.org/).  Infers is not yet ready for
+production use.
+
+## Documentation
+
 To gain an understanding on what Infers can do, you might want start with the
 [Infers Tutorial](Docs/Tutorial.md).
