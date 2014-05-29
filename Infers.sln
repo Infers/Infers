@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers", "Libs\Infers\Infers.fsproj", "{B06B1B50-16C3-42C0-A820-59BBA70EA601}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D026932E-2FD5-41CE-826A-087BEEBB676E}"
+	ProjectSection(SolutionItems) = preProject
+		Docs\Tutorial.md = Docs\Tutorial.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{974D8B7C-2F55-44CE-A579-B7728ECBAD2D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{F6892AB8-6A0C-4AB9-9554-E42C561C5125}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{3430A088-2AB2-4019-B48A-5A355BD5D8C0}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet\Infers.nuspec = NuGet\Infers.nuspec
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root", "Root", "{57274DE6-EE01-4F72-B4D0-9CD5448668EA}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE.md = LICENSE.md
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers.Rep", "Libs\Infers.Rep\Infers.Rep.fsproj", "{2399EAEA-7668-48BA-91B4-162060CB050F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2399EAEA-7668-48BA-91B4-162060CB050F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2399EAEA-7668-48BA-91B4-162060CB050F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2399EAEA-7668-48BA-91B4-162060CB050F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2399EAEA-7668-48BA-91B4-162060CB050F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
+		{2399EAEA-7668-48BA-91B4-162060CB050F} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
+	EndGlobalSection
+EndGlobal
