@@ -33,14 +33,17 @@ type [<AbstractClass>] Product<'r> =
   val Arity: int
   val IsMutable: bool
 
-type [<AbstractClass>] Tuple<'t> =
-  inherit Product<'t>
-  new (arity) = {inherit Product<'t> (arity, false)}
-
 type [<AbstractClass>] Elem<'e, 'p, 't> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
+
+type [<AbstractClass>] Tuple<'t> =
+  inherit Product<'t>
+  new (arity) = {inherit Product<'t> (arity, false)}
+
+type [<AbstractClass>] Item<'e, 'p, 't> (index) =
+  inherit Elem<'e, 'p, 't> (index)
 
 type [<AbstractClass>] Union<'u> =
   inherit Rep<'u>

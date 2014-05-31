@@ -1,4 +1,14 @@
-﻿namespace Infers.Rep
+﻿/// `Infers.Rep` is a library providing inference rules for datatype generic
+/// programming with the `Infers` library.
+///
+/// `Infers.Rep` uses reflection and run-time code generation to build type
+/// representations for various F# types.  Those type representations can be
+/// accessed using `Infers` by writing rules over the structure of types.  The
+/// type representations provided by `Infers.Rep` make it possible to manipulate
+/// values of the represented types efficiently: after the type representation
+/// has been created, no further use of slow reflection, boxing or other kinds
+/// of auxiliary memory allocations are required.
+namespace Infers.Rep
 
 open Infers
 
@@ -41,7 +51,7 @@ type [<Struct>] And<'x, 'xs> =
 /// product.  Depending on the type `'t` those members are of one of the
 /// following forms:
 ///
-///> member _:  Elem<'e, 'sp,      't>
+///> member _:  Item<'e, 'sp,      't>
 ///> member _: Label<'l, 'sp, 'sc, 'u>
 ///> member _: Field<'f, 'sp,      'r>
 ///
@@ -49,7 +59,7 @@ type [<Struct>] And<'x, 'xs> =
 /// signature in F#.
 #endif
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
-  /// Copies fields of type `'t` to the generic product of type `'p`.
+  /// Copies the fields of the type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
   /// Creates a new instance of type `'t` from the generic product of type
@@ -111,6 +121,14 @@ type [<AbstractClass>] Product<'t> =
   /// Whether the product type is mutable.
   val IsMutable: bool
 
+/// Representation of an element of type `'e` of the product type `'t`.
+type [<AbstractClass>] Elem<'e, 'p, 't> =
+  /// The index of the element.
+  val Index: int
+
+  /// Returns the value of the element.
+  abstract Get: 't -> 'e
+
 /////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# tuple type `'t`.
@@ -118,12 +136,8 @@ type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
 
 /// Representation of an element of type `'e` of a tuple of type `'t`.
-type [<AbstractClass>] Elem<'e, 'p, 't> =
-  /// The index of the element.
-  val Index: int
-
-  /// Returns the value of the element.
-  abstract Get: 't -> 'e
+type [<AbstractClass>] Item<'e, 'p, 't> =
+  inherit Elem<'e, 'p, 't>
 
 /////////////////////////////////////////////////////////////////////////
 

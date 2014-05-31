@@ -435,7 +435,7 @@ type [<InferenceRules>] Rep () =
             products
             (Builder.forTo 0 (elems.Length-1) (fun i ->
               let elemType =
-                typedefof<Elem<_, _, _>>.MakeGenericType
+                typedefof<Item<_, _, _>>.MakeGenericType
                  [|elems.[i]; products.[i]; t|]
               Builder.metaField elemType [|box i|]
                (Builder.overrideGetMethod "Get" t props.[i])))) with
@@ -460,5 +460,6 @@ type [<InferenceRules>] Rep () =
      | _ ->
        raise Backtrack
 
+  member rr.asElem (i: Item<'e, 'p, 't>) = i :> Elem<'e, 'p, 't>
   member rr.asElem (f: Field<'f, 'p, 'r>) = f :> Elem<'f, 'p, 'r>
   member rr.asElem (l: Label<'l, 'sp, 'sc, 'u>) = l :> Elem<'l, 'sp, 'u>
