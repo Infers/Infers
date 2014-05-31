@@ -17,8 +17,8 @@ applications are also quite possible.
 ## Download
 
 An experimental build of [Infers](http://www.nuget.org/packages/Infers/) is
-available via [NuGet](http://www.nuget.org/).  Infers is not yet ready for
-production use.
+available via [NuGet](http://www.nuget.org/).  **Please note that Infers is not
+yet ready for production use.**
 
 ## Documentation
 
