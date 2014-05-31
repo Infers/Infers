@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Infers Library Reference</title>
+<style>
+pre {
+border: 1px solid #e0e0e0;
+border-radius: 3px;
+padding: 5px;
+line-height: 160%;
+background: #f7f7f7;
+font-family: "Lucida Console", Monaco, monospace;
+font-size: 72%;
+}
+code {
+border: 1px solid #e0e0e0;
+border-radius: 3px;
+padding: 2px;
+background: #f7f7f7;
+font-family: "Lucida Console", Monaco, monospace;
+font-size: 72%;
+}
+div.nested {
+padding-left: 1.5em;
+}
+a {
+text-decoration: none;
+font-weight: bold;
+}
+</style>
+</head>
+<body><table width="80%" align="center"><tr><td>
+<h1>Infers Library Reference</h1>
+<p>This document provides a reference manual for the Infers library and is generated from the library source code.</p>
+<h2>Synopsis</h2>
+<pre><b>namespace</b> <a id="dec:namespace Infers" href="#def:namespace Infers">Infers</a></pre>
+<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Engine" href="#def:type Infers.Engine">Engine</a>  <b>=</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.Engine.TryGenerate" href="#def:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> explain<b>:</b> bool
+                           <b>*</b> initialDepth<b>:</b> int
+                           <b>*</b> maxDepth<b>:</b> int
+                           <b>*</b> rules<b>:</b> seq<b>&lt;</b>obj<b>&gt;</b>
+                          <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.Engine.TryGenerate" href="#def:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.Engine.TryGenerate" href="#def:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> rules<b>:</b> seq<b>&lt;</b>obj<b>&gt;</b> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+</pre>
+<pre><b>type</b> <a id="dec:type Infers.InferenceRules" href="#def:type Infers.InferenceRules">InferenceRules</a>  <b>=</b>
+  inherit Attribute
+  <b>val</b> <a id="dec:val Infers.InferenceRules.NonPublic" href="#def:val Infers.InferenceRules.NonPublic">NonPublic</a><b>:</b> bool
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+  <b>new</b><b>:</b> nonPublic<b>:</b> bool <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rec" href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i><b>&gt;</b> <b>=</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i><b>&gt;</b>
+  <b>abstract</b> <a id="dec:abstract Infers.Rec.Get" href="#def:abstract Infers.Rec.Get">Get</a><b>:</b> unit <b>-&gt;</b> <i>'x</i>
+  <b>abstract</b> <a id="dec:abstract Infers.Rec.Set" href="#def:abstract Infers.Rec.Set">Set</a><b>:</b> <i>'x</i> <b>-&gt;</b> unit
+</pre>
+<pre><b>exception</b> <a id="dec:exception Infers.Backtrack" href="#def:exception Infers.Backtrack">Backtrack</a>
+</pre>
+<pre><b>[&lt;</b><a href="#def:type Infers.InferenceRules">InferenceRules</a><b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.RecFn" href="#def:type Infers.RecFn">RecFn</a>  <b>=</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.RecFn">RecFn</a>
+  <b>member</b> <a id="dec:member Infers.RecFn.func" href="#def:member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
+  <b>member</b> <a id="dec:member Infers.RecFn.func0" href="#def:member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
+  <b>member</b> <a id="dec:member Infers.RecFn.func1" href="#def:member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
+  <b>member</b> <a id="dec:member Infers.RecFn.func2" href="#def:member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
+</pre>
+<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.StaticMap" href="#def:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i>, <i>'v</i><b>&gt;</b> <b>=</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.StaticMap.Get" href="#def:static member Infers.StaticMap.Get">Get</a><b>:</b> unit <b>-&gt;</b> <i>'v</i>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.StaticMap.Set" href="#def:static member Infers.StaticMap.Set">Set</a><b>:</b> value<b>:</b> <i>'v</i> <b>-&gt;</b> unit
+</pre>
+<h2>Description</h2>
+<pre><b>namespace</b> <a id="def:namespace Infers" href="#dec:namespace Infers">Infers</a>
+</pre>
+<div class="nested"><p> <code><a href="#def:namespace Infers">Infers</a></code> is a library for deriving F# values from their types and, in a way, a direct application of the Curry-Howard correspondence.</p><p> The basic idea is to view the types of F# member functions as Horn clauses. Using a Prolog-style resolution engine it is then possible to attempt to prove goals given as simple F# types.  During the resolution process the engine invokes the member functions to build a value of the type given as the goal.</p><p> Infers can be useful, for example, in situations where one might wish to use something like type classes or when one might want to do datatype generic programming.  Other kinds of applications are also quite possible.<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Engine" href="#dec:type Infers.Engine">Engine</a>  <b>=</b>
+</pre>
+<div class="nested"><p> Interface to the resolution engine.<pre><b>static</b> <b>member</b> <a id="def:static member Infers.Engine.TryGenerate" href="#dec:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> explain<b>:</b> bool
+                         <b>*</b> initialDepth<b>:</b> int
+                         <b>*</b> maxDepth<b>:</b> int
+                         <b>*</b> rules<b>:</b> seq<b>&lt;</b>obj<b>&gt;</b>
+                        <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> Using IDDFS, tries to generate a value of the type <code><i>'a</i></code> by using the given set of inference rules.  See  <code><a href="#def:type Infers.InferenceRules">InferenceRules</a></code>.</div>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.Engine.TryGenerate" href="#dec:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> <code>TryGenerate&nbsp;rules</code> is equivalent to <code>TryGenerate&nbsp;(<b>false</b>,&nbsp;Int32<b>.</b>MaxValue,&nbsp;Int32<b>.</b>MaxValue,&nbsp;[rules])</code>.  This is equivalent to doing a DFS search.  Use this method when you know that the set of rules is essentially unambiquous.</div>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.Engine.TryGenerate" href="#dec:static member Infers.Engine.TryGenerate">TryGenerate</a><b>:</b> rules<b>:</b> seq<b>&lt;</b>obj<b>&gt;</b> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> <code>TryGenerate&nbsp;rules</code> is equivalent to <code>TryGenerate&nbsp;(<b>false</b>,&nbsp;Int32<b>.</b>MaxValue,&nbsp;Int32<b>.</b>MaxValue,&nbsp;rules)</code>.  This is equivalent to doing a DFS search.  Use this method when you know that the set of rules is essentially unambiquous.</div>
+</div>
+<pre><b>type</b> <a id="def:type Infers.InferenceRules" href="#dec:type Infers.InferenceRules">InferenceRules</a>  <b>=</b>
+</pre>
+<div class="nested"><p> A type that has the <code><a href="#def:type Infers.InferenceRules">InferenceRules</a></code> attribute is assumed to contain rule methods that are used by the inference engine.<pre><b>val</b> <a id="def:val Infers.InferenceRules.NonPublic" href="#dec:val Infers.InferenceRules.NonPublic">NonPublic</a><b>:</b> bool
+</pre>
+<div class="nested"><p> If <code><b>true</b></code> then both public and non-public members are to be considered as rules.  If <code><b>false</b></code> only public members are to be considered as rules.</div>
+<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+</pre>
+<div class="nested"><p> Default constructor sets <code><a href="#def:val Infers.InferenceRules.NonPublic">NonPublic</a></code> to false.</div>
+<pre><b>new</b><b>:</b> nonPublic<b>:</b> bool <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+</pre>
+<div class="nested"><p> Allows to specify the value for <code><a href="#def:val Infers.InferenceRules.NonPublic">NonPublic</a></code>.</div>
+</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rec" href="#dec:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Proxy for a potentially recursive value.<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> Empty default constructor.</div>
+<pre><b>abstract</b> <a id="def:abstract Infers.Rec.Get" href="#dec:abstract Infers.Rec.Get">Get</a><b>:</b> unit <b>-&gt;</b> <i>'x</i>
+</pre>
+<div class="nested"><p> Returns a wrapper of type <code><i>'x</i></code> that corresponds to the value of the proxy.  Note that <code><a href="#def:abstract Infers.Rec.Get">Get</a></code> may be called on a <code><a href="#def:type Infers.Rec">Rec</a></code> proxy before <code><a href="#def:abstract Infers.Rec.Set">Set</a></code> is called.</div>
+<pre><b>abstract</b> <a id="def:abstract Infers.Rec.Set" href="#dec:abstract Infers.Rec.Set">Set</a><b>:</b> <i>'x</i> <b>-&gt;</b> unit
+</pre>
+<div class="nested"><p> Sets the value of the proxy.</div>
+</div>
+<pre><b>exception</b> <a id="def:exception Infers.Backtrack" href="#dec:exception Infers.Backtrack">Backtrack</a>
+</pre>
+<div class="nested"><p> Exception that can be raised by an otherwise matched rule to make the inference engine to treat the rule as a non-match and backtrack.</div>
+<pre><b>[&lt;</b><a href="#def:type Infers.InferenceRules">InferenceRules</a><b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.RecFn" href="#dec:type Infers.RecFn">RecFn</a>  <b>=</b>
+</pre>
+<div class="nested"><p> Inference rules for creating proxies for creating recursive functions.<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.RecFn">RecFn</a>
+</pre>
+<div class="nested"><p> Default constructor.</div>
+<pre><b>member</b> <a id="def:member Infers.RecFn.func" href="#dec:member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> Creates a proxy for a F# function.</div>
+<pre><b>member</b> <a id="def:member Infers.RecFn.func0" href="#dec:member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
+</pre>
+<div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
+<pre><b>member</b> <a id="def:member Infers.RecFn.func1" href="#dec:member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
+</pre>
+<div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
+<pre><b>member</b> <a id="def:member Infers.RecFn.func2" href="#dec:member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
+</pre>
+<div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
+</div>
+<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.StaticMap" href="#dec:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i>, <i>'v</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Represents a kind of static, or code generation time, mapping of types to values.</p><p> A single value of type <code><i>'v</i></code> can be stored for a type of <code><i>'k</i></code>.  A module typically gives some private type for <code><i>'k</i></code> and then stores unique values for many types <code><i>'v</i></code>.</p><p> <code><a href="#def:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i>,&nbsp;<i>'v</i><b>&gt;</b></code> is designed for situations in which the mapping is polytypic and static.  Use in other kinds of contexts is unlikely to make sense.<pre><b>static</b> <b>member</b> <a id="def:static member Infers.StaticMap.Get" href="#dec:static member Infers.StaticMap.Get">Get</a><b>:</b> unit <b>-&gt;</b> <i>'v</i>
+</pre>
+<div class="nested"><p> Gets the value.  If the value has not been previously set, then the value stored is the default value for that type.</div>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.StaticMap.Set" href="#dec:static member Infers.StaticMap.Set">Set</a><b>:</b> value<b>:</b> <i>'v</i> <b>-&gt;</b> unit
+</pre>
+<div class="nested"><p> Sets the value.</div>
+</div>
+</div>
+</td></tr></table></body>
+</html>
