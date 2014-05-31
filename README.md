@@ -22,5 +22,9 @@ yet ready for production use.**
 
 ## Documentation
 
-To gain an understanding on what Infers can do, you might want start with the
-[Infers Tutorial](Docs/Tutorial.md).
+To gain an understanding of what Infers can do, you might want start with the
+[Infers Tutorial](Docs/Tutorial.md).  The
+[Infers Library Reference](http://vesakarvonen.github.io/Infers/Infers.html) and
+the
+[Infers.Rep Library Reference](http://vesakarvonen.github.io/Infers/Infers.Rep.html)
+provide more details.
