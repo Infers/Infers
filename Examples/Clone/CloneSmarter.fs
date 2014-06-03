@@ -71,12 +71,12 @@ type [<InferenceRules>] Clone () =
   /// A rule for the `int32` type.
   member this.Int : CloneSmart<int> = null  // Nothing to copy!
 
-  // A rule for the `string` type.
+  /// A rule for the `string` type.
   member this.String : CloneSmart<string> = null // Nothing to copy!
 
   // Rules for some specific type constructors ---------------------------------
 
-  // A rule for the `ref<'t>` type constructor.
+  /// A rule for the `ref<'t>` type constructor.
   member this.Ref (cloneT: CloneSmart<'t>) : CloneSmart<ref<'t>> =
     match cloneT with
      | null ->
@@ -88,7 +88,7 @@ type [<InferenceRules>] Clone () =
          override this.Clone (original) =
           ref (!original)}
 
-  // A rule for the `array<'t>` type constructor.
+  /// A rule for the `array<'t>` type constructor.
   member this.Array (cloneX: CloneSmart<'x>) : CloneSmart<array<'x>> =
     match cloneX with
      | null ->

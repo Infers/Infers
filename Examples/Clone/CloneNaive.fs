@@ -43,16 +43,16 @@ type [<InferenceRules>] Clone () =
   /// A rule for the `int32` type.
   member this.Int : Clone<int> = fun x -> x
 
-  // A rule for the `string` type.
+  /// A rule for the `string` type.
   member this.String : Clone<string> = fun x -> x
 
   // Rules for some specific type constructors ---------------------------------
 
-  // A rule for the `ref<'t>` type constructor.
+  /// A rule for the `ref<'t>` type constructor.
   member this.Ref (cloneT: Clone<'t>) : Clone<ref<'t>> =
     fun r -> ref (cloneT (!r))
 
-  // A rule for the `array<'t>` type constructor.
+  /// A rule for the `array<'t>` type constructor.
   member this.Array (cloneT: Clone<'t>) : Clone<array<'t>> =
     Array.map cloneT
 
