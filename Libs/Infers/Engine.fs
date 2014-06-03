@@ -159,7 +159,11 @@ module IDDFS =
                tell <| fun () -> sprintf "built: %A" (Ty.toType desiredTy)
                (desiredObj, v2t, tie desiredObj knownObjs)
           | parType::parTypes ->
-            dfsGenerate explain nesting limit infRuleSet knownObjs parType >>=
+            let results = seq {
+              yield! dfsGenerate explain nesting limit infRuleSet knownObjs parType
+              do tell <| fun () -> sprintf "FAILED: %A" (Ty.toType parType)
+            }
+            results >>=
              fun (argObj, v2t, knownObjs) ->
                lp (InfRuleSet.maybeAddRules argObj infRuleSet)
                   (genArgTypes |> Array.map (resolve v2t))
