@@ -1,8 +1,4 @@
-﻿// Inspired by
-//   https://gist.github.com/t0yv0/649a10818119636c0952
-//   http://fssnip.net/n1
-
-module Main
+﻿module CloneNaive
 
 open Infers
 open Infers.Rep
@@ -131,22 +127,3 @@ type [<InferenceRules>] Clone () =
       override this.Clone (e: byref<'e>) =
        // We just mutate the element in-place within the stack allocated space.
        e <- cloneElem e}
-
-////////////////////////////////////////////////////////////////////////////////
- 
-type SimpleRecord = { Name: string; Age: option<int> }
-type LotsOfRecords = { People: SimpleRecord [] }
- 
-[<EntryPoint>]
-let Start args =
-  let sr = { People = [| {Name = "Rick"; Age = Some 33 }; { Name = "Paul"; Age = None }|] }
-  let func = Infers.Engine.TryGenerate<Clone<LotsOfRecords>> (Clone ())
-  match func with
-   | Some clone ->
-     let src = clone sr
-     if (sr = src) && not (System.Object.ReferenceEquals(sr, src))
-     then printfn "OK"
-     else printfn "FAIL"
-   | _ ->
-     printfn "NO MATCH"
-  0

@@ -49,7 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <Compile Include="Clone.fs" />
+    <Compile Include="CloneNaive.fs" />
+    <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Libs\Infers.Rep\Infers.Rep.fsproj">
