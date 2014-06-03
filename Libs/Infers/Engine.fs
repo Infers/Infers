@@ -86,9 +86,13 @@ module InfRuleSet =
   }
 
   let maybeAddRules (o: obj) (infRuleSet: InfRuleSet) =
-    if o.GetType () |> getInferenceRules |> Option.isSome
-    then HashEqMap.add o (preprocess o) infRuleSet
-    else infRuleSet
+    match o with
+     | null ->
+       infRuleSet
+     | o ->
+       if o.GetType () |> getInferenceRules |> Option.isSome
+       then HashEqMap.add o (preprocess o) infRuleSet
+       else infRuleSet
 
 /////////////////////////////////////////////////////////////////////////
 
