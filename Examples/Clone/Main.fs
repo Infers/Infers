@@ -11,8 +11,8 @@ type LotsOfRecords = { People: SimpleRecord [] }
  
 [<EntryPoint>]
 let Start args =
-  let sr = { People = [| {Name = "Rick"; Age = Some 33 }; { Name = "Paul"; Age = None }|] }
-  let func = Infers.Engine.TryGenerate<CloneNaive.Clone<LotsOfRecords>> (CloneNaive.Clone ())
+  let sr = { People = [| {Name = "Rick"; Age = Some 33 }; { Name = "Paul"; Age = None } |] }
+  let func = Infers.Engine.TryGenerate<CloneSmarter.Clone<LotsOfRecords>> (CloneSmarter.Clone ())
   match func with
    | Some clone ->
      let src = clone sr
