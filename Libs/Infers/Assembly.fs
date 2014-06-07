@@ -6,7 +6,7 @@ open System.Runtime.InteropServices
 [<AutoOpen>]
 module AssemblyInfo =
   [<Literal>]
-  let Version = "0.0.0.1"
+  let Version = "0.0.0.2"
 
 [<assembly: AssemblyTitle("Infers")>]
 [<assembly: AssemblyDescription("Infers is a library for deriving F# values from their types.")>]

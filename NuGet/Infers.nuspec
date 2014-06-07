@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Infers</id>
-    <version>0.0.0.1</version>
+    <version>0.0.0.2</version>
     <title>Infers</title>
     <summary>Infers is a library for deriving F# values from their types.</summary>
     <authors>Vesa Karvonen and Anton Tayanovskyy</authors>
