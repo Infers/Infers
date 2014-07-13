@@ -1,27 +1,24 @@
-﻿namespace Infers
+﻿// Copyright (C) by Vesa Karvonen
+
+namespace Infers
 
 open System.Reflection
 open System.Runtime.InteropServices
 
-[<AutoOpen>]
-module AssemblyInfo =
-  [<Literal>]
-  let Version = "0.0.0.2"
-
 [<assembly: AssemblyTitle("Infers")>]
-[<assembly: AssemblyDescription("Infers is a library for deriving F# values from their types.")>]
-[<assembly: AssemblyConfiguration("")>]
-[<assembly: AssemblyCompany("")>]
-[<assembly: AssemblyProduct("Infers")>]
-[<assembly: AssemblyCopyright("© Vesa Karvonen and Anton Tayanovskyy")>]
-[<assembly: AssemblyTrademark("")>]
-[<assembly: AssemblyCulture("")>]
+[<assembly: AssemblyDescription(Infers.Core.CommonAssemblyInfo.Description)>]
+[<assembly: AssemblyConfiguration(Infers.Core.CommonAssemblyInfo.Configuration)>]
+[<assembly: AssemblyCompany(Infers.Core.CommonAssemblyInfo.Company)>]
+[<assembly: AssemblyProduct(Infers.Core.CommonAssemblyInfo.Product)>]
+[<assembly: AssemblyCopyright(Infers.Core.CommonAssemblyInfo.Copyright)>]
+[<assembly: AssemblyTrademark(Infers.Core.CommonAssemblyInfo.Trademark)>]
+[<assembly: AssemblyCulture(Infers.Core.CommonAssemblyInfo.Culture)>]
 
 [<assembly: ComVisible(false)>]
 
 [<assembly: Guid("2c3b33a5-81d6-4e06-8f46-7b4105b39c7e")>]
 
-[<assembly: AssemblyVersion(Version)>]
-[<assembly: AssemblyFileVersion(Version)>]
+[<assembly: AssemblyVersion(Infers.Core.CommonAssemblyInfo.Version)>]
+[<assembly: AssemblyFileVersion(Infers.Core.CommonAssemblyInfo.FileVersion)>]
 
 ()

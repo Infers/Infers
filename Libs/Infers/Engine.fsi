@@ -1,4 +1,6 @@
-﻿namespace Infers
+﻿// Copyright (C) by Vesa Karvonen
+
+namespace Infers
 
 /// Interface to the resolution engine.
 type [<Sealed>] Engine =

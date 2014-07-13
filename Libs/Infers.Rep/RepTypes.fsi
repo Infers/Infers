@@ -1,4 +1,6 @@
-﻿/// `Infers.Rep` is a library providing inference rules for datatype generic
+﻿// Copyright (C) by Vesa Karvonen
+
+/// `Infers.Rep` is a library providing inference rules for datatype generic
 /// programming with the `Infers` library.
 ///
 /// `Infers.Rep` uses reflection and run-time code generation to build type
@@ -96,7 +98,8 @@ type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> = class
 
 /////////////////////////////////////////////////////////////////////////
 
-type [<AllowNullLiteral; InferenceRules>] Rep<'x> = class
+/// Base class for type representations.
+type [<InferenceRules>] Rep<'x> = class
   end
 
 /////////////////////////////////////////////////////////////////////////
@@ -128,6 +131,13 @@ type [<AbstractClass>] Elem<'e, 'p, 't> =
 
   /// Returns the value of the element.
   abstract Get: 't -> 'e
+
+/// Representation of a possibly labelled element of type `'e`.
+type [<AbstractClass>] Labelled<'e, 'p, 't> =
+  inherit Elem<'e, 'p, 't>
+  
+  /// The name of the label.
+  val Name: string
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -177,10 +187,7 @@ type [<AbstractClass>] Case<'lp, 'sc, 'u> =
 /// Representation of a possibly labelled element of type `'l` of a case of the
 /// F# discriminated union type `'u`.
 type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
-  inherit Elem<'l, 'sp, 'u>
-
-  /// The name of the label.
-  val Name: string
+  inherit Labelled<'l, 'sp, 'u>
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -190,10 +197,7 @@ type [<AbstractClass>] Record<'r> =
 
 /// Representation of a field of type `'f` of the record type `'r`.
 type [<AbstractClass>] Field<'f, 'sp, 'r> =
-  inherit Elem<'f, 'sp, 'r>
-
-  /// The name of the field.
-  val Name: string
+  inherit Labelled<'f, 'sp, 'r>
 
   /// Whether the field is mutable.
   val IsMutable: bool

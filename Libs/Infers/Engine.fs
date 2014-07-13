@@ -1,4 +1,6 @@
-﻿namespace Infers
+﻿// Copyright (C) by Vesa Karvonen
+
+namespace Infers
 
 open System
 open System.Reflection
@@ -46,9 +48,13 @@ module InfRuleSet =
        | None -> Seq.empty
        | Some attr ->
          let bindingFlags =
-           if attr.NonPublic
-           then BindingFlags.AnyDeclaredInstance
-           else BindingFlags.PublicDeclaredInstance
+           match attr.Members with
+            | Members.PublicAndPrivate ->
+              BindingFlags.AnyDeclaredInstance
+            | Members.PublicOnly ->
+              BindingFlags.PublicDeclaredInstance
+            | _ ->
+              failwithf "Invalid members definition: %A" attr.Members
          [ty.GetMethods bindingFlags
           |> Seq.map (fun infRule ->
              InfRuleMethod (infRule, infRules) :> InfRule)

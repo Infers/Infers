@@ -1,4 +1,6 @@
-﻿/// `Infers` is a library for deriving F# values from their types and, in a way,
+﻿// Copyright (C) by Vesa Karvonen
+
+/// `Infers` is a library for deriving F# values from their types and, in a way,
 /// a direct application of the Curry-Howard correspondence. 
 ///
 /// The basic idea is to view the types of F# member functions as Horn clauses.
@@ -14,20 +16,36 @@ namespace Infers
 
 open System
 
+/// Specifies which members to consider as rules.
+type Members =
+  /// Only consider public methods as rules.
+  | PublicOnly = 1
+  /// Consider both public and non-public methods as rules.
+  | PublicAndPrivate = 3
+
+/// Specifies whether results are memoized with a `StaticMap`.
+type StaticMap =
+  /// Do not cache results.
+  | Nothing = 0
+  /// Cache rule results.
+  | Results = 1
+
 /// A type that has the `InferenceRules` attribute is assumed to contain rule
 /// methods that are used by the inference engine.
 type InferenceRules =
   inherit Attribute
 
-  /// If `true` then both public and non-public members are to be considered as
-  /// rules.  If `false` only public members are to be considered as rules.
-  val NonPublic: bool
+  /// Specifies which methods are considered as rules.
+  /// Default: `Members.PublicOnly`.
+  member Members: Members with get, set
 
-  /// Default constructor sets `NonPublic` to false.
+  /// Specifies whether to memoize results with a `StaticMap`.
+  /// Default: `StaticMap.Nothing`.
+  member StaticMap: StaticMap with get, set
+
+  /// Default constructor.  The defaults are safe, but in most cases you will
+  /// want to say `InferenceRules (StaticMap = StaticMap.Results)`.
   new: unit -> InferenceRules
-
-  /// Allows to specify the value for `NonPublic`.
-  new: nonPublic: bool -> InferenceRules
 
 /// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> =

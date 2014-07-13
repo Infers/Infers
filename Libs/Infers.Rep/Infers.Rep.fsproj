@@ -43,6 +43,11 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
+      <Name>Infers.Core</Name>
+      <Project>{dd618307-19ac-4667-bd22-6cc10bbc7bf5}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\Infers\Infers.fsproj">
       <Name>Infers</Name>
       <Project>{b06b1b50-16c3-42c0-a820-59bba70ea601}</Project>

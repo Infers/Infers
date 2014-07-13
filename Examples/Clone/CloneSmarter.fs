@@ -1,4 +1,6 @@
-﻿module CloneSmarter
+﻿// Copyright (C) by Vesa Karvonen
+
+module CloneSmarter
 
 open System.Collections.Generic
 open Infers
@@ -49,7 +51,12 @@ let CloneProductToCloneSmart (isMutable: bool)
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Inference rules for creating cloning functions.
-type [<InferenceRules>] Clone () =
+type [<InferenceRules (StaticMap = StaticMap.Results)>] Clone () =
+  static member Get () : Clone<'x> = StaticMap<Clone>.Memoize <| fun () ->
+    match Engine.TryGenerate (Clone ()) with
+     | Some clone -> clone
+     | None -> failwith "CloneSmarter.Clone: %A" typeof<'x>
+
   // Turn a smart clone to a simple clone --------------------------------------
 
   member this.AsClone (clone: CloneSmarter<'x>) : Clone<'x> =

@@ -1,4 +1,6 @@
-﻿// Inspired by
+﻿// Copyright (C) by Vesa Karvonen
+
+// Inspired by
 //   https://gist.github.com/t0yv0/649a10818119636c0952
 //   http://fssnip.net/n1
 

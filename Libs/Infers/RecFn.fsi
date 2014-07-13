@@ -1,4 +1,6 @@
-﻿namespace Infers
+﻿// Copyright (C) by Vesa Karvonen
+
+namespace Infers
 
 open System
 

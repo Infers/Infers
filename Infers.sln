@@ -31,6 +31,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Clone", "Examples\Clone\Clo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers.Basic", "Libs\Infers.Basic\Infers.Basic.fsproj", "{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infers.Core", "Libs\Infers.Core\Infers.Core.csproj", "{DD618307-19AC-4667-BD22-6CC10BBC7BF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,5 +68,6 @@ Global
 		{2399EAEA-7668-48BA-91B4-162060CB050F} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
 		{CDB81E34-CB35-4D62-A2F8-6B9A6A73880E} = {F6892AB8-6A0C-4AB9-9554-E42C561C5125}
 		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
 	EndGlobalSection
 EndGlobal

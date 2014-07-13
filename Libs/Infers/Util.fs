@@ -1,4 +1,6 @@
-﻿[<AutoOpen>]
+﻿// Copyright (C) by Vesa Karvonen
+
+[<AutoOpen>]
 module internal Infers.Util
 
 open System

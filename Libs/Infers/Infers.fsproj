@@ -57,6 +57,13 @@
     <Compile Include="Engine.fsi" />
     <Compile Include="Engine.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
+      <Name>Infers.Core</Name>
+      <Project>{dd618307-19ac-4667-bd22-6cc10bbc7bf5}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>

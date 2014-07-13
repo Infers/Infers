@@ -1,4 +1,6 @@
-﻿module CloneNaive
+﻿// Copyright (C) by Vesa Karvonen
+
+module CloneNaive
 
 open Infers
 open Infers.Rep
@@ -31,7 +33,12 @@ let inline CloneProductToClone (asProduct: AsProduct<'es, 't>)
     asProduct.Create (&clone)
 
 /// Inference rules for creating cloning functions.
-type [<InferenceRules>] Clone () =
+type [<InferenceRules (StaticMap = StaticMap.Results)>] Clone () =
+  static member Get () : Clone<'x> = StaticMap<Clone>.Memoize <| fun () ->
+    match Engine.TryGenerate (Clone ()) with
+     | Some clone -> clone
+     | None -> failwith "CloneNaive.Clone: %A" typeof<'x>
+
   // Recursion rule ------------------------------------------------------------
 
   // Rule for creating a proxy when defining a recursive cloning function.

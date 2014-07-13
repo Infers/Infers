@@ -1,4 +1,6 @@
-﻿namespace Infers.Rep
+﻿// Copyright (C) by Vesa Karvonen
+
+namespace Infers.Rep
 
 open Infers
 
@@ -24,7 +26,7 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
 type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> () = class
   end
 
-type [<AllowNullLiteral; InferenceRules>] Rep<'x> () = class
+type [<InferenceRules>] Rep<'x> () = class
   end
 
 type [<AbstractClass>] Product<'r> =
@@ -37,6 +39,11 @@ type [<AbstractClass>] Elem<'e, 'p, 't> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
+
+type [<AbstractClass>] Labelled<'e, 'p, 't> =
+  inherit Elem<'e, 'p, 't>
+  new (index, name) = {inherit Elem<'e, 'p, 't>(index); Name = name}
+  val Name: string
 
 type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
@@ -59,19 +66,17 @@ type [<AbstractClass>] Case<'lp, 'sc, 'u> =
   val Tag: int
 
 type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
-  inherit Elem<'l, 'sp, 'u>
-  new (index, name) = {inherit Elem<'l, 'sp, 'u> (index); Name = name}
-  val Name: string
+  inherit Labelled<'l, 'sp, 'u>
+  new (index, name) = {inherit Labelled<'l, 'sp, 'u> (index, name)}
 
 type [<AbstractClass>] Record<'r> =
   inherit Product<'r>
   new (arity, isMutable) = {inherit Product<'r>(arity, isMutable)}
 
 type [<AbstractClass>] Field<'f, 'p, 'r> =
-  inherit Elem<'f, 'p, 'r>
+  inherit Labelled<'f, 'p, 'r>
   new (index, name, isMutable) =
-    {inherit Elem<'f, 'p, 'r> (index); Name = name; IsMutable = isMutable}
-  val Name: string
+    {inherit Labelled<'f, 'p, 'r> (index, name); IsMutable = isMutable}
   val IsMutable: bool
   abstract Set: 'r * 'f -> unit
   default f.Set (_: 'r, _: 'f) = raise (System.NotImplementedException ())

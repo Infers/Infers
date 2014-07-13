@@ -1,7 +1,19 @@
-﻿namespace Infers
+﻿// Copyright (C) by Vesa Karvonen
 
-type [<Sealed>] StaticMap<'k, 'v> =
-  [<DefaultValue>]
-  static val mutable private Value: 'v
-  static member Get () = StaticMap<'k, 'v>.Value
-  static member Set (value: 'v) = StaticMap<'k, 'v>.Value <- value
+namespace Infers
+
+open Infers.Core
+open System.Threading
+
+type [<Sealed>] StaticMap<'k> =
+  static member MemoizeLocked (mk: unit -> 'v) =
+    match StaticMap<'k, option<'v>>.Get () with
+     | None ->
+       Some (mk ())
+       |> StaticMap<'k, option<'v>>.TrySetAndGet
+       |> Option.get
+     | Some v -> v
+  static member inline Memoize (mk: unit -> 'v) =
+    match StaticMap<'k, option<'v>>.Get () with
+     | Some v -> v
+     | None -> StaticMap<'k>.MemoizeLocked mk
