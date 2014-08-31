@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Infers</id>
-    <version>0.0.0.5</version>
+    <version>0.0.0.6</version>
     <title>Infers</title>
     <summary>Infers is a library for deriving F# values from their types.</summary>
     <authors>Vesa Karvonen and Anton Tayanovskyy</authors>
@@ -16,13 +16,13 @@
     <tags>f# fsharp generic</tags>
   </metadata>
   <files>
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.dll" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.xml" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Core.dll" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Core.xml" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Basic.dll" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Basic.xml" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Rep.dll" target="lib\net451" />
-    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Rep.xml" target="lib\net451" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.dll" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.xml" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Core.dll" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Core.xml" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Basic.dll" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Basic.xml" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Rep.dll" target="lib\net45" />
+    <file src="..\Libs\Infers.Basic\bin\Release\Infers.Rep.xml" target="lib\net45" />
   </files>
 </package>
