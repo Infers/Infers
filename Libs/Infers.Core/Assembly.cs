@@ -30,7 +30,7 @@ namespace Infers.Core {
     public const string Product = "Infers";
     public const string Company = "";
     public const string Copyright = "© Vesa Karvonen and Anton Tayanovskyy";
-    public const string Version = "0.0.0.5";
+    public const string Version = "0.0.0.6";
     public const string FileVersion = Version;
     public const string Trademark = "";
     public const string Culture = "";
