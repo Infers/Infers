@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2013 for Windows Desktop
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers", "Libs\Infers\Infers.fsproj", "{B06B1B50-16C3-42C0-A820-59BBA70EA601}"
 EndProject
@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{3430A088
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root", "Root", "{57274DE6-EE01-4F72-B4D0-9CD5448668EA}"
 	ProjectSection(SolutionItems) = preProject
+		Infers.fsx = Infers.fsx
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
