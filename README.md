@@ -1,3 +1,5 @@
+> [![Build status](https://ci.appveyor.com/api/projects/status/l5n0ryqq8c7lk3n7)](https://ci.appveyor.com/project/VesaKarvonen/infers) &#xb7; [![Build Status](https://travis-ci.org/VesaKarvonen/Infers.svg?branch=master)](https://travis-ci.org/VesaKarvonen/Infers)
+
 # Infers
 
 Infers is a library for deriving F# values from their types.
