@@ -1,0 +1,14 @@
+version: "{build}"
+
+branches:
+  only:
+    - master
+
+matrix:
+  fast_finish: true
+
+platform: Any CPU
+
+configuration:
+  - Debug
+  - Release
