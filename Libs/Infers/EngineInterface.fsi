@@ -35,17 +35,19 @@ type StaticMap =
 type InferenceRules =
   inherit Attribute
 
+  /// Default constructor.  The defaults are safe, but in most cases you will
+  /// want to say `InferenceRules (StaticMap = StaticMap.Results)`.
+  new: unit -> InferenceRules
+
   /// Specifies which methods are considered as rules.
+  ///
   /// Default: `Members.PublicOnly`.
   member Members: Members with get, set
 
   /// Specifies whether to memoize results with a `StaticMap`.
+  ///
   /// Default: `StaticMap.Nothing`.
   member StaticMap: StaticMap with get, set
-
-  /// Default constructor.  The defaults are safe, but in most cases you will
-  /// want to say `InferenceRules (StaticMap = StaticMap.Results)`.
-  new: unit -> InferenceRules
 
 /// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> =
