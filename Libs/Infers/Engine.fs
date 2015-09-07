@@ -66,14 +66,14 @@ module InfRuleSet =
     |> TyTree.build
 
   let ofSeq infRules : InfRuleSet =
-   infRules
-   |> Seq.fold
-       (fun rulesMap rules ->
-         HashEqMap.add
-          rules
-          (preprocess rules)
-          rulesMap)
-       HashEqMap.empty
+    infRules
+    |> Seq.fold
+        (fun rulesMap rules ->
+          HashEqMap.add
+           rules
+           (preprocess rules)
+           rulesMap)
+        HashEqMap.empty
 
   let rulesFor (infRuleSet: InfRuleSet) (desiredTy: Ty) = seq {
     yield! HashEqMap.toSeq infRuleSet
@@ -173,13 +173,12 @@ module IDDFS =
               yield! dfsGenerate explain nesting limit infRuleSet knownObjs parType
               do tell <| fun () -> sprintf "FAILED: %A" (Ty.toType parType)
             }
-            results >>=
-             fun (argObj, v2t, knownObjs) ->
-               lp (InfRuleSet.maybeAddRules argObj infRuleSet)
-                  (genArgTypes |> Array.map (resolve v2t))
-                  knownObjs
-                  (argObj::argObjs)
-                  (parTypes |> List.map (resolve v2t))
+            results >>= fun (argObj, v2t, knownObjs) ->
+            lp (InfRuleSet.maybeAddRules argObj infRuleSet)
+               (genArgTypes |> Array.map (resolve v2t))
+               knownObjs
+               (argObj::argObjs)
+               (parTypes |> List.map (resolve v2t))
        lp infRuleSet
           (infRule.GenericArgTypes |> Array.map (resolve v2t))
           knownObjs
