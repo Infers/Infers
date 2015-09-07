@@ -1,8 +1,10 @@
 *.nupkg
 *.suo
+*.userprefs
 *~
 .\#*
 \#*\#
 bin
 gh-pages
 obj
+packages

@@ -34,11 +34,6 @@ let inline CloneProductToClone (asProduct: AsProduct<'es, 't>)
 
 /// Inference rules for creating cloning functions.
 type [<InferenceRules (StaticMap = StaticMap.Results)>] Clone () =
-  static member Get () : Clone<'x> = StaticMap<Clone>.Memoize <| fun () ->
-    match Engine.TryGenerate (Clone ()) with
-     | Some clone -> clone
-     | None -> failwith "CloneNaive.Clone: %A" typeof<'x>
-
   // Recursion rule ------------------------------------------------------------
 
   // Rule for creating a proxy when defining a recursive cloning function.

@@ -14,13 +14,9 @@ type LotsOfRecords = { People: SimpleRecord [] }
 [<EntryPoint>]
 let Start args =
   let sr = { People = [| {Name = "Rick"; Age = Some 33 }; { Name = "Paul"; Age = None } |] }
-  let func = Infers.Engine.TryGenerate<CloneSmarter.Clone<LotsOfRecords>> (CloneSmarter.Clone ())
-  match func with
-   | Some clone ->
-     let src = clone sr
-     if (sr = src) && not (System.Object.ReferenceEquals(sr, src))
-     then printfn "OK"
-     else printfn "FAIL"
-   | _ ->
-     printfn "NO MATCH"
+  let clone = Infers.StaticRules<CloneSmarter.Clone>.Generate ()
+  let src = clone sr
+  if (sr = src) && not (System.Object.ReferenceEquals(sr, src))
+  then printfn "OK"
+  else printfn "FAIL"
   0

@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>cdb81e34-cb35-4d62-a2f8-6b9a6a73880e</ProjectGuid>
+    <ProjectGuid>{CDB81E34-CB35-4D62-A2F8-6B9A6A73880E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Clone</RootNamespace>
     <AssemblyName>Clone</AssemblyName>
@@ -17,7 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Debug\</OutputPath>
@@ -37,32 +35,32 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>bin\Release\Clone.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <Compile Include="CloneNaive.fs" />
     <Compile Include="CloneSmarter.fs" />
     <Compile Include="Main.fs" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Libs\Infers.Rep\Infers.Rep.fsproj">
       <Name>Infers.Rep</Name>
-      <Project>{2399eaea-7668-48ba-91b4-162060cb050f}</Project>
-      <Private>True</Private>
+      <Project>{2399EAEA-7668-48BA-91B4-162060CB050F}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Libs\Infers\Infers.fsproj">
       <Name>Infers</Name>
-      <Project>{b06b1b50-16c3-42c0-a820-59bba70ea601}</Project>
-      <Private>True</Private>
+      <Project>{B06B1B50-16C3-42C0-A820-59BBA70EA601}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

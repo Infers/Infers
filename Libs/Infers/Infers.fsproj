@@ -1,11 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>b06b1b50-16c3-42c0-a820-59bba70ea601</ProjectGuid>
+    <ProjectGuid>{B06B1B50-16C3-42C0-A820-59BBA70EA601}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Infers</RootNamespace>
     <AssemblyName>Infers</AssemblyName>
@@ -16,7 +15,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Debug\</OutputPath>
@@ -34,15 +32,16 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\Infers.XML</DocumentationFile>
     <NoWarn>0050</NoWarn>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assembly.fs" />
@@ -60,8 +59,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
       <Name>Infers.Core</Name>
-      <Project>{dd618307-19ac-4667-bd22-6cc10bbc7bf5}</Project>
-      <Private>True</Private>
+      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
@@ -87,4 +85,9 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <Compile Include="StaticRules.fsi" />
+    <Compile Include="StaticRules.fs" />
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>
