@@ -221,7 +221,7 @@ module TyTree =
                // leaf consisting of all the remaining values.
                tyrs
                |> Array.ofList
-               &> inPlaceSelectSpecificFirst
+               |>!inPlaceSelectSpecificFirst
                |> Array.map snd
                |> Many
              | at::ats ->

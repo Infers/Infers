@@ -15,17 +15,14 @@ type [<Sealed>] Fun =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// The identity function.
-let inline id x = x
-
 /// The constant function.
 let inline constant x _ = x
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// `x &> ef` is equivalent to `x |> fun x -> ef x ; x` and basically allows
+/// `x |>! ef` is equivalent to `x |> fun x -> ef x ; x` and basically allows
 /// an imperative operation to be used in a pipe.
-let inline (&>) x effect = effect x ; x
+let inline (|>!) x effect = effect x ; x
 
 ////////////////////////////////////////////////////////////////////////////////
 
