@@ -1,11 +1,13 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
+module GMap
+
 open Infers
 
 type GM<'w, 'p> = ('p -> 'p) -> 'w -> 'w
 type GMap<'w, 'p> = {gm: GM<'w, 'p>}
 
-type [<InferenceRules>] GMap () =
+type [<InferenceRules (StaticMap = StaticMap.Results)>] GMap () =
   member g.same ()                  : GMap<'p, 'p> = {gm = id}
   member g.notSame (gm: GM<'w, 'p>) : GMap<'w, 'p> = {gm = gm}
 
@@ -21,8 +23,6 @@ type [<InferenceRules>] GMap () =
 
 let gmap (p2p: 'p -> 'p) : 'w -> 'w = StaticRules<GMap>.Generate () p2p
 
-[<EntryPoint>]
-let main argv = 
+let test () : unit =
   gmap ((+) 1) [("vesa", 1)] |> printfn "%A"
   gmap (fun (x: string) -> x.ToUpper ()) [("vesa", 1)] |> printfn "%A"
-  0
