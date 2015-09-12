@@ -49,6 +49,12 @@ type InferenceRules =
   /// Default: `StaticMap.Nothing`.
   member StaticMap: StaticMap with get, set
 
+/// `PureInferenceRules` is a convenient shorthand for
+/// `InferenceRules (StaticMap = StaticMap.Results)`.
+type PureInferenceRules =
+  inherit InferenceRules
+  new: unit -> PureInferenceRules
+
 /// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> =
   /// Empty default constructor.

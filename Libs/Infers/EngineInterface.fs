@@ -19,6 +19,9 @@ type InferenceRules () =
   member this.Members with get () = members and set v = members <- v
   member this.StaticMap with get () = staticMap and set v = staticMap <- v
 
+type PureInferenceRules () =
+  inherit InferenceRules (StaticMap = StaticMap.Results)
+
 type [<AbstractClass>] Rec<'x> () =
   abstract Get: unit -> 'x
   abstract Set: 'x -> unit
