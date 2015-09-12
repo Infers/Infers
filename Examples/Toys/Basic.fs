@@ -10,7 +10,7 @@ type Eq<'x, 'y, 'z> = | Eq3
 type Or<'l, 'r> = | Or2
 type And<'l, 'r> = | And2
 
-type [<PureInferenceRules>] Basic () =
+type [<InferenceRules>] Basic () =
   member g.Eq2 () : Eq<'x, 'x> = Eq2
   member g.Eq3 () : Eq<'x, 'x, 'x> = Eq3
 

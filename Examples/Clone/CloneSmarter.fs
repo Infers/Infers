@@ -51,7 +51,7 @@ let CloneProductToCloneSmart (isMutable: bool)
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Inference rules for creating cloning functions.
-type [<InferenceRules (StaticMap = StaticMap.Results)>] Clone () =
+type [<InferenceRules>] Clone () =
   // Turn a smart clone to a simple clone --------------------------------------
 
   member this.AsClone (clone: CloneSmarter<'x>) : Clone<'x> =

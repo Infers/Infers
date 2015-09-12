@@ -4,7 +4,7 @@ module Toys.GFlip
 
 open Infers
 
-type [<PureInferenceRules>] GFlip () =
+type [<InferenceRules>] GFlip () =
   member f.id () = id
   member f.first (ab2yz) = fun xb -> xb >> ab2yz
   member f.rest (ab2axc, ac2y) = fun ab ->

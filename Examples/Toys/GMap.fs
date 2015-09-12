@@ -7,7 +7,7 @@ open Infers
 type GM<'w, 'p> = ('p -> 'p) -> 'w -> 'w
 type GMap<'w, 'p> = {gm: GM<'w, 'p>}
 
-type [<PureInferenceRules>] GMap () =
+type [<InferenceRules>] GMap () =
   member g.same ()                  : GMap<'p, 'p> = {gm = id}
   member g.notSame (gm: GM<'w, 'p>) : GMap<'w, 'p> = {gm = gm}
 

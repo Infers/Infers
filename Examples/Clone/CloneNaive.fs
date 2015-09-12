@@ -33,7 +33,7 @@ let inline CloneProductToClone (asProduct: AsProduct<'es, 't>)
     asProduct.Create (&clone)
 
 /// Inference rules for creating cloning functions.
-type [<InferenceRules (StaticMap = StaticMap.Results)>] Clone () =
+type [<InferenceRules>] Clone () =
   // Recursion rule ------------------------------------------------------------
 
   // Rule for creating a proxy when defining a recursive cloning function.

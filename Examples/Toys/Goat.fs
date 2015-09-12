@@ -27,7 +27,7 @@ type Wolf<'x> = class end
 
 type Search<'p, 'r> = | Search
 
-type [<PureInferenceRules>] Goat () =
+type [<InferenceRules>] Goat () =
   member g.Puzzle
     (_: Basic, _: List,
      _: Eq<'initial, Farmer<S> * Goat<S> * Cabbage<S> * Wolf<S>>,

@@ -18,7 +18,7 @@ type Member<'x, 'xs> = | Member
 type Next<'x, 'y, 'xs> = | Next
 type Right<'x, 'y, 'xs> = | Right
 
-type [<PureInferenceRules>] List () =
+type [<InferenceRules>] List () =
   member g.Member () : Member<'x, Cons<'x, _>> = Member
   member g.Member (_: Member<'x, 'xs>) : Member<'x, Cons<_, 'xs>> = Member
 

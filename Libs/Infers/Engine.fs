@@ -76,15 +76,7 @@ module RuleSet =
       match getInferenceRules ty with
        | None -> Seq.empty
        | Some attr ->
-         let bindingFlags =
-           match attr.Members with
-            | Members.PublicAndPrivate ->
-              BindingFlags.AnyDeclaredInstance
-            | Members.PublicOnly ->
-              BindingFlags.PublicDeclaredInstance
-            | _ ->
-              failwithf "Invalid members definition: %A" attr.Members
-         [ty.GetMethods bindingFlags
+         [ty.GetMethods BindingFlags.PublicDeclaredInstance
           |> Seq.map (fun infRule ->
              RuleMethod (infRule, infRules) :> Rule<_>)
           collectRules ty.BaseType]

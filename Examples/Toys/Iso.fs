@@ -7,7 +7,7 @@ open Infers.Rep
 
 type Iso<'x, 'y> = ('x -> 'y) * ('y -> 'x)
 
-type [<PureInferenceRules>] Iso () =
+type [<InferenceRules>] Iso () =
   member g.Id () : Iso<'x, 'x> = (id, id)
   member g.Inv ((t, o): Iso<'x, 'y>) : Iso<'y, 'x> = (o, t)
   member g.Pairs ((t, o): Iso<     'pairs,         'ands>)

@@ -8,11 +8,11 @@ open Toys.Iso
 
 type Pairs<'xsp> = | Pairs'
 
-type [<PureInferenceRules>] Pairs () =
+type [<InferenceRules>] Pairs () =
   member g.Nested (_: Pairs<'xsp>) : Pairs<'x * 'xsp> = Pairs'
   member g.Pair () : Pairs<'x * 'y> = Pairs'
 
-type [<InferenceRules (StaticMap = StaticMap.Results)>] GUncurry () =
+type [<InferenceRules>] GUncurry () =
   member g.Uncurry (_: Rep, _: Iso, _: Pairs,
                     _: Tuple<'xst>,
                     p: AsProduct<'xsa, 'xst>,

@@ -16,44 +16,13 @@ namespace Infers
 
 open System
 
-/// Specifies which members to consider as rules.
-type Members =
-  /// Only consider public methods as rules.
-  | PublicOnly = 1
-  /// Consider both public and non-public methods as rules.
-  | PublicAndPrivate = 3
-
-/// Specifies whether results are memoized with a `StaticMap`.
-type StaticMap =
-  /// Do not cache results.
-  | Nothing = 0
-  /// Cache rule results.
-  | Results = 1
-
-/// A type that has the `InferenceRules` attribute is assumed to contain rule
-/// methods that are used by the inference engine.
+/// A type that has the `InferenceRules` attribute is assumed to contain pure
+/// rule methods that are used by the inference engine.
 type InferenceRules =
   inherit Attribute
 
-  /// Default constructor.  The defaults are safe, but in most cases you will
-  /// want to say `InferenceRules (StaticMap = StaticMap.Results)`.
+  /// Default constructor.
   new: unit -> InferenceRules
-
-  /// Specifies which methods are considered as rules.
-  ///
-  /// Default: `Members.PublicOnly`.
-  member Members: Members with get, set
-
-  /// Specifies whether to memoize results with a `StaticMap`.
-  ///
-  /// Default: `StaticMap.Nothing`.
-  member StaticMap: StaticMap with get, set
-
-/// `PureInferenceRules` is a convenient shorthand for
-/// `InferenceRules (StaticMap = StaticMap.Results)`.
-type PureInferenceRules =
-  inherit InferenceRules
-  new: unit -> PureInferenceRules
 
 /// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> =

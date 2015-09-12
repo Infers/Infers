@@ -4,23 +4,8 @@ namespace Infers
 
 open System
 
-type Members =
-  | PublicOnly = 1
-  | PublicAndPrivate = 3
-
-type StaticMap =
-  | Nothing = 0
-  | Results = 1
-
 type InferenceRules () =
   inherit Attribute ()
-  let mutable members = Members.PublicOnly
-  let mutable staticMap = StaticMap.Nothing
-  member this.Members with get () = members and set v = members <- v
-  member this.StaticMap with get () = staticMap and set v = staticMap <- v
-
-type PureInferenceRules () =
-  inherit InferenceRules (StaticMap = StaticMap.Results)
 
 type [<AbstractClass>] Rec<'x> () =
   abstract Get: unit -> 'x

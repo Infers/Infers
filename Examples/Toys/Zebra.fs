@@ -41,7 +41,7 @@ type winston = class end
 type yellow = class end
 type zebra = class end
 
-type [<PureInferenceRules>] Zebra () =
+type [<InferenceRules>] Zebra () =
   member g.Puzzle
     (_: Basic, _: List,
      _: Eq<'s, List<'x0, 'x1, 'x2, 'x3, 'x4>>,
