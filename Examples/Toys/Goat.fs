@@ -27,6 +27,10 @@ type Wolf<'x> = class end
 
 type Search<'p, 'r> = | Search
 
+/// Rules for solving the Goat problem.  This is similar to the original Prolog
+/// program, but has been modified in a couple of ways.  Most importantly,
+/// negation is not supported by Infers, so the rules have been changed to
+/// eliminate negation.
 type [<InferenceRules>] Goat () =
   member g.Puzzle
     (_: Basic, _: List,

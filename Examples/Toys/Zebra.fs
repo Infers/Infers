@@ -41,6 +41,8 @@ type winston = class end
 type yellow = class end
 type zebra = class end
 
+/// Rules for deriving the result of the Zebra puzzle.  This is a straighforward
+/// translation of a Prolog program.
 type [<InferenceRules>] Zebra () =
   member g.Puzzle
     (_: Basic, _: List,

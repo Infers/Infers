@@ -23,6 +23,7 @@ type [<InferenceRules>] GUncurry () =
   member g.Nested u = fun x2xs2y (x, xs) -> u (x2xs2y x) xs
   member g.Finish () = id
 
+/// Derives a function that uncurries a given n-ary curried function.
 let guncurry f = Option.get (NextGen.tryGenerate (GUncurry ())) f
 
 let test () : unit =
