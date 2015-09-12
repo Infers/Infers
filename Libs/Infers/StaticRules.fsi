@@ -7,3 +7,5 @@ namespace Infers
 type [<Sealed>] StaticRules<'rules when 'rules : (new : unit -> 'rules)> =
   /// Memoizes the result of `Engine.TryGenerate (new 'rules () :> obj)`.
   static member Generate : unit -> 'result
+
+  static member GenerateIDDFS : unit -> 'result

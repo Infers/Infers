@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -44,8 +44,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Basic.fs" />
+    <Compile Include="List.fs" />
+    <Compile Include="Solver.fs" />
+    <Compile Include="Iso.fs" />
     <Compile Include="GMap.fs" />
     <Compile Include="GUncurry.fs" />
+    <Compile Include="GFlip.fs" />
+    <Compile Include="Zebra.fs" />
+    <Compile Include="Goat.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>

@@ -2,6 +2,9 @@
 
 namespace Infers
 
+module NextGen =
+  val tryGenerate: obj -> option<'a>
+
 /// Interface to the resolution engine.
 type [<Sealed>] Engine =
   /// Using IDDFS, tries to generate a value of the type `'a` by using the

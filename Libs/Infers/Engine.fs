@@ -7,13 +7,42 @@ open System.Reflection
 
 /////////////////////////////////////////////////////////////////////////
 
-type InfRule =
-  abstract ReturnType: Ty
-  abstract ParTypes: array<Ty>
-  abstract GenericArgTypes: array<Ty>
-  abstract Invoke: array<Ty> * array<obj> -> option<obj>
+module Fresh =
+  let mutable private counter = 0L
 
-type InfRuleMethod (infRule: MethodInfo, infRules: obj) =
+  let newMapper () =
+    let v2w = System.Collections.Generic.Dictionary<_, _> ()
+    fun v ->
+      match v2w.TryGetValue v with
+       | (true, w) -> w
+       | (false, _) ->
+         let w = (System.Threading.Interlocked.Increment &counter, v)
+         v2w.Add (v, w)
+         w
+
+/////////////////////////////////////////////////////////////////////////
+
+type Rule<'v> =
+  abstract ReturnType: Ty<'v>
+  abstract ParTypes: array<Ty<'v>>
+  abstract GenericArgTypes: array<Ty<'v>>
+  abstract Invoke: array<Type> * array<obj> -> option<obj>
+
+module Rule =
+  let mapVars v2w (rule: Rule<_>) =
+    let returnType = mapVars v2w rule.ReturnType
+    let parTypes = lazy Array.map (mapVars v2w) rule.ParTypes
+    let genericArgTypes = lazy Array.map (mapVars v2w) rule.GenericArgTypes
+    {new Rule<_> with
+      member ir.ReturnType = returnType
+      member ir.ParTypes = parTypes.Force ()
+      member ir.GenericArgTypes = genericArgTypes.Force ()
+      member ir.Invoke (genArgTys, argObjs) = rule.Invoke (genArgTys, argObjs)}
+
+  let freshVars (rule: Rule<Type>) : Rule<Int64 * Type> =
+    mapVars (Fresh.newMapper ()) rule
+
+type RuleMethod (infRule: MethodInfo, infRules: obj) =
   let returnType = Ty.ofType infRule.ReturnType
   let parTypes =
     lazy (infRule.GetParameters ()
@@ -22,21 +51,21 @@ type InfRuleMethod (infRule: MethodInfo, infRules: obj) =
     lazy if infRule.ContainsGenericParameters
          then infRule.GetGenericArguments () |> Array.map Ty.ofType
          else [||]
-  interface InfRule with
+  interface Rule<Type> with
    member ir.ReturnType = returnType
    member ir.ParTypes = parTypes.Force ()
    member ir.GenericArgTypes = genArgs.Force ()
    member ir.Invoke (genArgTys, argObjs) =
     try (if infRule.ContainsGenericParameters
-         then infRule.MakeGenericMethod (Array.map Ty.toType genArgTys)
+         then infRule.MakeGenericMethod genArgTys
          else infRule).Invoke (infRules, argObjs) |> Some
     with :? TargetInvocationException as e
            when (match e.InnerException with
                   | Backtrack -> true
                   | _ -> false) -> None
 
-module InfRuleSet =
-  type InfRuleSet = HashEqMap<obj, TyTree<InfRule>>
+module RuleSet =
+  type RuleSet = HashEqMap<obj, TyTree<Rule<Type>>>
 
   let getInferenceRules (ty: Type) =
     ty.GetCustomAttributes<InferenceRules> true
@@ -57,7 +86,7 @@ module InfRuleSet =
               failwithf "Invalid members definition: %A" attr.Members
          [ty.GetMethods bindingFlags
           |> Seq.map (fun infRule ->
-             InfRuleMethod (infRule, infRules) :> InfRule)
+             RuleMethod (infRule, infRules) :> Rule<_>)
           collectRules ty.BaseType]
          |> Seq.concat
     infRules.GetType ()
@@ -65,7 +94,7 @@ module InfRuleSet =
     |> Seq.map (fun rule -> (rule.ReturnType, rule))
     |> TyTree.build
 
-  let ofSeq infRules : InfRuleSet =
+  let ofSeq infRules : RuleSet =
     infRules
     |> Seq.fold
         (fun rulesMap rules ->
@@ -75,32 +104,114 @@ module InfRuleSet =
            rulesMap)
         HashEqMap.empty
 
-  let rulesFor (infRuleSet: InfRuleSet) (desiredTy: Ty) = seq {
+  let rulesFor (infRuleSet: RuleSet) (desiredTy: Ty<_>) = seq {
     yield! HashEqMap.toSeq infRuleSet
            |> Seq.collect (fun (_, infRulesTree) ->
               TyTree.filter infRulesTree desiredTy)
-    let t = Ty.toType desiredTy
-    match t.GetConstructor [||] with
-     | null -> ()
-     | ctor ->
-       yield {new InfRule with
-         member this.ReturnType = desiredTy
-         member this.ParTypes = [||]
-         member this.GenericArgTypes = [||]
-         member this.Invoke (_: array<Ty>, _: array<obj>) =
-           Some (ctor.Invoke [||])}
+    let t = desiredTy |> Ty.toType
+    if not t.IsAbstract then
+      match t.GetConstructor [||] with
+       | null -> ()
+       | _ ->
+         let t = if t.IsGenericType then t.GetGenericTypeDefinition() else t
+         let returnType = Ty.ofType t
+         let genArgs =
+           lazy if t.IsGenericType
+                then t.GetGenericArguments () |> Array.map Ty.ofType
+                else [||]
+         yield {new Rule<_> with
+                 member this.ReturnType = returnType
+                 member this.ParTypes = [||]
+                 member this.GenericArgTypes = genArgs.Force ()
+                 member this.Invoke (genArgTys: array<Type>, _: array<obj>) =
+                  (if t.IsGenericType
+                   then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
+                   else t).GetConstructor([||]).Invoke [||] |> Some}
   }
 
-  let maybeAddRules (o: obj) (infRuleSet: InfRuleSet) =
+  let maybeAddRules (o: obj) (infRuleSet: RuleSet) =
     match o with
      | null ->
        infRuleSet
      | o ->
        if o.GetType () |> getInferenceRules |> Option.isSome
+          && HashEqMap.tryFind o infRuleSet |> Option.isNone
        then HashEqMap.add o (preprocess o) infRuleSet
        else infRuleSet
 
 /////////////////////////////////////////////////////////////////////////
+
+module NextGen =
+  type Env<'v when 'v : equality> = HashEqMap<'v, Ty<'v>>
+
+  type Result<'v> =
+    | Value of ty: Ty<'v> * value: obj
+    | Ruled of ty: Ty<'v> * args: list<Result<'v>> * rule: Rule<'v>
+
+  let rec resolveResult env result =
+    match result with
+     | Value _ -> result
+     | Ruled (ty, args, rule) ->
+       let ty = resolve env ty
+       let args = args |> List.map (resolveResult env)
+       if containsVars ty
+          || args |> List.exists (function Value _ -> false | Ruled _ -> true)
+       then Ruled (ty, args, rule)
+       else let genArgTys =
+              rule.GenericArgTypes
+              |> Array.map (resolve env >> Ty.toMonoType)
+            let argVals =
+              args
+              |> Array.ofList
+              |> Array.map (function Value (_, value) -> value
+                                   | _ -> failwith "Bug")
+            Value (ty, rule.Invoke (genArgTys, argVals) |> Option.get)
+
+  let rec tryGenerate' nesting
+                       limit
+                       (rules: RuleSet.RuleSet)
+                       env
+                       (desTy: Ty<_>) : seq<Result<_> * Env<_>> =
+    if limit <= nesting then
+      Seq.empty
+    else
+      let nesting = nesting + 1
+      RuleSet.rulesFor rules (mapVars snd desTy)
+      |> Seq.map Rule.freshVars
+      |> Seq.collect (fun rule ->
+         tryMatchIn rule.ReturnType desTy env
+         |> Option.toSeq |> Seq.collect (fun env ->
+            let rec outer args rules env = function
+              | [] ->
+                Seq.singleton (Ruled (resolve env desTy, List.rev args, rule), env)
+              | parTy::parTys ->
+                resolve env parTy
+                |> tryGenerate' nesting limit rules env
+                |> Seq.collect (fun (result, env) ->
+                   let rec inner resolvedArgs rules = function
+                     | [] ->
+                       outer resolvedArgs rules env parTys
+                     | arg::args ->
+                       let resolvedArg = resolveResult env arg
+                       inner (resolvedArg::resolvedArgs)
+                             (match resolvedArg with
+                               | Ruled _ -> rules
+                               | Value (_, value) ->
+                                 RuleSet.maybeAddRules value rules)
+                             args
+                   inner [] rules (List.rev (result::args)))
+            outer [] rules env (rule.ParTypes |> Array.toList)))
+
+  let tryGenerate (rules: obj) : option<'a> =
+    let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
+    let rules = RuleSet.ofSeq [rules]
+    seq {1 .. Int32.MaxValue}
+    |> Seq.collect (fun limit ->
+       tryGenerate' 0 limit rules HashEqMap.empty desTy)
+    |> Seq.tryPick (fun (result, env) ->
+       match resolveResult env result with
+        | Ruled _ -> None
+        | Value (_, value) -> Some (unbox<'a> value))
 
 [<AutoOpen>]
 module IDDFS =
@@ -117,9 +228,9 @@ module IDDFS =
   let rec dfsGenerate (explain: bool)
                       (nesting: int)
                       (limit: int)
-                      (infRuleSet: InfRuleSet.InfRuleSet)
-                      (knownObjs: HashEqMap<Ty, unit -> obj>)
-                      (desiredTy: Ty) : seq<_ * _ * _> =
+                      (infRuleSet: RuleSet.RuleSet)
+                      (knownObjs: HashEqMap<Ty<_>, unit -> obj>)
+                      (desiredTy: Ty<_>) : seq<_ * _ * _> =
     let inline tell u2msg =
       if explain then
         printfn "%s%s" (String.replicate nesting " ") (u2msg ())
@@ -133,7 +244,7 @@ module IDDFS =
      | None ->
        guard (nesting < limit) >>= fun () ->
        let nesting = nesting + 1
-       InfRuleSet.rulesFor infRuleSet desiredTy >>= fun infRule ->
+       RuleSet.rulesFor infRuleSet desiredTy >>= fun infRule ->
        tell <| fun () ->
          sprintf "trying: %A :- %A"
           (Ty.toType infRule.ReturnType) (Array.map Ty.toType infRule.ParTypes)
@@ -164,7 +275,7 @@ module IDDFS =
          match parTypes with
           | [] ->
             let argObjs = Array.ofList (List.rev argObjs)
-            infRule.Invoke (genArgTypes, argObjs)
+            infRule.Invoke (Array.map Ty.toType genArgTypes, argObjs)
             |> Option.toSeq |>> fun desiredObj ->
                tell <| fun () -> sprintf "built: %A" (Ty.toType desiredTy)
                (desiredObj, v2t, tie desiredObj knownObjs)
@@ -174,7 +285,7 @@ module IDDFS =
               do tell <| fun () -> sprintf "FAILED: %A" (Ty.toType parType)
             }
             results >>= fun (argObj, v2t, knownObjs) ->
-            lp (InfRuleSet.maybeAddRules argObj infRuleSet)
+            lp (RuleSet.maybeAddRules argObj infRuleSet)
                (genArgTypes |> Array.map (resolve v2t))
                knownObjs
                (argObj::argObjs)
@@ -192,7 +303,7 @@ module IDDFS =
 
 type [<Sealed>] Engine =
   static member TryGenerate (explain: bool,
-                             initialDepth: int, 
+                             initialDepth: int,
                              maxDepth: int,
                              rules: seq<obj>) : option<'a> =
     assert (0 <= initialDepth && initialDepth <= maxDepth)
@@ -203,7 +314,7 @@ type [<Sealed>] Engine =
      explain
      initialDepth
      maxDepth
-     (InfRuleSet.ofSeq rules)
+     (RuleSet.ofSeq rules)
      desiredTy
     |> Seq.tryPick (fun (x, _, _) ->
        Some (unbox<'a> x))

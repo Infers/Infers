@@ -15,34 +15,66 @@ type TyCon =
   | Def of def: Type
 
 /// Represents a type.  This makes dealing with generic types more convenient.
-type Ty =
-  | Var of Type
-  | App of TyCon * array<Ty>
+type Ty<'v> =
+  | Var of 'v
+  | App of TyCon * array<Ty<'v>>
+  override t.ToString () =
+    match t with
+     | Var v -> sprintf "%A" v
+     | App (Def tc, [||]) ->
+       sprintf "%A" tc
+     | App (tc, tys) ->
+       match tc with
+        | Arr _ ->
+          sprintf "array<%A>" tys.[0]
+        | Def t ->
+          if t = typedefof<_ -> _> then
+            sprintf "(%A -> %A)" tys.[0] tys.[1]
+          elif t = typedefof<list<_>> then
+            sprintf "list<%A>" tys.[0]
+          else
+            sprintf "%A%A" t tys
 
+module Ty =
   /// Converts a .Net type to a `Ty`.
-  static member ofType (t: Type) =
+  let rec ofType (t: Type) =
     if t.IsArray then
-      App (Arr (t.GetArrayRank ()), [|Ty.ofType (t.GetElementType ())|])
+      App (Arr (t.GetArrayRank ()), [|ofType (t.GetElementType ())|])
     elif t.IsGenericParameter then
       Var t
     elif t.IsGenericType then
       App (Def (t.GetGenericTypeDefinition ()),
-           t.GetGenericArguments () |> Array.map Ty.ofType)
+           t.GetGenericArguments () |> Array.map ofType)
     else
       App (Def t, [||])
 
   /// Converts a `Ty` to the corresponding .Net `Type`.
-  static member toType ty =
+  let rec toType (ty: Ty<Type>) =
     match ty with
      | Var t -> t
      | App (Arr r, [|ty|]) -> 
-       let t = Ty.toType ty
+       let t = toType ty
        if r = 1
        then t.MakeArrayType ()
        else t.MakeArrayType r
      | App (Arr _, _) -> failwithf "Bug: %A" ty
      | App (Def t, [||]) -> t
-     | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map Ty.toType)
+     | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map toType)
+
+  let toMonoType (tyOriginal: Ty<'any>) =
+    let rec toMonoType ty : Type =
+      match ty with
+       | Var _ ->
+         failwithf "Ty.toMonoType: Type contained vars: '%A'" tyOriginal
+       | App (Arr r, [|ty|]) ->
+         let t = toMonoType ty
+         if r = 1
+         then t.MakeArrayType ()
+         else t.MakeArrayType r
+       | App (Arr _, _) -> failwithf "Bug: %A" ty
+       | App (Def t, [||]) -> t
+       | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map toMonoType)
+    toMonoType tyOriginal
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -81,27 +113,35 @@ let rec private occurs v2ty v ty =
      tys
      |> Array.exists (occurs v2ty v << resolveTop v2ty)
 
+let rec mapVars v2w ty =
+  match ty with
+   | Var v ->
+     Var (v2w v)
+   | App (tc, tys) ->
+     App (tc, tys |> Array.map (mapVars v2w))
+
+let rec tryMatchIn formal actual v2ty =
+  match (resolveTop v2ty formal, resolveTop v2ty actual) with
+   | (Var fv, Var av) when fv = av ->
+     Some v2ty
+   | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
+     Some (HashEqMap.add v ty v2ty)
+   | (App (formal, pars), App (actual, args)) when formal = actual ->
+     assert (pars.Length = args.Length)
+     let rec loop i v2ty =
+       if i < pars.Length then
+         tryMatchIn pars.[i] args.[i] v2ty
+         |> Option.bind (loop (i+1))
+       else
+         Some v2ty
+     loop 0 v2ty
+   | _ ->
+     None
+
 /// Given two types, determines whether they can be unified and, if so, returns
 /// substition of type variables to types.
 let tryMatch formal actual =
-  let rec tryMatch formal actual v2ty =
-    match (resolveTop v2ty formal, resolveTop v2ty actual) with
-     | (Var fv, Var av) when fv = av ->
-       Some v2ty
-     | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
-       Some (HashEqMap.add v ty v2ty)
-     | (App (formal, pars), App (actual, args)) when formal = actual ->
-       assert (pars.Length = args.Length)
-       let rec loop i v2ty =
-         if i < pars.Length then
-           tryMatch pars.[i] args.[i] v2ty
-           |> Option.bind (loop (i+1))
-         else
-           Some v2ty
-       loop 0 v2ty
-     | _ ->
-       None
-  tryMatch formal actual HashEqMap.empty
+  tryMatchIn formal actual HashEqMap.empty
 
 /// Given two types, determines whether they are equal, taking into
 /// consideration the implicit universal quantification of type variables.
@@ -158,7 +198,7 @@ let moreSpecific lhs rhs =
 /// Reorder the type associations in the given array so that types that unify
 /// with a smaller set of types are before types that unify with larger sets of
 /// types.
-let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
+let inPlaceSelectSpecificFirst (tyrs: array<Ty<'v> * 'r>) =
   let swap i j =
     let iEl = tyrs.[i]
     tyrs.[i] <- tyrs.[j]
@@ -207,7 +247,7 @@ module TyTree =
           None
 
   let rec private build' (ats: list<TyCursor>)
-                         (tyrs: list<Ty * 'r>) : TyTree<'r> =
+                         (tyrs: list<Ty<_> * 'r>) : TyTree<'r> =
     // `tyrs` is the remaining association sequence we wish to classify.
     lazy match tyrs with
           | [] -> Empty
@@ -272,7 +312,7 @@ module TyTree =
 
   /// Returns a sequence values from the type tree whose associated types may
   /// unify with the given type.
-  let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> = seq {
+  let rec filter (formal: TyTree<'r>) (actual: Ty<_>) : seq<'r> = seq {
     match force formal with
      | Empty -> ()
      | One r -> yield r
@@ -297,7 +337,7 @@ module TyTree =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-let prepare (m: MethodInfo) (v2ty: HashEqMap<Type, Ty>) : MethodInfo =
+let prepare (m: MethodInfo) (v2ty: HashEqMap<_, Ty<_>>) : MethodInfo =
   if m.ContainsGenericParameters then
     m.MakeGenericMethod
      (m.GetGenericArguments ()
