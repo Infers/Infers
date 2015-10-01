@@ -41,6 +41,26 @@ module Option =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+module Array =
+  let chooseAll x2yO xs =
+    let ys = Array.zeroCreate <| Array.length xs
+    let rec lp i =
+      if xs.Length <= i then
+        Some ys
+      else
+        match x2yO xs.[i] with
+         | None -> None
+         | Some y ->
+           ys.[i] <- y
+           lp (i+1)
+    lp 0
+
+////////////////////////////////////////////////////////////////////////////////
+
+let (|Force|) (xL: Lazy<_>) = xL.Force ()
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// Represents a functional set of type `'k` requiring only that `'k` provides
 /// equality and hash operations.
 type HashEqSet<'k> when 'k: equality = HES of Map<int, list<'k>>
