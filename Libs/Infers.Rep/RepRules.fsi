@@ -18,8 +18,14 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a product type representation for the type `'p`.
   member product: Rep<'p> -> Product<'p>
 
-  /// Attempts to constructs a record type representation for the type `'r`.
+  /// Attempts to construct a record type representation for the type `'r`.
   member record: Rep<'r> -> Record<'r>
+
+  /// Attempts to construct a nested choice for the type `'t`'.
+  member asChoice: Union<'t> * AsChoice<'c, 't> -> AsChoice<'c, 't>
+
+  /// Attempts to construct a nested product for the type `'t`'.
+  member asProduct: Product<'t> * AsProduct<'p, 't> -> AsProduct<'p, 't>
 
   /// Attempts to constructs a tuple type representation for the type `'t`.
   member tuple: Rep<'t> -> Tuple<'t>
@@ -28,10 +34,10 @@ type [<InferenceRules>] Rep =
   member asElem: Labelled<'e, 'sp, 't> -> Elem<'e, 'sp, 't>
 
   /// Trivially view a tuple item as an elem.
-  member asElem: Item<'e, 'sp, 't> -> Elem<'e, 'sp, 't>
+  member asElem: Tuple<'t> * Item<'e, 'sp, 't> -> Elem<'e, 'sp, 't>
 
   /// Trivially view a record field as an elem.
   member asLabelled: Field<'f, 'sp, 'r> -> Labelled<'f, 'sp, 'r>
 
   /// Trivially view a case label as an elem.
-  member asLabelled: Label<'l, 'sp, 'sc, 'u> -> Labelled<'l, 'sp, 'u>
+  member asLabelled: Union<'u> * Label<'l, 'sp, 'sc, 'u> -> Labelled<'l, 'sp, 'u>

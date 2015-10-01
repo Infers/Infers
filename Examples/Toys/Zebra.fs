@@ -66,7 +66,7 @@ type [<InferenceRules>] Zebra () =
       : Result<'x0 * 'x1 * 'x2 * 'x3 * 'x4> = Result
 
 let test () : unit =
-  if NextGen.tryGenerate (Solver<Zebra> ()) = Some Solution
+  if Engine.tryGenerate (Solver<Zebra> ()) = Some Solution
   then printfn "Got solution!"
   else printfn "No solution?"
 

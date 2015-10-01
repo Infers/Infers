@@ -54,7 +54,7 @@ let CloneProductToCloneSmart (isMutable: bool)
 type [<InferenceRules>] Clone () =
   // Turn a smart clone to a simple clone --------------------------------------
 
-  member this.AsClone (clone: CloneSmarter<'x>) : Clone<'x> =
+  member this.AsClone (_: Rep, clone: CloneSmarter<'x>) : Clone<'x> =
     match clone with
      | null  -> fun x -> x
      | clone -> fun x -> clone.Clone (x)
@@ -111,8 +111,7 @@ type [<InferenceRules>] Clone () =
   // Rules for union types -----------------------------------------------------
 
   /// A rule for cloning an arbitrary union type.
-  member this.Union (_: Rep,
-                     union: Union<'t>,
+  member this.Union (union: Union<'t>,
                      asChoice: AsChoice<'cs, 't>,
                      CloneUnion cloneUnion: CloneUnion<'cs, 'cs, 't>) =
     /// Is there something to copy?
@@ -163,8 +162,7 @@ type [<InferenceRules>] Clone () =
   // Rules for product types ---------------------------------------------------
 
   /// A rule for cloning an arbitrary product (tuple, record or union case).
-  member this.Product (_: Rep,
-                       product: Product<'t>,
+  member this.Product (product: Product<'t>,
                        asProduct: AsProduct<'es, 't>,
                        cloneProduct': CloneProduct<'es, 'es, 't>) : CloneSmarter<'t> =
     // Do we need to copy something?
@@ -204,7 +202,7 @@ type [<InferenceRules>] Clone () =
           cloneProductRest.ForAll pred}
 
   /// A rule for cloning a specific element of type `'e` within a product.
-  member this.Elem (_: Rep, _: Elem<'e, 'es, 't>, cloneElem': CloneSmarter<'e>) =
+  member this.Elem (_: Elem<'e, 'es, 't>, cloneElem': CloneSmarter<'e>) =
     match cloneElem' with
      | null ->
        null

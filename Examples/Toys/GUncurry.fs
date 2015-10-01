@@ -24,7 +24,7 @@ type [<InferenceRules>] GUncurry () =
   member g.Finish () = id
 
 /// Derives a function that uncurries a given n-ary curried function.
-let guncurry f = Option.get (NextGen.tryGenerate (GUncurry ())) f
+let guncurry f = StaticRules<GUncurry>.Generate() f
 
 let test () : unit =
   guncurry (printfn "%d %s") (1, "2")

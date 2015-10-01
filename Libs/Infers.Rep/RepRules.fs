@@ -417,7 +417,10 @@ type [<InferenceRules>] Rep () =
   member this.record (rep: Rep<'r>) : Record<'r> = cast rep
   member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
 
-  member this.asElem (i: Item<'e, 'p, 't>) = i :> Elem<'e, 'p, 't>
+  member this.asChoice (_: Union<'t>, c: AsChoice<'c, 't>) = c
+  member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p
+
+  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) = i :> Elem<'e, 'p, 't>
   member this.asElem (l: Labelled<'e, 'p, 't>) = l :> Elem<'e, 'p, 't>
   member this.asLabelled (f: Field<'f, 'p, 'r>) = f :> Labelled<'f, 'p, 'r>
-  member this.asLabelled (l: Label<'l, 'sp, 'sc, 'u>) = l :> Labelled<'l, 'sp, 'u>
+  member this.asLabelled (_: Union<'u>, l: Label<'l, 'sp, 'sc, 'u>) = l :> Labelled<'l, 'sp, 'u>

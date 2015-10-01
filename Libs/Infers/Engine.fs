@@ -133,186 +133,143 @@ module RuleSet =
 
 /////////////////////////////////////////////////////////////////////////
 
-module NextGen =
-  type Env<'v when 'v : equality> = HashEqMap<'v, Ty<'v>>
+module Engine =
+  type TyEnv<'v when 'v : equality> = HashEqMap<'v, Ty<'v>>
+  type ObjEnv<'v when 'v : equality> = HashEqMap<Ty<'v>, obj>
 
   type Result<'v> =
     | Value of ty: Ty<'v> * value: obj
-    | Ruled of ty: Ty<'v> * args: list<Result<'v>> * rule: Rule<'v>
+    | Ruled of ty: Ty<'v> * args: array<Result<'v>> * rule: Rule<'v>
 
-  let rec resolveResult env result =
+  let rec tryResolveResult objEnv tyEnv result =
     match result with
-     | Value _ -> result
-     | Ruled (ty, args, rule) ->
-       let ty = resolve env ty
-       let args = args |> List.map (resolveResult env)
-       if containsVars ty
-          || args |> List.exists (function Value _ -> false | Ruled _ -> true)
-       then Ruled (ty, args, rule)
-       else let genArgTys =
-              rule.GenericArgTypes
-              |> Array.map (resolve env >> Ty.toMonoType)
-            let argVals =
-              args
-              |> Array.ofList
-              |> Array.map (function Value (_, value) -> value
-                                   | _ -> failwith "Bug")
-            Value (ty, rule.Invoke (genArgTys, argVals) |> Option.get)
+     | Value _ -> (objEnv, Some result)
+     | Ruled (ty, args', rule) ->
+       let args = Array.zeroCreate <| Array.length args'
+       let rec lp objEnv i =
+         if args.Length <= i then
+           (objEnv, Some args)
+         else
+           match tryResolveResult objEnv tyEnv args'.[i] with
+            | (objEnv, Some arg) ->
+              args.[i] <- arg
+              lp objEnv (i+1)
+            | (objEnv, None) ->
+              (objEnv, None)
+       match lp objEnv 0 with
+        | (objEnv, None) ->
+          (objEnv, None)
+        | (objEnv, Some args) ->
+          let ty = resolve tyEnv ty
+          match (lazy containsVars ty,
+                 lazy (Array.chooseAll
+                         <| function Value (_, v) -> Some v
+                                   | Ruled _ -> None
+                         <| args)) with
+           | (Force true, _) | (_, Force None) ->
+             (objEnv, Ruled (ty, args, rule) |> Some)
+           | (Force false, Force (Some argVals)) ->
+             let genArgTys =
+               rule.GenericArgTypes
+               |> Array.map (resolve tyEnv >> Ty.toMonoType)
+             match rule.Invoke (genArgTys, argVals) with
+              | None -> (objEnv, None)
+              | Some o ->
+                (HashEqMap.add ty o objEnv, Value (ty, o) |> Some)
 
-  let rec tryGenerate' nesting
-                       limit
-                       (rules: RuleSet.RuleSet)
-                       env
-                       (desTy: Ty<_>) : seq<Result<_> * Env<_>> =
+  let rec tryGenerate' nesting limit rules objEnv tyEnv ty =
     if limit <= nesting then
       Seq.empty
     else
       let nesting = nesting + 1
-      RuleSet.rulesFor rules (mapVars snd desTy)
-      |> Seq.map Rule.freshVars
-      |> Seq.collect (fun rule ->
-         tryMatchIn rule.ReturnType desTy env
-         |> Option.toSeq |> Seq.collect (fun env ->
-            let rec outer args rules env = function
-              | [] ->
-                Seq.singleton (Ruled (resolve env desTy, List.rev args, rule), env)
-              | parTy::parTys ->
-                resolve env parTy
-                |> tryGenerate' nesting limit rules env
-                |> Seq.collect (fun (result, env) ->
-                   let rec inner resolvedArgs rules = function
-                     | [] ->
-                       outer resolvedArgs rules env parTys
-                     | arg::args ->
-                       let resolvedArg = resolveResult env arg
-                       inner (resolvedArg::resolvedArgs)
-                             (match resolvedArg with
-                               | Ruled _ -> rules
-                               | Value (_, value) ->
-                                 RuleSet.maybeAddRules value rules)
-                             args
-                   inner [] rules (List.rev (result::args)))
-            outer [] rules env (rule.ParTypes |> Array.toList)))
+      let ty' = mapVars snd ty
+      match HashEqMap.tryFind ty objEnv with
+       | Some o ->
+         Seq.singleton (Value (ty, o), objEnv, tyEnv)
+       | None ->
+         RuleSet.rulesFor rules ty'
+         |> Seq.map Rule.freshVars
+         |> Seq.collect (fun rule ->
+            tryMatchIn rule.ReturnType ty tyEnv
+            |> Option.toSeq |> Seq.collect (fun tyEnv ->
+               let rec outer args rules objEnv tyEnv ty parTys =
+                 let ty = resolve tyEnv ty
+
+                 let (objEnv, tyEnv) =
+                   if rule.ParTypes.Length <> 0 &&
+                      containsVars ty |> not then
+                     let recTy = App (Def typedefof<Rec<_>>, [|ty|])
+                     if HashEqMap.tryFind recTy objEnv |> Option.isNone then
+                       tryGenerate' nesting limit rules objEnv tyEnv recTy
+                       |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+                          match result with
+                           | Ruled _ -> None
+                           | Value (_, recO) ->
+                             match recO with
+                              | :? IRecObj as recO' ->
+                                Some (objEnv
+                                      |> HashEqMap.add recTy recO
+                                      |> HashEqMap.add ty (recO'.GetObj ()), tyEnv)
+                              | _ ->
+                                failwith "Bug")
+                       |> function None -> (objEnv, tyEnv)
+                                 | Some envs -> envs
+                     else
+                       (objEnv, tyEnv)
+                   else
+                     (objEnv, tyEnv)
+
+                 match parTys with
+                  | [] ->
+                    match Ruled (ty, List.rev args |> Array.ofList, rule)
+                          |> tryResolveResult objEnv tyEnv with
+                     | (objEnv, None) ->
+                       Seq.empty
+                     | (objEnv, Some result) ->
+
+                       match result with
+                        | Value (ty, o) ->
+                          let recTy = App (Def typedefof<Rec<_>>, [|ty|])
+                          match HashEqMap.tryFind recTy objEnv with
+                           | None -> ()
+                           | Some recO ->
+                             match recO with
+                              | :? IRecObj as recO' ->
+                                recO'.SetObj o
+                              | _ ->
+                                failwith "Bug"
+                        | Ruled _ ->
+                          ()
+
+                       Seq.singleton (result, objEnv, tyEnv)
+                  | parTy::parTys ->
+                    resolve tyEnv parTy
+                    |> tryGenerate' nesting limit rules objEnv tyEnv
+                    |> Seq.collect (fun (result, objEnv, tyEnv) ->
+                       let rec inner resolvedArgs rules objEnv = function
+                         | [] ->
+                           outer resolvedArgs rules objEnv tyEnv ty parTys
+                         | arg::args ->
+                           match tryResolveResult objEnv tyEnv arg with
+                            | (objEnv, None) -> Seq.empty
+                            | (objEnv, Some resolvedArg) ->
+                              inner <| resolvedArg::resolvedArgs
+                                    <| match resolvedArg with
+                                        | Ruled _ -> rules
+                                        | Value (_, value) ->
+                                          RuleSet.maybeAddRules value rules
+                                    <| objEnv
+                                    <| args
+                       result::args |> List.rev |> inner [] rules objEnv)
+               rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
     let rules = RuleSet.ofSeq [rules]
     seq {1 .. Int32.MaxValue}
     |> Seq.collect (fun limit ->
-       tryGenerate' 0 limit rules HashEqMap.empty desTy)
-    |> Seq.tryPick (fun (result, env) ->
-       match resolveResult env result with
+       tryGenerate' 0 limit rules HashEqMap.empty HashEqMap.empty desTy)
+    |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+       match result with
         | Ruled _ -> None
         | Value (_, value) -> Some (unbox<'a> value))
-
-[<AutoOpen>]
-module IDDFS =
-  let result x = Seq.singleton x
-  let (>>=) xO x2yO = Seq.collect x2yO xO
-  let (|>>) xO x2y = Seq.map x2y xO
-  let guard b = if b then result () else Seq.empty
-
-  let isRec ty =
-    match ty with
-     | App (Def t, _) when t = typedefof<Rec<_>> -> true
-     | _ -> false
-
-  let rec dfsGenerate (explain: bool)
-                      (nesting: int)
-                      (limit: int)
-                      (infRuleSet: RuleSet.RuleSet)
-                      (knownObjs: HashEqMap<Ty<_>, unit -> obj>)
-                      (desiredTy: Ty<_>) : seq<_ * _ * _> =
-    let inline tell u2msg =
-      if explain then
-        printfn "%s%s" (String.replicate nesting " ") (u2msg ())
-    tell <| fun () -> sprintf "desired: %A" (Ty.toType desiredTy)
-    match HashEqMap.tryFind desiredTy knownObjs
-          |> Option.bind (fun u2o ->
-             try Some (u2o ()) with Backtrack -> None) with
-     | Some o ->
-       tell <| fun () -> sprintf "known"
-       result (o, HashEqMap.empty, knownObjs)
-     | None ->
-       guard (nesting < limit) >>= fun () ->
-       let nesting = nesting + 1
-       RuleSet.rulesFor infRuleSet desiredTy >>= fun infRule ->
-       tell <| fun () ->
-         sprintf "trying: %A :- %A"
-          (Ty.toType infRule.ReturnType) (Array.map Ty.toType infRule.ParTypes)
-       tryMatch infRule.ReturnType desiredTy |> Option.toSeq >>= fun v2t ->
-       let desiredTy = resolve v2t desiredTy
-       guard (not (containsVars desiredTy)) >>= fun () ->
-       tell <| fun () -> sprintf "match as: %A" (Ty.toType desiredTy)
-       let parTypes = infRule.ParTypes
-       let (knownObjs, tie) =
-         let noRec () =
-           (HashEqMap.add desiredTy (fun () -> raise Backtrack) knownObjs,
-            constant >> HashEqMap.add desiredTy)
-         if parTypes.Length = 0 || isRec desiredTy then
-           noRec ()
-         else
-           let recTy = App (Def typedefof<Rec<_>>, [|desiredTy|])
-           match dfsGenerate explain nesting limit infRuleSet knownObjs recTy
-                 |> Seq.tryPick Some with
-            | Some (:? IRecObj as recObj, _, knownObjs) ->
-              (HashEqMap.add desiredTy
-                (fun () -> recObj.GetObj ()) knownObjs,
-               fun complete knownObjs ->
-                 recObj.SetObj complete
-                 HashEqMap.add desiredTy (constant complete) knownObjs)
-            | _ ->
-              noRec ()
-       let rec lp infRuleSet genArgTypes knownObjs argObjs parTypes =
-         match parTypes with
-          | [] ->
-            let argObjs = Array.ofList (List.rev argObjs)
-            infRule.Invoke (Array.map Ty.toType genArgTypes, argObjs)
-            |> Option.toSeq |>> fun desiredObj ->
-               tell <| fun () -> sprintf "built: %A" (Ty.toType desiredTy)
-               (desiredObj, v2t, tie desiredObj knownObjs)
-          | parType::parTypes ->
-            let results = seq {
-              yield! dfsGenerate explain nesting limit infRuleSet knownObjs parType
-              do tell <| fun () -> sprintf "FAILED: %A" (Ty.toType parType)
-            }
-            results >>= fun (argObj, v2t, knownObjs) ->
-            lp (RuleSet.maybeAddRules argObj infRuleSet)
-               (genArgTypes |> Array.map (resolve v2t))
-               knownObjs
-               (argObj::argObjs)
-               (parTypes |> List.map (resolve v2t))
-       lp infRuleSet
-          (infRule.GenericArgTypes |> Array.map (resolve v2t))
-          knownObjs
-          []
-          (parTypes |> Array.map (resolve v2t) |> List.ofArray)
-
-  let iddfsGenerate explain initialDepth maxDepth infRuleSet desiredTy =
-    seq {initialDepth .. maxDepth}
-    |> Seq.collect (fun limit ->
-       dfsGenerate explain 0 limit infRuleSet HashEqMap.empty desiredTy)
-
-type [<Sealed>] Engine =
-  static member TryGenerate (explain: bool,
-                             initialDepth: int,
-                             maxDepth: int,
-                             rules: seq<obj>) : option<'a> =
-    assert (0 <= initialDepth && initialDepth <= maxDepth)
-    let desiredTy = Ty.ofType typeof<'a>
-    if containsVars desiredTy then
-      failwith "Infers can only generate monomorphic values"
-    iddfsGenerate
-     explain
-     initialDepth
-     maxDepth
-     (RuleSet.ofSeq rules)
-     desiredTy
-    |> Seq.tryPick (fun (x, _, _) ->
-       Some (unbox<'a> x))
-
-  static member TryGenerate (rules: obj) =
-    Engine.TryGenerate (false, Int32.MaxValue, Int32.MaxValue, [rules])
-
-  static member TryGenerate (rules: seq<obj>) =
-    Engine.TryGenerate (false, Int32.MaxValue, Int32.MaxValue, rules)

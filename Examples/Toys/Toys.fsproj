@@ -7,7 +7,6 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Toys</RootNamespace>
     <AssemblyName>Toys</AssemblyName>
-    <UseMSBuildEngine>True</UseMSBuildEngine>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -16,11 +15,11 @@
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <Externalconsole>true</Externalconsole>
     <PlatformTarget>
     </PlatformTarget>
     <GenerateTailCalls>true</GenerateTailCalls>
     <DocumentationFile>bin\Debug\Toys.XML</DocumentationFile>
+    <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

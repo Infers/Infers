@@ -106,7 +106,6 @@ type [<InferenceRules>] Clone () =
 
   /// A rule for cloning an arbitrary product (tuple, record or union case).
   member this.Product (_: Rep,
-                       _: Product<'t>,
                        asProduct: AsProduct<'es, 't>,
                        cloneProduct: CloneProduct<'es, 'es, 't>) : Clone<'t> =
     // We forward here to a helper function to avoid duplicating this case.

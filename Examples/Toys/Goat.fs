@@ -66,7 +66,7 @@ type [<InferenceRules>] Goat () =
                     : Search<Cons<'s1, Cons<'s2, 'p>>, 'd> = Search
         
 let test () : unit =
-  if NextGen.tryGenerate (Solver<Goat> ()) = Some Solution
+  if Engine.tryGenerate (Solver<Goat> ()) = Some Solution
   then printfn "Got solution!"
   else printfn "No solution?"
 
