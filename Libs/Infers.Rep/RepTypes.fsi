@@ -104,6 +104,12 @@ type [<InferenceRules>] Rep<'x> = class
 
 /////////////////////////////////////////////////////////////////////////
 
+/// Representation for primitive types.
+type [<AbstractClass>] Prim<'x> =
+  inherit Rep<'x>
+
+/////////////////////////////////////////////////////////////////////////
+
 /// Type representation for the F# product type (tuple or record) `'t`.
 #if DOC
 ///

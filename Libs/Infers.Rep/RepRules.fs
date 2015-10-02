@@ -406,7 +406,8 @@ type [<InferenceRules>] Rep () =
              Builder.metaField elemType [|box i|]
               (Builder.overrideGetMethod "Get" t props.[i]))))
       else
-        raise Backtrack with
+        Builder.metaType typeof<Prim<'t>> [||]
+         (Builder.result ()) with
     | :? Rep<'t> as rep ->
       rep
     | _ ->
@@ -416,6 +417,7 @@ type [<InferenceRules>] Rep () =
   member this.product (rep: Rep<'p>) : Product<'p> = cast rep
   member this.record (rep: Rep<'r>) : Record<'r> = cast rep
   member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
+  member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
 
   member this.asChoice (_: Union<'t>, c: AsChoice<'c, 't>) = c
   member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p

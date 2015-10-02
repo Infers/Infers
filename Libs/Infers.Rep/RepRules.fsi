@@ -21,6 +21,9 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a record type representation for the type `'r`.
   member record: Rep<'r> -> Record<'r>
 
+  /// Attempts to construct a primitive type representation for the type `'t`.
+  member prim: Rep<'t> -> Prim<'t>
+
   /// Attempts to construct a nested choice for the type `'t`'.
   member asChoice: Union<'t> * AsChoice<'c, 't> -> AsChoice<'c, 't>
 

@@ -29,6 +29,9 @@ type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> () = class
 type [<InferenceRules>] Rep<'x> () = class
   end
 
+type [<AbstractClass>] Prim<'x> () =
+  inherit Rep<'x> ()
+
 type [<AbstractClass>] Product<'r> =
   inherit Rep<'r>
   new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
