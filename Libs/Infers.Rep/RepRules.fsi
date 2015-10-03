@@ -39,8 +39,8 @@ type [<InferenceRules>] Rep =
   /// Trivially view a tuple item as an elem.
   member asElem: Tuple<'t> * Item<'e, 'sp, 't> -> Elem<'e, 'sp, 't>
 
-  /// Trivially view a record field as an elem.
+  /// Trivially view a record field as a labelled elem.
   member asLabelled: Field<'f, 'sp, 'r> -> Labelled<'f, 'sp, 'r>
 
-  /// Trivially view a case label as an elem.
+  /// Trivially view a case label as a labelled elem.
   member asLabelled: Union<'u> * Label<'l, 'sp, 'sc, 'u> -> Labelled<'l, 'sp, 'u>
