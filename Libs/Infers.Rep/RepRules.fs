@@ -20,13 +20,15 @@ module BindingFlags =
   /// Both public and non-public members.
   let [<Literal>] Any = BindingFlags.Public ||| BindingFlags.NonPublic
   /// Only declared and instance members.
-  let [<Literal>] DeclaredInstance = BindingFlags.DeclaredOnly ||| BindingFlags.Instance
+  let [<Literal>] DeclaredInstance =
+    BindingFlags.DeclaredOnly ||| BindingFlags.Instance
   /// Only declared instance members that may be either public or non-public.
   let [<Literal>] AnyDeclaredInstance = Any ||| DeclaredInstance
   /// Only public declared instance members.
-  let [<Literal>] PublicDeclaredInstance = BindingFlags.Public ||| DeclaredInstance
+  let [<Literal>] PublicDeclaredInstance =
+    BindingFlags.Public ||| DeclaredInstance
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 [<AutoOpen>]
 module Util =
@@ -74,7 +76,9 @@ type Builder =
     fun (typeBuilder, values) ->
       (values, typeBuilder)
 
-  static member metaType (baseType: Type) (basePars: array<obj>) (builder: Builder<unit>) =
+  static member metaType (baseType: Type)
+                         (basePars: array<obj>)
+                         (builder: Builder<unit>) =
     lock repModule <| fun () ->
     let typeBuilder =
       repModule.DefineType
@@ -83,8 +87,9 @@ type Builder =
         baseType)
     let (values, ()) = builder (typeBuilder, [])
     let baseArgTypes =
-      match baseType.GetConstructors (BindingFlags.Any ||| BindingFlags.Instance) with
-       | [|baseCtor|] when (baseCtor.GetParameters ()).Length = basePars.Length ->
+      match baseType.GetConstructors
+              (BindingFlags.Any ||| BindingFlags.Instance) with
+       | [|baseCtor|] when baseCtor.GetParameters().Length = basePars.Length ->
          let baseArgTypes =
            baseCtor.GetParameters () |> Array.map (fun p -> p.ParameterType)
          let ctor =
@@ -99,7 +104,8 @@ type Builder =
          ilGen.Emit (OpCodes.Ret)
          baseArgTypes
        | cs ->
-         failwithf "Type %A used as metatype base must have exactly one ctor with %d params.  Got: %A"
+         failwithf "Type %A used as metatype base must have exactly one ctor \
+                    with %d params.  Got: %A"
           baseType basePars.Length cs
     values
     |> List.iter (fun (name, field, baseType, _) ->
@@ -133,11 +139,11 @@ type Builder =
     let ctor = metaType.GetConstructor baseArgTypes
     ctor.Invoke basePars
 
-  static member metaValue name fb baseType (value: Object) : Builder<unit> =
+  static member metaValue name fb baseType (value: Object) =
     fun (typeBuilder, values) ->
       ((name, fb, baseType, value)::values, ())
 
-  static member metaField baseType basePars (definition: Builder<unit>) : Builder<unit> =
+  static member metaField baseType basePars (definition: Builder<unit>) =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let name = uniqueName ()
     let fb =
@@ -164,7 +170,7 @@ type Builder =
   static member emit (op, t: Type) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, t) ; ilgen
 
-  static member overrideMethod name resultType paramTypes code : Builder<unit> =
+  static member overrideMethod name resultType paramTypes code =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let methodBuilder =
       typeBuilder.DefineMethod
@@ -178,7 +184,7 @@ type Builder =
     code ilgen |> ignore
     Builder.result ()
 
-  static member overrideGetMethod name paramType (property: PropertyInfo) : Builder<unit> =
+  static member overrideGetMethod name paramType (property: PropertyInfo) =
     Builder.overrideMethod name
      property.PropertyType
      [|paramType (*property.DeclaringType*)|]
@@ -186,7 +192,7 @@ type Builder =
       Builder.emit (OpCodes.Call, property.GetGetMethod ()) >>
       Builder.emit (OpCodes.Ret))
 
-  static member overrideSetMethodWhenCanWrite name (property: PropertyInfo) : Builder<unit> =
+  static member overrideSetMethodWhenCanWrite name (property: PropertyInfo) =
     if property.CanWrite then
       Builder.overrideMethod name
        typeof<Void>
@@ -205,13 +211,16 @@ type Builder =
     else
       Builder.result ()
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 module Products =
 
   let products ts = build typedefof<And<_, _>> ts
 
-  let defineExtractAndCreate t emitCtor (props: array<PropertyInfo>) (products: array<Type>) =
+  let defineExtractAndCreate t
+                             emitCtor
+                             (props: array<PropertyInfo>)
+                             (products: array<Type>) =
     let getField (t: Type) name =
       match t.GetField name with // Only public is ok here.
        | null -> failwithf "The %A type has no field named \"%s\"" t name
@@ -282,7 +291,7 @@ module Products =
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
       defineRest)
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 module Unions =
   let choices ts = build typedefof<Choice<_, _>> ts
@@ -295,7 +304,7 @@ module Unions =
      [||]
      defineRest
 
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 type [<InferenceRules>] Rep () =
   member this.rep () : Rep<'t> = StaticMap<Rep>.Memoize <| fun () ->
@@ -303,18 +312,18 @@ type [<InferenceRules>] Rep () =
 
     match
       if FSharpType.IsRecord (t, BindingFlags.Any) then
-        let fields =
-          FSharpType.GetRecordFields
-           (t, BindingFlags.Public ||| BindingFlags.NonPublic)
-        let products = Products.products (fields |> Array.map (fun p -> p.PropertyType))
+        let fields = FSharpType.GetRecordFields (t, BindingFlags.Any)
+        let products =
+          Products.products (fields |> Array.map (fun p -> p.PropertyType))
 
         Builder.metaType typeof<Record<'t>>
-         [|box fields.Length; box (fields |> Array.exists (fun p -> p.CanWrite))|]
+         [|box fields.Length
+           box (fields |> Array.exists (fun p -> p.CanWrite))|]
          (Products.asProductField t
            (Builder.emit
              (OpCodes.Newobj,
               FSharpValue.PreComputeRecordConstructorInfo
-               (t, BindingFlags.Public ||| BindingFlags.NonPublic)))
+               (t, BindingFlags.Any)))
            fields
            products
            (Builder.forTo 0 (fields.Length-1) (fun i ->
@@ -346,7 +355,7 @@ type [<InferenceRules>] Rep () =
 
         Builder.metaType typeof<Union<'t>> [|box cases.Length|]
          ((match FSharpValue.PreComputeUnionTagMemberInfo
-                  (t, BindingFlags.Public ||| BindingFlags.NonPublic) with
+                  (t, BindingFlags.Any) with
             | :? PropertyInfo as prop ->
               Builder.overrideGetMethod "Tag" t prop
             | :? MethodInfo as meth when meth.IsStatic ->
@@ -367,8 +376,7 @@ type [<InferenceRules>] Rep () =
                 (Builder.emit
                   (OpCodes.Call,
                    FSharpValue.PreComputeUnionConstructorInfo
-                    (cases.[i],
-                     BindingFlags.Public ||| BindingFlags.NonPublic)))
+                    (cases.[i], BindingFlags.Any)))
                 caseFields.[i]
                 caseProducts.[i] >>= fun () ->
                Builder.forTo 0 (caseFields.[i].Length-1) (fun j ->
@@ -383,7 +391,8 @@ type [<InferenceRules>] Rep () =
       elif FSharpType.IsTuple t then
         let elems = FSharpType.GetTupleElements t
         if 7 < elems.Length then
-          failwith "XXX: Tuples with more than 7 elements are not yet supported."
+          failwith "XXX: Tuples with more than 7 elements are not yet \
+                    supported.  Pull requests are welcome!"
 
         let props =
           Array.init elems.Length <| fun i ->
@@ -422,7 +431,9 @@ type [<InferenceRules>] Rep () =
   member this.asChoice (_: Union<'t>, c: AsChoice<'c, 't>) = c
   member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p
 
-  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) = i :> Elem<'e, 'p, 't>
+  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =
+    i :> Elem<'e, 'p, 't>
   member this.asElem (l: Labelled<'e, 'p, 't>) = l :> Elem<'e, 'p, 't>
   member this.asLabelled (f: Field<'f, 'p, 'r>) = f :> Labelled<'f, 'p, 'r>
-  member this.asLabelled (_: Union<'u>, l: Label<'l, 'sp, 'sc, 'u>) = l :> Labelled<'l, 'sp, 'u>
+  member this.asLabelled (_: Union<'u>, l: Label<'l, 'sp, 'sc, 'u>) =
+    l :> Labelled<'l, 'sp, 'u>
