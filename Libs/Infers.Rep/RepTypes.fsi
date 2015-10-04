@@ -47,6 +47,11 @@ type [<Struct>] And<'x, 'xs> =
   /// Constructs a pair.
   new: 'x * 'xs -> And<'x, 'xs>
 
+[<AutoOpen>]
+module And =
+  /// Active pattern for convenient matching of pair structs.
+  val inline (|And|): And<'x, 'xs> -> 'x * 'xs
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Representation of the type `'t` as nested structs of type `'p`.

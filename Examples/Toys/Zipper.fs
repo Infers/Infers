@@ -28,8 +28,6 @@ type PIZ<'ls, 'rs, 'w, 'p> =
 
 type UZ<'c, 'cs, 'w, 'u> = U of list<Z<'w, 'u>>
 
-let inline (|And|) (xxs: And<_, _>) = (xxs.Elem, xxs.Rest)
-
 type [<InferenceRules>] Zipper () =
   member z.ToZipper (_: Rep,
                      _: Rec,

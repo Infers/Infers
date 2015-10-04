@@ -17,9 +17,5 @@ type [<InferenceRules>] Iso () =
     (x2y >> y2z, z2y >> y2x)
   member g.Pairs ((t, o): Iso<     'pairs,         'ands>)
                         : Iso<'e * 'pairs, And<'e, 'ands>> =
-    ((fun (e, es) ->
-        let mutable ands = Unchecked.defaultof<And<_, _>>
-        ands.Elem <- e
-        ands.Rest <- t es
-        ands),
-     (fun ands -> (ands.Elem, o ands.Rest)))
+    ((fun (e, es) -> And (e, t es)),
+     (fun (And (e, es)) -> (e, o es)))

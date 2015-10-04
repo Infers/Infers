@@ -11,6 +11,10 @@ type [<Struct>] And<'x, 'xs> =
   val mutable Rest: 'xs
   new (x, xs) = {Elem = x; Rest = xs}
 
+[<AutoOpen>]
+module And =
+  let inline (|And|) (xxs: And<_, _>) = (xxs.Elem, xxs.Rest)
+
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
   abstract Extract: 't * byref<'p> -> unit
   abstract Create: byref<'p> -> 't
