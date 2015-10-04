@@ -20,7 +20,7 @@ type [<InferenceRules>] Rec () =
       override pR.Set e = eR.Set e}
 
   member t.Times (eR: ProductRec<'e, And<'e, 'r>, 't>,
-                  rR: ProductRec<'r, 'r , 't>) =
+                  rR: ProductRec<'r, 'r, 't>) =
     {new ProductRec<And<'e, 'r>, And<'e, 'r>, 't> () with
       override pR.Get er = eR.Get (&er.Elem) ; rR.Get (&er.Rest)
       override pR.Set er = eR.Set (&er.Elem) ; rR.Set (&er.Rest)}
