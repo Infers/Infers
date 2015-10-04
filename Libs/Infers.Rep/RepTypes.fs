@@ -9,6 +9,7 @@ type Empty = struct end
 type [<Struct>] And<'x, 'xs> =
   val mutable Elem: 'x
   val mutable Rest: 'xs
+  new (x, xs) = {Elem = x; Rest = xs}
 
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
   abstract Extract: 't * byref<'p> -> unit
