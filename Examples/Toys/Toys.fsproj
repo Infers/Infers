@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Basic.fs" />
+    <Compile Include="Rec.fs" />
     <Compile Include="List.fs" />
     <Compile Include="Solver.fs" />
     <Compile Include="Iso.fs" />
