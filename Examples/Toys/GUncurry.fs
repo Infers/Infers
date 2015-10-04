@@ -4,23 +4,14 @@ module Toys.GUncurry
 
 open Infers
 open Infers.Rep
-open Toys.Iso
-
-type Pairs<'xsp> = | Pairs'
-
-type [<InferenceRules>] Pairs () =
-  member g.Nested (_: Pairs<'xsp>) : Pairs<'x * 'xsp> = Pairs'
-  member g.Pair () : Pairs<'x * 'y> = Pairs'
 
 type [<InferenceRules>] GUncurry () =
-  member g.Uncurry (_: Rep, _: Iso, _: Pairs,
+  member g.Uncurry (_: Rep,
                     _: Tuple<'xst>,
                     p: AsProduct<'xsa, 'xst>,
-                    _: Pairs<'xsp>,
-                    (_, o): Iso<'xsp, 'xsa>,
-                    u: 'xs2y -> 'xsp -> 'y) : 'xs2y -> 'xst -> 'y =
-    fun xs2y -> p.ToProduct >> o >> u xs2y
-  member g.Nested u = fun x2xs2y (x, xs) -> u (x2xs2y x) xs
+                    u: 'xs2y -> 'xsa -> 'y) : 'xs2y -> 'xst -> 'y =
+    fun xs2y -> p.ToProduct >> u xs2y
+  member g.Nested u = fun x2xs2y (And (x, xs)) -> u (x2xs2y x) xs
   member g.Finish () = id
 
 /// Derives a function that uncurries a given n-ary curried function.
