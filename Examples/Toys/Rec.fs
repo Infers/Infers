@@ -15,22 +15,22 @@ type [<InferenceRules>] Rec () =
   inherit RecFn ()
 
   member t.Elem (_: Elem<'e, 'r, 't>, eR: Rec<'e>) =
-    {new ProductRec<'e, 'r, 't> () with
+    {new ProductRec<_, 'r, 't> () with
       override pR.Get e = e <- eR.Get ()
       override pR.Set e = eR.Set e}
 
   member t.Times (eR: ProductRec<'e, And<'e, 'r>, 't>,
                   rR: ProductRec<'r, 'r, 't>) =
-    {new ProductRec<And<'e, 'r>, And<'e, 'r>, 't> () with
+    {new ProductRec<And<_, _>, And<'e, 'r>, 't> () with
       override pR.Get er = eR.Get (&er.Elem) ; rR.Get (&er.Rest)
       override pR.Set er = eR.Set (&er.Elem) ; rR.Set (&er.Rest)}
 
   member t.Product (_: Rep,
                     m: AsProduct<'p, 't>,
                     pR: ProductRec<'p, 'p, 't>) =
-    {new Rec<'t> () with
+    {new Rec<_> () with
       override tR.Get () =
-        let mutable p = Unchecked.defaultof<'p>
+        let mutable p = Unchecked.defaultof<_>
         pR.Get (&p)
         m.Create (&p)
       override tR.Set t =
