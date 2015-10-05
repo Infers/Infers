@@ -6,10 +6,10 @@ open System.Text.RegularExpressions
 open Infers
 
 /// Represents a solution to a logic puzzle.
-type Solution = | Solution
+type Solution = | Solution'0
 
 /// Represents the result `'x` of a logic puzzle.
-type Result<'x> = | Result
+type Result<'x> = | Result'1
 
 let private prefix = Regex "[a-zA-Z0-9.-]+[+.]"
 let private suffix = Regex "`[0-9]+"
@@ -26,4 +26,4 @@ type [<InferenceRules>] Solver<'Puzzle> () =
     |> replace prefix ""
     |> replace suffix ""
     |> printfn "%s"
-    Solution
+    Solution'0

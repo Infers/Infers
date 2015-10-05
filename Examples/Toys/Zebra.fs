@@ -70,32 +70,34 @@ type Ivory = class end
 type Red = class end
 type Yellow = class end
 
+type House<'nationality, 'pet, 'smokes, 'drinks, 'color> = class end
+
 /// Rules for deriving the result of the Zebra puzzle.  This is a straighforward
 /// translation of a Prolog program.
 type [<InferenceRules>] Puzzle () =
   member g.Puzzle
     (_: Basic, _: List,
-     _: Eq<'s, List<'x0, 'x1, 'x2, 'x3, 'x4>>,
-     _: Member<Englishman * _ * _ * _ * Red, 's>,
-     _: Member<Spaniard * Dog * _ * _ * _, 's>,
-     _: Member<_ * _ * _ * Coffee * Green, 's>,
-     _: Member<Ukrainian * _ * _ * Tea * _, 's>,
-     _: Sublist<List<_ * _ * _ * _ * Ivory, _ * _ * _ * _ * Green>, 's>,
-     _: Member<_ * Snails * OldGolds * _ * _, 's>,
-     _: Member<_ * _ * Kools * _ * Yellow, 's>,
-     _: Eq<'s, List<_, _, _ * _ * _ * Milk * _, _, _>>,
-     _: Eq<'s, List<Norwegian * _ * _ * _ * _, _, _, _, _>>,
-     _: Adjacent<_ * _ * Chesterfields * _ * _, _ * Fox * _ * _ * _, 's>,
-     _: Adjacent<_ * _ * Kools * _ * _, _ * Horse * _ * _ * _, 's>,
-     _: Member<_ * _ * LuckyStrikes * OrangeJuice * _, 's>,
-     _: Member<Japanese * _ * Parliaments * _ * _, 's>,
-     _: Adjacent<Norwegian * _ * _ * _ * _, _ * _ * _ * _ * Blue, 's>,
-     _: Member<_ * _ * _ * Water * _, 's>,
-     _: Member<_ * Zebra * _ * _ * _, 's>)
-      : Result<'x0 * 'x1 * 'x2 * 'x3 * 'x4> = Result
+     _: Eq<'solution, List<'house1, 'house2, 'house3, 'house4, 'house5>>,
+     _: Member<House<Englishman, _, _, _, Red>, 'solution>,
+     _: Member<House<Spaniard, Dog, _, _, _>, 'solution>,
+     _: Member<House<_, _, _, Coffee, Green>, 'solution>,
+     _: Member<House<Ukrainian, _, _, Tea, _>, 'solution>,
+     _: Sublist<List<House<_, _, _, _, Ivory>, House<_, _, _, _, Green>>, 'solution>,
+     _: Member<House<_, Snails, OldGolds, _, _>, 'solution>,
+     _: Member<House<_, _, Kools, _, Yellow>, 'solution>,
+     _: Eq<'solution, List<_, _, House<_, _, _, Milk, _>, _, _>>,
+     _: Eq<'solution, List<House<Norwegian, _, _, _, _>, _, _, _, _>>,
+     _: Adjacent<House<_, _, Chesterfields, _, _>, House<_, Fox, _, _, _>, 'solution>,
+     _: Adjacent<House<_, _, Kools, _, _>, House<_, Horse, _, _, _>, 'solution>,
+     _: Member<House<_, _, LuckyStrikes, OrangeJuice, _>, 'solution>,
+     _: Member<House<Japanese, _, Parliaments, _, _>, 'solution>,
+     _: Adjacent<House<Norwegian, _, _, _, _>, House<_, _, _, _, Blue>, 'solution>,
+     _: Member<House<_, _, _, Water, _>, 'solution>,
+     _: Member<House<_, Zebra, _, _, _>, 'solution>)
+      : Result<'house1 * 'house2 * 'house3 * 'house4 * 'house5> = Result'1
 
 let test () : unit =
-  if Engine.tryGenerate (Solver<Puzzle> ()) = Some Solution
+  if Engine.tryGenerate (Solver<Puzzle> ()) = Some Solution'0
   then printfn "Got solution!"
   else printfn "No solution?"
 
