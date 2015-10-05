@@ -30,6 +30,9 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a nested product for the type `'t`'.
   member asProduct: Product<'t> * AsProduct<'p, 't> -> AsProduct<'p, 't>
 
+  /// View a single case union type as a product type.
+  member asProduct: AsChoice<'p, 'u> * Case<'p, 'p, 'u> -> AsProduct<'p, 'u>
+
   /// Attempts to constructs a tuple type representation for the type `'t`.
   member tuple: Rep<'t> -> Tuple<'t>
 

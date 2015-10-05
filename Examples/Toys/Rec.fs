@@ -9,8 +9,8 @@ type [<AbstractClass>] ProductRec<'e, 'r, 't> () =
   abstract Get: byref<'e> -> unit
   abstract Set: byref<'e> -> unit
 
-/// Rules for computing fixed points over products, single case union types
-/// (a.k.a newtypes) and functions.
+/// Rules for computing fixed points over products, single case union types (aka
+/// newtypes) and functions.
 type [<InferenceRules>] Rec () =
   inherit RecFn ()
 
@@ -36,9 +36,3 @@ type [<InferenceRules>] Rec () =
       override tR.Set t =
         let mutable p = m.ToProduct t
         pR.Set (&p)}
-
-  member t.Newtype (r: Rep,
-                    _: AsChoice<'p, 'u>,
-                    m: Case<'p, 'p, 'u>,
-                    pR: ProductRec<'p, 'p, 'u>) =
-    t.Product (r, m, pR)
