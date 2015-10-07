@@ -136,6 +136,8 @@ type [<AbstractClass>] Prim<'x> =
 /// where the type `'p` is a representation of the product as a nested record.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
+///
+/// See also `Union<'u>`.
 #endif
 type [<AbstractClass>] Product<'t> =
   inherit Rep<'t>
@@ -183,6 +185,21 @@ type [<AbstractClass>] Item<'e, 'p, 't> =
 /// where type `'c` is a representation of the union as nested binary choices.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
+///
+/// Note that while union types are not considered as product types in
+/// `Infers.Rep`, one can view a union type with only a single case as a
+/// product.  For example,
+///
+///> type foo = Bar of int * string * float
+///
+/// can be viewed as a product
+///
+///> AsProduct<And<int, And<string, float>>, foo>
+///
+/// and the `Rep.viewAsProduct` rule provides this directly.  If you need to
+/// handle product types and union types separately, say in a pretty printing
+/// generic, you should have the `Union<_>` and `Product<_>` predicates in your
+/// rules.
 #endif
 type [<AbstractClass>] Union<'u> =
   inherit Rep<'u>

@@ -430,7 +430,7 @@ type [<InferenceRules>] Rep () =
 
   member this.asChoice (_: Union<'t>, c: AsChoice<'c, 't>) = c
   member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p
-  member this.asProduct (_: AsChoice<'p, 'u>, m: Case<'p, 'p, 'u>) =
+  member this.viewAsProduct (_: AsChoice<'p, 'u>, m: Case<'p, 'p, 'u>) =
     m :> AsProduct<'p, 'u>
 
   member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =
