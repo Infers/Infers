@@ -185,22 +185,32 @@ type Builder =
     Builder.result ()
 
   static member overrideGetMethod name paramType (property: PropertyInfo) =
-    Builder.overrideMethod name
-     property.PropertyType
-     [|paramType (*property.DeclaringType*)|]
-     (Builder.emit (OpCodes.Ldarg_1) >>
-      Builder.emit (OpCodes.Call, property.GetGetMethod ()) >>
-      Builder.emit (OpCodes.Ret))
+    match property.GetGetMethod () with
+     | null ->
+       failwithf "Failed to get Get-method for property \"%s\" of \"%s\""
+        property.Name property.DeclaringType.Name
+     | getMethod ->
+       Builder.overrideMethod name
+        property.PropertyType
+        [|paramType (*property.DeclaringType*)|]
+        (Builder.emit (OpCodes.Ldarg_1) >>
+         Builder.emit (OpCodes.Call, getMethod) >>
+         Builder.emit (OpCodes.Ret))
 
   static member overrideSetMethodWhenCanWrite name (property: PropertyInfo) =
     if property.CanWrite then
-      Builder.overrideMethod name
-       typeof<Void>
-       [|property.DeclaringType; property.PropertyType|]
-       (Builder.emit (OpCodes.Ldarg_1) >>
-        Builder.emit (OpCodes.Ldarg_2) >>
-        Builder.emit (OpCodes.Call, property.GetSetMethod ()) >>
-        Builder.emit (OpCodes.Ret))
+      match property.GetSetMethod () with
+       | null ->
+         failwithf "Failed to get Set-method for property \"%s\" of \"%s\""
+          property.Name property.DeclaringType.Name
+       | setMethod ->
+         Builder.overrideMethod name
+          typeof<Void>
+          [|property.DeclaringType; property.PropertyType|]
+          (Builder.emit (OpCodes.Ldarg_1) >>
+           Builder.emit (OpCodes.Ldarg_2) >>
+           Builder.emit (OpCodes.Call, setMethod) >>
+           Builder.emit (OpCodes.Ret))
     else
       Builder.result ()
 
@@ -226,8 +236,13 @@ module Products =
        | null -> failwithf "The %A type has no field named \"%s\"" t name
        | field -> field
     let emitGet i =
-      Builder.emit (OpCodes.Ldarg_1) >>
-      Builder.emit (OpCodes.Call, props.[i].GetGetMethod true)
+      match props.[i].GetGetMethod () with
+       | null ->
+         failwithf "Failed to get Get-method for property \"%s\" of \"%s\""
+          props.[i].Name props.[i].DeclaringType.Name
+       | getMethod ->
+         Builder.emit (OpCodes.Ldarg_1) >>
+         Builder.emit (OpCodes.Call, getMethod)
     let rec emitLoadAddr arg i =
       if i = 0 then
         Builder.emit arg
