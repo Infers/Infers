@@ -52,11 +52,15 @@
     <Compile Include="Solver.fsi" />
     <Compile Include="Solver.fs" />
     <Compile Include="Iso.fs" />
+    <Compile Include="GMap.fsi" />
     <Compile Include="GMap.fs" />
     <Compile Include="GUncurry.fs" />
     <Compile Include="GFlip.fs" />
     <Compile Include="Zebra.fs" />
     <Compile Include="Goat.fs" />
+    <Compile Include="Zipper.fs" />
+    <Compile Include="Toys.fs" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
@@ -68,10 +72,5 @@
       <Project>{2399EAEA-7668-48BA-91B4-162060CB050F}</Project>
       <Name>Infers.Rep</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Zipper.fs" />
-    <Compile Include="Toys.fs" />
-    <None Include="packages.config" />
   </ItemGroup>
 </Project>

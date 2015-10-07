@@ -9,19 +9,24 @@ let time ef =
   ef ()
   printf "Took %A\n\n" start.Elapsed
 
+module GMap =
+  let test () : unit =
+    GMap.gmap ((+) 1) [("vesa", 1)] |> printfn "%A"
+    GMap.gmap (fun (x: string) -> x.ToUpper ()) [("vesa", 1)] |> printfn "%A"
+
 [<EntryPoint>]
 let main _ =
   try
+    time GMap.test
+    time GFlip.test
     time GUncurry.Optimized.test
     time GUncurry.Naive.test
     time Zipper.test
     time Goat.test
     time Zebra.test
-    time GFlip.test
-    time GMap.test
   with
    | :? System.Reflection.TargetInvocationException as e ->
-     printfn "%s" e.InnerException.Message
+     printfn "%s\n%s" e.InnerException.Message e.InnerException.StackTrace
    | e ->
-     printfn "%s" e.Message
+     printfn "%s\n%s" e.Message e.StackTrace
   0
