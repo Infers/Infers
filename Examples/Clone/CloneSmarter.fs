@@ -62,7 +62,7 @@ type [<InferenceRules>] Clone () =
   // Recursion rule ------------------------------------------------------------
 
   // Rule for creating a proxy when defining a recursive cloning function.
-  member this.Fix (recFn: RecFn) : Rec<CloneSmarter<'t>> =
+  member this.Fix () : Rec<CloneSmarter<'t>> =
     let proxy : ref<CloneSmarter<'t>> = ref null
     let clone =
       {new CloneSmarter<'t> () with
@@ -112,7 +112,7 @@ type [<InferenceRules>] Clone () =
 
   /// A rule for cloning an arbitrary union type.
   member this.Union (union: Union<'t>,
-                     asChoice: AsChoice<'cs, 't>,
+                     _: AsChoice<'cs, 't>,
                      CloneUnion cloneUnion: CloneUnion<'cs, 'cs, 't>) =
     /// Is there something to copy?
     if List.forall ((=) null) cloneUnion then
@@ -155,7 +155,7 @@ type [<InferenceRules>] Clone () =
     CloneUnion [cloneCase]
 
   /// A rule for cloning a nullary union case.
-  member this.Case (case: Case<Empty, 'cs, 't>) : CloneUnion<Empty, 'cs, 't> =
+  member this.Case (_: Case<Empty, 'cs, 't>) : CloneUnion<Empty, 'cs, 't> =
     // Then we return just this case.  There is nothing to copy.
     CloneUnion [null]
 

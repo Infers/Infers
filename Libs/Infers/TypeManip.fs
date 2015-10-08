@@ -82,7 +82,7 @@ module Ty =
 /// is not given a substitution.
 let rec containsVars ty =
   match ty with
-   | Var v -> true
+   | Var _ -> true
    | App (_, tys) -> Array.exists containsVars tys
 
 /// Resolves the root of the type with respect to the given substition of type
@@ -325,7 +325,7 @@ module TyTree =
           yield! HashEqMap.toSeq apps
                  |> Seq.collect (fun (_, formal) ->
                     filter formal actual)
-        | Some (App (tc, args)) ->
+        | Some (App (tc, _)) ->
           // Yes, so we need only produce those `apps` that have the same tycon.
           match HashEqMap.tryFind tc apps with
            | None -> ()

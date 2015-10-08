@@ -75,7 +75,7 @@ module RuleSet =
     let rec collectRules ty =
       match getInferenceRules ty with
        | None -> Seq.empty
-       | Some attr ->
+       | Some _ ->
          [ty.GetMethods BindingFlags.PublicDeclaredInstance
           |> Seq.map (fun infRule ->
              RuleMethod (infRule, infRules) :> Rule<_>)
@@ -230,7 +230,7 @@ module Engine =
                     | [] ->
                       match Ruled (ty, List.rev args |> Array.ofList, rule)
                             |> tryResolveResult objEnv tyEnv with
-                       | (objEnv, None) ->
+                       | (_, None) ->
                          Seq.empty
                        | (objEnv, Some result) ->
 
@@ -262,7 +262,7 @@ module Engine =
                              outer resolvedArgs rules objEnv tyEnv ty parTys
                            | arg::args ->
                              match tryResolveResult objEnv tyEnv arg with
-                              | (objEnv, None) -> Seq.empty
+                              | (_, None) -> Seq.empty
                               | (objEnv, Some resolvedArg) ->
                                 inner <| resolvedArg::resolvedArgs
                                       <| match resolvedArg with
@@ -280,7 +280,7 @@ module Engine =
     seq {1 .. Int32.MaxValue}
     |> Seq.collect (fun limit ->
        tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy)
-    |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+    |> Seq.tryPick (fun (result, _, _) ->
        match result with
         | Ruled _ -> None
         | Value (_, value) -> Some (unbox<'a> value))

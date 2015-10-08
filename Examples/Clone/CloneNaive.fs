@@ -63,7 +63,7 @@ type [<InferenceRules>] Clone () =
   /// A rule for cloning an arbitrary union type.
   member this.Union (_: Rep,
                      union: Union<'t>,
-                     asChoice: AsChoice<'cs, 't>,
+                     _: AsChoice<'cs, 't>,
                      CloneUnion cloneUnion: CloneUnion<'cs, 'cs, 't>) =
     // First we stage an array for fast indexing of cases.  It is important that
     // we do this outside of the cloning function that we actually return.
@@ -96,7 +96,7 @@ type [<InferenceRules>] Clone () =
     CloneUnion [cloneCase]
 
   /// A rule for cloning a nullary union case.
-  member this.Case (case: Case<Empty, 'cs, 't>) : CloneUnion<Empty, 'cs, 't> =
+  member this.Case (_: Case<Empty, 'cs, 't>) : CloneUnion<Empty, 'cs, 't> =
     // There is nothing to clone in the empty case.
     let cloneCase : Clone<'t> = fun x -> x
     // Then we return just this case. 

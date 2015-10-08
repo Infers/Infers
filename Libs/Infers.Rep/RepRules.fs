@@ -140,7 +140,7 @@ type Builder =
     ctor.Invoke basePars
 
   static member metaValue name fb baseType (value: Object) =
-    fun (typeBuilder, values) ->
+    fun (_, values) ->
       ((name, fb, baseType, value)::values, ())
 
   static member metaField baseType basePars (definition: Builder<unit>) =
@@ -420,7 +420,7 @@ type [<InferenceRules>] Rep () =
              (OpCodes.Newobj,
               match FSharpValue.PreComputeTupleConstructorInfo t with
                | (ctor, None) -> ctor
-               | (ctor, Some _) -> failwith "XXX"))
+               | (_, Some _) -> failwith "XXX"))
            props
            products
            (Builder.forTo 0 (elems.Length-1) (fun i ->

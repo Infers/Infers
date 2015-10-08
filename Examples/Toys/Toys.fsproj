@@ -20,6 +20,7 @@
     <GenerateTailCalls>true</GenerateTailCalls>
     <DocumentationFile>bin\Debug\Toys.XML</DocumentationFile>
     <ConsolePause>false</ConsolePause>
+    <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,9 +30,12 @@
     <GenerateTailCalls>true</GenerateTailCalls>
     <PlatformTarget>
     </PlatformTarget>
-    <DefineConstants>DEBUG</DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <DocumentationFile>bin\Release\Toys.XML</DocumentationFile>
     <ConsolePause>false</ConsolePause>
+    <DebugType>pdbonly</DebugType>
+    <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

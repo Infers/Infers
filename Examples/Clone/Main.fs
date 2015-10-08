@@ -12,7 +12,7 @@ type SimpleRecord = { Name: string; Age: option<int> }
 type LotsOfRecords = { People: SimpleRecord [] }
  
 [<EntryPoint>]
-let Start args =
+let Start _ =
   let sr = { People = [| {Name = "Rick"; Age = Some 33 }; { Name = "Paul"; Age = None } |] }
   let clone = Infers.StaticRules<CloneSmarter.Clone>.Generate ()
   let src = clone sr
