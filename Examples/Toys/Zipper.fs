@@ -17,59 +17,58 @@ type Zipper<'w, 'h> =
   abstract Get: unit -> 'h
   abstract Set: 'h -> Zipper<'w>
 
-type Context<'w, 'h> = 'h -> Zipper<'w>
+type Up<'w, 'h> = 'h -> Zipper<'w>
+type Down<'w, 'h> = Up<'w, 'h> -> 'h -> option<Zipper<'w>>
 
-type Z<'w, 'h> = Context<'w, 'h> -> 'h -> option<Zipper<'w>>
+type ProductDown0<'rs, 'w, 'p> =
+  P0 of (Up<'w, 'rs> -> 'rs -> Zipper<'w>)
+type ProductDownI<'ls, 'rs, 'w, 'p> =
+  PI of (Up<'w, And<'ls, 'rs>> -> And<'ls, 'rs> -> Zipper<'w>)
 
-type P0Z<'rs, 'w, 'p> =
-  P0 of (Context<'w, 'rs> -> 'rs -> Zipper<'w>)
-type PIZ<'ls, 'rs, 'w, 'p> =
-  PI of (Context<'w, And<'ls, 'rs>> -> And<'ls, 'rs> -> Zipper<'w>)
-
-type UZ<'c, 'cs, 'w, 'u> = U of list<Z<'w, 'u>>
+type UZ<'c, 'cs, 'w, 'u> = U of list<Down<'w, 'u>>
 
 type [<InferenceRules>] Zipper () =
   member z.ToZipper (_: Rep,
                      _: Rec,
-                     down: Z<'w, 'w>) : 'w -> Zipper<'w> =
+                     down: Down<'w, 'w>) : 'w -> Zipper<'w> =
     let rec mk w =
       {new Zipper<'w, 'w> with
         override z.Get () = w
         override z.Set w = mk w
         override z.Up () = None
-        override z.Down () = z.Get () |> down z.Set
+        override z.Down () = down mk w
         override z.Left () = None
         override z.Right () = None} :> Zipper<_>
     mk
 
-  member z.Prim (_: Prim<'t>) : Z<'w, 't> =
+  member z.Prim (_: Prim<'t>) : Down<'w, 't> =
     fun tC ->
       let rec mk t =
         {new Zipper<'w, 't> with
           override z.Get () = t
           override z.Set t = mk t
-          override z.Up () = None
+          override z.Up () = t |> tC |> Some
           override z.Down () = None
           override z.Left () = None
           override z.Right () = None} :> Zipper<_>
       mk >> Some
 
-  member z.Pos (_: Elem<'r, 'r, 'p>, down: Z<'w, 'r>) : P0Z<'r, 'w, 'p> =
+  member z.Pos (_: Elem<'r, 'r, 'p>, down: Down<'w, 'r>) : ProductDown0<'r, 'w, 'p> =
     P0 <| fun wrC ->
       let rec mk r =
         {new Zipper<'w, 'r> with
           override z.Get () = r
           override z.Set r = r |> mk
           override z.Up () = r |> wrC |> Some
-          override z.Down () = down z.Set r
+          override z.Down () = down mk r
           override z.Left () = None
           override x.Right () = None} :> Zipper<_>
       mk
 
   member z.Pos (_: Elem<'r, And<'r, 'rs>, 'p>,
-                down: Z<'w, 'r>,
-                PI right: PIZ<    'r, 'rs , 'w, 'p>)
-                        : P0Z<And<'r, 'rs>, 'w, 'p> =
+                down: Down<'w, 'r>,
+                PI right: ProductDownI<    'r, 'rs , 'w, 'p>)
+                        : ProductDown0<And<'r, 'rs>, 'w, 'p> =
     P0 <| fun wrrsC ->
       let rec mk (And (r, rs)) =
         {new Zipper<'w, 'r> with
@@ -82,9 +81,9 @@ type [<InferenceRules>] Zipper () =
       mk
 
   member z.Pos (_: Elem<'r, 'r, 'p>,
-                down: Z<'w, 'r>,
-                P0 left: P0Z<And<'l, 'r>, 'w, 'p>)
-                       : PIZ<    'l, 'r , 'w, 'p> =
+                down: Down<'w, 'r>,
+                P0 left: ProductDown0<And<'l, 'r>, 'w, 'p>)
+                       : ProductDownI<    'l, 'r , 'w, 'p> =
     PI <| fun wlrC ->
       let rec mk (And (l, r)) =
         {new Zipper<'w, 'r> with
@@ -97,9 +96,9 @@ type [<InferenceRules>] Zipper () =
       mk
 
   member z.Pos (_: Elem<'r, 'r, 'p>,
-                down: Z<'w, 'r>,
-                PI left: PIZ<        'ls , And<'l, 'r>, 'w, 'p>)
-                       : PIZ<And<'l, 'ls>,         'r , 'w, 'p> =
+                down: Down<'w, 'r>,
+                PI left: ProductDownI<        'ls , And<'l, 'r>, 'w, 'p>)
+                       : ProductDownI<And<'l, 'ls>,         'r , 'w, 'p> =
     PI <| fun wllsrC ->
       let wlslrC (And (ls, And (l, r))) = And (And (l, ls), r) |> wllsrC
       let rec mk (And (And (l, ls), r)) =
@@ -113,10 +112,10 @@ type [<InferenceRules>] Zipper () =
       mk
 
   member z.Pos (_: Elem<'r, And<'r, 'rs>, 'p>,
-                down: Z<'w, 'r>,
-                P0 left : P0Z<             And<'l, And<'r, 'rs>>, 'w, 'p>,
-                PI right: PIZ<And<'r, 'l>,                 'rs  , 'w, 'p>)
-                        : PIZ<        'l ,         And<'r, 'rs> , 'w, 'p> =
+                down: Down<'w, 'r>,
+                P0 left : ProductDown0<             And<'l, And<'r, 'rs>>, 'w, 'p>,
+                PI right: ProductDownI<And<'r, 'l>,                 'rs  , 'w, 'p>)
+                        : ProductDownI<        'l ,         And<'r, 'rs> , 'w, 'p> =
     PI <| fun wlrrsC ->
       let wrlrsC (And (And (r, l), rs)) = And (l, And (r, rs)) |> wlrrsC
       let rec mk (And (l, And (r, rs))) =
@@ -130,10 +129,10 @@ type [<InferenceRules>] Zipper () =
       mk
 
   member z.Pos (_: Elem<'r, And<'r, 'rs>, 'p>,
-                down: Z<'w, 'r>,
-                PI left : PIZ<                'ls  , And<'l, And<'r, 'rs>>, 'w, 'p>,
-                PI right: PIZ<And<'r, And<'l, 'ls>>,                 'rs  , 'w, 'p>)
-                        : PIZ<        And<'l, 'ls> ,         And<'r, 'rs> , 'w, 'p> =
+                down: Down<'w, 'r>,
+                PI left : ProductDownI<                'ls  , And<'l, And<'r, 'rs>>, 'w, 'p>,
+                PI right: ProductDownI<And<'r, And<'l, 'ls>>,                 'rs  , 'w, 'p>)
+                        : ProductDownI<        And<'l, 'ls> ,         And<'r, 'rs> , 'w, 'p> =
     PI <| fun wllsrrsC ->
       let wlslrrsC (And (ls, (And (l, And (r, rs))))) =
         And (And (l, ls), And (r, rs)) |> wllsrrsC
@@ -152,15 +151,15 @@ type [<InferenceRules>] Zipper () =
       mk
 
   member z.Product (m: AsProduct<'es, 'p>,
-                    P0 down: P0Z<'es, 'w, 'p>) : Z<'w, 'p> =
+                    P0 down: ProductDown0<'es, 'w, 'p>) : Down<'w, 'p> =
     fun wpC -> m.ToProduct >> down (m.OfProduct >> wpC) >> Some
 
   member z.Case (_: Case<Empty, 'cs, 'u>) : UZ<Empty, 'cs, 'w, 'u> =
-    U [fun u wuC -> None]
+    U [fun _ _ -> None]
 
   member z.Case (m: Case<'ls, 'cs, 'u>,
-                 P0 down: P0Z<'ls, 'w, 'u>) : UZ<'ls, 'cs, 'w, 'u> =
-    U [fun wuC -> m.ToProduct >> down (m.OfProduct >> wuC) >> Some]
+                 down: ProductDown0<'ls, 'w, 'u>) : UZ<'ls, 'cs, 'w, 'u> =
+    U [z.Product (m, down)]
 
   member z.Plus (U c:  UZ<       'c      , Choice<'c, 'cs>, 'w, 'u>,
                  U cs: UZ<           'cs ,            'cs , 'w, 'u>)
@@ -169,7 +168,7 @@ type [<InferenceRules>] Zipper () =
 
   member z.Union (m: Union<'u>,
                   _: AsChoice<'c, 'u>,
-                  U u: UZ<'c, 'c, 'w, 'u>) : Z<'w, 'u> =
+                  U u: UZ<'c, 'c, 'w, 'u>) : Down<'w, 'u> =
     let cs = Array.ofList u
     fun wuC u -> cs.[m.Tag u] wuC u
 
