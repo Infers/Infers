@@ -206,25 +206,27 @@ module Engine =
                     containsVars ty |> not &&
                     stack |> List.exists ((=) ty) then
 
-                   let recTy = App (Def typedefof<Rec<_>>, [|ty|])
-                   if HashEqMap.tryFind recTy objEnv |> Option.isSome then
-                     failwith "Bug"
-                   tryGenerate' limit rules objEnv tyEnv (ty::stack) recTy
-                   |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
-                      match result with
-                       | Ruled _ -> None
-                       | Value (_, recO) ->
-                         match recO with
-                          | :? IRecObj as recO' ->
-                            let o = recO'.GetObj ()
-                            Some (Value (ty, o),
-                                  objEnv
-                                  |> HashEqMap.add recTy recO
-                                  |> HashEqMap.add ty o,
-                                  tyEnv)
-                          | _ ->
-                            failwith "Bug")
-                   |> Option.toSeq
+                   match HashEqMap.tryFind ty objEnv with
+                    | Some o ->
+                      Seq.singleton (Value (ty, o), objEnv, tyEnv)
+                    | None ->
+                      let recTy = App (Def typedefof<Rec<_>>, [|ty|])
+                      tryGenerate' limit rules objEnv tyEnv (ty::stack) recTy
+                      |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+                         match result with
+                          | Ruled _ -> None
+                          | Value (_, recO) ->
+                            match recO with
+                             | :? IRecObj as recO' ->
+                               let o = recO'.GetObj ()
+                               Some (Value (ty, o),
+                                     objEnv
+                                     |> HashEqMap.add recTy recO
+                                     |> HashEqMap.add ty o,
+                                     tyEnv)
+                             | _ ->
+                               failwith "Bug")
+                      |> Option.toSeq
                  else
                    match parTys with
                     | [] ->
