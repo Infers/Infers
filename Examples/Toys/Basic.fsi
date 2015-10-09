@@ -15,9 +15,6 @@ type Eq<'x, 'y, 'z>
 /// both are.
 type Or<'l, 'r>
 
-/// Logical AND: `And<'x, 'y>` is derivable iff both `'x` and `'y` are.
-type And<'l, 'r>
-
 /// Some basic rules for logic programming.
 type [<InferenceRules>] Basic =
   new: unit -> Basic
@@ -27,5 +24,3 @@ type [<InferenceRules>] Basic =
 
   member Or'L: 'l -> Or<'l, 'r>
   member Or'R: 'r -> Or<'l, 'r>
-
-  member And'2: 'l * 'r -> And<'l, 'r>
