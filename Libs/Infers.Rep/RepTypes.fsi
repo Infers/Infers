@@ -149,7 +149,7 @@ type [<AbstractClass>] Product<'t> =
   val IsMutable: bool
 
 /// Representation of an element of type `'e` of the product type `'t`.
-type [<AbstractClass>] Elem<'e, 'p, 't> =
+type [<AbstractClass>] Elem<'e, 'p, 'c, 't> =
   /// The index of the element.
   val Index: int
 
@@ -157,8 +157,8 @@ type [<AbstractClass>] Elem<'e, 'p, 't> =
   abstract Get: 't -> 'e
 
 /// Representation of a possibly labelled element of type `'e`.
-type [<AbstractClass>] Labelled<'e, 'p, 't> =
-  inherit Elem<'e, 'p, 't>
+type [<AbstractClass>] Labelled<'e, 'p, 'c, 't> =
+  inherit Elem<'e, 'p, 'c, 't>
   
   /// The name of the label.
   val Name: string
@@ -171,7 +171,7 @@ type [<AbstractClass>] Tuple<'t> =
 
 /// Representation of an element of type `'e` of a tuple of type `'t`.
 type [<AbstractClass>] Item<'e, 'p, 't> =
-  inherit Elem<'e, 'p, 't>
+  inherit Elem<'e, 'p, 't, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -226,7 +226,7 @@ type [<AbstractClass>] Case<'lp, 'sc, 'u> =
 /// Representation of a possibly labelled element of type `'l` of a case of the
 /// F# discriminated union type `'u`.
 type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
-  inherit Labelled<'l, 'sp, 'u>
+  inherit Labelled<'l, 'sp, 'sc, 'u>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -236,7 +236,7 @@ type [<AbstractClass>] Record<'r> =
 
 /// Representation of a field of type `'f` of the record type `'r`.
 type [<AbstractClass>] Field<'f, 'sp, 'r> =
-  inherit Labelled<'f, 'sp, 'r>
+  inherit Labelled<'f, 'sp, 'r, 'r>
 
   /// Whether the field is mutable.
   val IsMutable: bool

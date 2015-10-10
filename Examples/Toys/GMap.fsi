@@ -18,7 +18,7 @@ type [<InferenceRules>] GMap =
 
   member Prim: Prim<'w> -> GM<'w, 'p>
 
-  member Elem: Elem<'e, 'r, 'w> * GMap<'e, 'p> -> ProductGM<'e, 'r, 'w, 'p>
+  member Elem: Elem<'e, 'r, 'c, 'w> * GMap<'e, 'p> -> ProductGM<'e, 'r, 'w, 'p>
 
   member Times: ProductGM<    'e     , And<'e, 'r>, 'w, 'p>
               * ProductGM<        'r ,         'r , 'w, 'p>

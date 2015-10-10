@@ -17,7 +17,7 @@ type [<InferenceRules>] GMap () =
 
   member g.Prim (_: Prim<'w>) : GM<'w, 'p> = {gm = fun _ -> id}
 
-  member g.Elem (_: Elem<'e, 'r, 'w>,
+  member g.Elem (_: Elem<'e, 'r, 'c, 'w>,
                  eG: GMap<'e, 'p>) : ProductGM<'e, 'r, 'w, 'p> =
     P eG
 

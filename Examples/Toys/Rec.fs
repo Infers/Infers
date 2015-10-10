@@ -14,7 +14,7 @@ type ProductRec<'e, 'r, 't> = P of ProductRec'<'e>
 type [<InferenceRules>] Rec () =
   inherit RecFn ()
 
-  member t.Elem (_: Elem<'e, 'r, 't>, eR: Rec<'e>) : ProductRec<'e, 'r, 't> =
+  member t.Elem (_: Elem<'e, 'r, 'c, 't>, eR: Rec<'e>) : ProductRec<'e, 'r, 't> =
     P {new ProductRec'<_> () with
         override pR.Get e = e <- eR.Get ()
         override pR.Set e = eR.Set e}

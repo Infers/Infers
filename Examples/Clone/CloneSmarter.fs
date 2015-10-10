@@ -202,7 +202,7 @@ type [<InferenceRules>] Clone () =
           cloneProductRest.ForAll pred}
 
   /// A rule for cloning a specific element of type `'e` within a product.
-  member this.Elem (_: Elem<'e, 'es, 't>, cloneElem': CloneSmarter<'e>) =
+  member this.Elem (_: Elem<'e, 'es, _, 't>, cloneElem': CloneSmarter<'e>) =
     match cloneElem' with
      | null ->
        null

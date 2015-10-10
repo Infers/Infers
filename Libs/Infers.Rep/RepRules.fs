@@ -449,8 +449,8 @@ type [<InferenceRules>] Rep () =
     m :> AsProduct<'p, 'u>
 
   member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =
-    i :> Elem<'e, 'p, 't>
-  member this.asElem (l: Labelled<'e, 'p, 't>) = l :> Elem<'e, 'p, 't>
-  member this.asLabelled (f: Field<'f, 'p, 'r>) = f :> Labelled<'f, 'p, 'r>
+    i :> Elem<'e, 'p, 't, 't>
+  member this.asElem (l: Labelled<'e, 'p, 'c, 't>) = l :> Elem<'e, 'p, 'c, 't>
+  member this.asLabelled (f: Field<'f, 'p, 'r>) = f :> Labelled<'f, 'p, 'r, 'r>
   member this.asLabelled (_: Union<'u>, l: Label<'l, 'sp, 'sc, 'u>) =
-    l :> Labelled<'l, 'sp, 'u>
+    l :> Labelled<'l, 'sp, 'sc, 'u>

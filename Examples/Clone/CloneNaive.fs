@@ -123,7 +123,7 @@ type [<InferenceRules>] Clone () =
        cloneProductRest.Clone (&ees.Rest)}
 
   /// A rule for cloning a specific element of type `'e` within a product.
-  member this.Elem (_: Rep, _: Elem<'e, 'es, 't>, cloneElem: Clone<'e>) =
+  member this.Elem (_: Rep, _: Elem<'e, 'es, _, 't>, cloneElem: Clone<'e>) =
     {new CloneProduct<'e, 'es, 't> () with
       override this.Clone (e: byref<'e>) =
        // We just mutate the element in-place within the stack allocated space.

@@ -43,14 +43,14 @@ type [<AbstractClass>] Product<'r> =
   val Arity: int
   val IsMutable: bool
 
-type [<AbstractClass>] Elem<'e, 'p, 't> =
+type [<AbstractClass>] Elem<'e, 'p, 'c, 't> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
 
-type [<AbstractClass>] Labelled<'e, 'p, 't> =
-  inherit Elem<'e, 'p, 't>
-  new (index, name) = {inherit Elem<'e, 'p, 't>(index); Name = name}
+type [<AbstractClass>] Labelled<'e, 'p, 'c, 't> =
+  inherit Elem<'e, 'p, 'c, 't>
+  new (index, name) = {inherit Elem<'e, 'p, 'c, 't>(index); Name = name}
   val Name: string
 
 type [<AbstractClass>] Tuple<'t> =
@@ -58,7 +58,7 @@ type [<AbstractClass>] Tuple<'t> =
   new (arity) = {inherit Product<'t> (arity, false)}
 
 type [<AbstractClass>] Item<'e, 'p, 't> (index) =
-  inherit Elem<'e, 'p, 't> (index)
+  inherit Elem<'e, 'p, 't, 't> (index)
 
 type [<AbstractClass>] Union<'u> =
   inherit Rep<'u>
@@ -74,17 +74,17 @@ type [<AbstractClass>] Case<'lp, 'sc, 'u> =
   val Tag: int
 
 type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
-  inherit Labelled<'l, 'sp, 'u>
-  new (index, name) = {inherit Labelled<'l, 'sp, 'u> (index, name)}
+  inherit Labelled<'l, 'sp, 'sc, 'u>
+  new (index, name) = {inherit Labelled<'l, 'sp, 'sc, 'u> (index, name)}
 
 type [<AbstractClass>] Record<'r> =
   inherit Product<'r>
   new (arity, isMutable) = {inherit Product<'r>(arity, isMutable)}
 
 type [<AbstractClass>] Field<'f, 'p, 'r> =
-  inherit Labelled<'f, 'p, 'r>
+  inherit Labelled<'f, 'p, 'r, 'r>
   new (index, name, isMutable) =
-    {inherit Labelled<'f, 'p, 'r> (index, name); IsMutable = isMutable}
+    {inherit Labelled<'f, 'p, 'r, 'r> (index, name); IsMutable = isMutable}
   val IsMutable: bool
   abstract Set: 'r * 'f -> unit
   default f.Set (_: 'r, _: 'f) = raise (System.NotImplementedException ())
