@@ -273,9 +273,9 @@ let test () =
      printfn "%A" (fromZipper z)
   do let x = App (Lambda ("x", If (Var "x", Var "a", Var "a")), Var "true")
      printfn "%A" x
-     let n = Engine.numAttempts ()
+     //let n = Engine.numAttempts ()
      let z = toZipper x
-     printfn "Attempts: %d" (Engine.numAttempts () - n)
+     //printfn "Attempts: %d" (Engine.numAttempts () - n)
      printfn "%A" (get z |> Option.get : Term)
      let z = z |> downFirst |> Option.get
      printfn "%A" (get z |> Option.get : Term)
