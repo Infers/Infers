@@ -131,10 +131,12 @@ module Ty =
 
   let rec tryMatchIn formal actual v2ty =
     match (resolveTop v2ty formal, resolveTop v2ty actual) with
-     | (Var' fv, Var' av) when fv = av ->
+     | (Var fv, Var av) when fv = av ->
        Some v2ty
-     | (Var' v, ty) | (ty, Var' v) when not (occurs v2ty v ty) ->
+     | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
        Some (HashEqMap.add v ty v2ty)
+     | (Mono f, Mono a) ->
+       if f = a then Some v2ty else None
      | (App' (formal, pars), App' (actual, args)) when formal = actual ->
        assert (pars.Length = args.Length)
        let rec loop i v2ty =
@@ -153,7 +155,7 @@ module Ty =
   let areEqual aTy bTy =
     let rec types aTy bTy v2ty =
       match (aTy, bTy) with
-       | (Var' a, Var' b) ->
+       | (Var a, Var b) ->
          match HashEqMap.tryFind a v2ty with
           | Some b' ->
             if b' = b then Some v2ty else None
