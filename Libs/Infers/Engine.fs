@@ -276,6 +276,7 @@ module Engine =
                                       <| args
                          result::args |> List.rev |> inner [] rules objEnv)
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
+         |> if containsVars ty then id else Seq.truncate 1
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
