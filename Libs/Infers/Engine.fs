@@ -164,42 +164,38 @@ module Engine =
 
   let rec tryResolveResult objEnv tyEnv result =
     match result with
-     | Value _ -> (objEnv, Some result)
+     | Value _ -> Some (objEnv, result)
      | Ruled (ty, args', rule) ->
        let args = Array.zeroCreate <| Array.length args'
        let rec lp objEnv i =
          if args.Length <= i then
-           (objEnv, Some args)
+           Some (objEnv, args)
          else
-           match tryResolveResult objEnv tyEnv args'.[i] with
-            | (objEnv, Some arg) ->
+           tryResolveResult objEnv tyEnv args'.[i]
+           |> Option.bind (fun (objEnv, arg) ->
               args.[i] <- arg
-              lp objEnv (i+1)
-            | (objEnv, None) ->
-              (objEnv, None)
-       match lp objEnv 0 with
-        | (objEnv, None) ->
-          (objEnv, None)
-        | (objEnv, Some args) ->
+              lp objEnv (i+1))
+       lp objEnv 0
+       |> Option.bind (fun (objEnv, args) ->
           let ty = Ty.resolve tyEnv ty
           if Ty.containsVars ty then
-            (objEnv, Ruled (ty, args, rule) |> Some)
+            Some (objEnv, Ruled (ty, args, rule))
           else
             match Array.chooseAll
                    <| function Value v -> Some v
                              | Ruled _ -> None
                    <| args with
              | None ->
-               (objEnv, Ruled (ty, args, rule) |> Some)
+               Some (objEnv, Ruled (ty, args, rule))
              | Some argVals ->
                match rule.GenericArgTypes
                      |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
                 | None ->
                   failwith "Bug"
                 | Some genArgTys ->
-                  match rule.Invoke (genArgTys, argVals) with
-                   | None -> (objEnv, None)
-                   | Some o -> (HashEqMap.add ty o objEnv, Value o |> Some)
+                  rule.Invoke (genArgTys, argVals)
+                  |> Option.map (fun o ->
+                     (HashEqMap.add ty o objEnv, Value o)))
 
   let inline isRec ty =
     match ty with
@@ -216,8 +212,8 @@ module Engine =
        | None ->
          let limit = limit - 1
          RuleSet.rulesFor rules ty
-         |> Seq.map Rule.freshVars
          |> Seq.collect (fun rule ->
+            let rule = Rule.freshVars rule
             Ty.tryMatchIn rule.ReturnType ty tyEnv
             |> Option.collect (fun tyEnv ->
                let rec outer args rules objEnv tyEnv ty parTys =
@@ -254,9 +250,9 @@ module Engine =
                     | [] ->
                       match Ruled (ty, List.rev args |> Array.ofList, rule)
                             |> tryResolveResult objEnv tyEnv with
-                       | (_, None) ->
+                       | None ->
                          Seq.empty
-                       | (objEnv, Some result) ->
+                       | Some (objEnv, result) ->
 
                          let objEnv =
                            match result with
@@ -286,8 +282,8 @@ module Engine =
                              outer resolvedArgs rules objEnv tyEnv ty parTys
                            | arg::args ->
                              match tryResolveResult objEnv tyEnv arg with
-                              | (_, None) -> Seq.empty
-                              | (objEnv, Some resolvedArg) ->
+                              | None -> Seq.empty
+                              | Some (objEnv, resolvedArg) ->
                                 inner <| resolvedArg::resolvedArgs
                                       <| match resolvedArg with
                                           | Ruled _ -> rules
