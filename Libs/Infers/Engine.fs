@@ -186,13 +186,13 @@ module Engine =
     if limit <= 0 then
       Seq.empty
     else
-      let limit = limit - 1
-      let ty' = mapVars snd ty
       match HashEqMap.tryFind ty objEnv with
        | Some o ->
          Seq.singleton (Value (ty, o), objEnv, tyEnv)
        | None ->
-         RuleSet.rulesFor rules ty'
+         let limit = limit - 1
+         mapVars snd ty
+         |> RuleSet.rulesFor rules
          |> Seq.map Rule.freshVars
          |> Seq.collect (fun rule ->
             tryMatchIn rule.ReturnType ty tyEnv
