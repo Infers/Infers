@@ -159,7 +159,7 @@ module Engine =
   type ObjEnv<'v when 'v : equality> = HashEqMap<Ty<'v>, obj>
 
   type Result<'v> =
-    | Value of ty: Ty<'v> * value: obj
+    | Value of obj
     | Ruled of ty: Ty<'v> * args: array<Result<'v>> * rule: Rule<'v>
 
   let rec tryResolveResult objEnv tyEnv result =
@@ -182,21 +182,23 @@ module Engine =
           (objEnv, None)
         | (objEnv, Some args) ->
           let ty = Ty.resolve tyEnv ty
-          match (lazy Ty.containsVars ty,
-                 lazy (Array.chooseAll
-                         <| function Value (_, v) -> Some v
-                                   | Ruled _ -> None
-                         <| args)) with
-           | (Force true, _) | (_, Force None) ->
-             (objEnv, Ruled (ty, args, rule) |> Some)
-           | (Force false, Force (Some argVals)) ->
-             let genArgTys =
-               rule.GenericArgTypes
-               |> Array.map (Ty.resolve tyEnv >> Ty.toMonoType >> Option.get) // XXX
-             match rule.Invoke (genArgTys, argVals) with
-              | None -> (objEnv, None)
-              | Some o ->
-                (HashEqMap.add ty o objEnv, Value (ty, o) |> Some)
+          if Ty.containsVars ty then
+            (objEnv, Ruled (ty, args, rule) |> Some)
+          else
+            match Array.chooseAll
+                   <| function Value v -> Some v
+                             | Ruled _ -> None
+                   <| args with
+             | None ->
+               (objEnv, Ruled (ty, args, rule) |> Some)
+             | Some argVals ->
+               let genArgTys =
+                 rule.GenericArgTypes
+                 |> Array.map (Ty.resolve tyEnv >> Ty.toMonoType >> Option.get)
+               match rule.Invoke (genArgTys, argVals) with
+                | None -> (objEnv, None)
+                | Some o ->
+                  (HashEqMap.add ty o objEnv, Value o |> Some)
 
   let inline isRec ty =
     match ty with
@@ -209,7 +211,7 @@ module Engine =
     else
       match HashEqMap.tryFind ty objEnv with
        | Some o ->
-         Seq.singleton (Value (ty, o), objEnv, tyEnv)
+         Seq.singleton (Value o, objEnv, tyEnv)
        | None ->
          let limit = limit - 1
          RuleSet.rulesFor rules ty
@@ -228,18 +230,18 @@ module Engine =
 
                    match HashEqMap.tryFind ty objEnv with
                     | Some o ->
-                      Seq.singleton (Value (ty, o), objEnv, tyEnv)
+                      Seq.singleton (Value o, objEnv, tyEnv)
                     | None ->
                       let recTy = App (Def typedefof<Rec<_>>, [|ty|])
                       tryGenerate' limit rules objEnv tyEnv (ty::stack) recTy
                       |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
                          match result with
                           | Ruled _ -> None
-                          | Value (_, recO) ->
+                          | Value recO ->
                             match recO with
                              | :? IRecObj as recO' ->
                                let o = recO'.GetObj ()
-                               Some (Value (ty, o),
+                               Some (Value o,
                                      objEnv
                                      |> HashEqMap.add recTy recO
                                      |> HashEqMap.add ty o,
@@ -258,7 +260,7 @@ module Engine =
 
                          let objEnv =
                            match result with
-                            | Value (ty, o) ->
+                            | Value o ->
                               let recTy = App (Def typedefof<Rec<_>>, [|ty|])
                               match HashEqMap.tryFind recTy objEnv with
                                | None ->
@@ -289,7 +291,7 @@ module Engine =
                                 inner <| resolvedArg::resolvedArgs
                                       <| match resolvedArg with
                                           | Ruled _ -> rules
-                                          | Value (_, value) ->
+                                          | Value value ->
                                             RuleSet.maybeAddRules value rules
                                       <| objEnv
                                       <| args
@@ -308,4 +310,4 @@ module Engine =
        |> Seq.tryPick (fun (result, _, _) ->
           match result with
            | Ruled _ -> None
-           | Value (_, value) -> Some (unbox<'a> value)))
+           | Value value -> Some (unbox<'a> value)))
