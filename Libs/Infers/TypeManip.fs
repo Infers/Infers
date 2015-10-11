@@ -69,137 +69,138 @@ module Ty =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Determines whether the given type contains type variables.  Note that this
-/// is not given a substitution.
-let rec containsVars ty =
-  match ty with
-   | Var _ -> true
-   | App (_, tys) -> Array.exists containsVars tys
+  /// Determines whether the given type contains type variables.  Note that this
+  /// is not given a substitution.
+  let rec containsVars ty =
+    match ty with
+     | Var _ -> true
+     | App (_, tys) -> Array.exists containsVars tys
 
-/// Resolves the root of the type with respect to the given substition of type
-/// variables to types.
-let rec resolveTop v2ty ty =
-  match ty with
-   | Var v ->
-     match HashEqMap.tryFind v v2ty with
-      | None -> ty
-      | Some ty -> resolveTop v2ty ty
-   | _ ->
-     ty
+  /// Resolves the root of the type with respect to the given substition of type
+  /// variables to types.
+  let rec resolveTop v2ty ty =
+    match ty with
+     | Var v ->
+       match HashEqMap.tryFind v v2ty with
+        | None -> ty
+        | Some ty -> resolveTop v2ty ty
+     | _ ->
+       ty
 
-/// Fully recursively resolves the type with respect to the given substition of
-/// type variables to types.
-let rec resolve v2ty ty =
-  match resolveTop v2ty ty with
-   | Var v -> Var v
-   | App (tc, tys) ->
-     App (tc, tys |> Array.map (resolve v2ty))
+  /// Fully recursively resolves the type with respect to the given substition
+  /// of type variables to types.
+  let rec resolve v2ty ty =
+    match resolveTop v2ty ty with
+     | Var v -> Var v
+     | App (tc, tys) ->
+       App (tc, tys |> Array.map (resolve v2ty))
 
-/// Tests whether the type variable `v` occurs in the type `ty` with respect to
-/// the given substitution of type variables to types.
-let rec private occurs v2ty v ty =
-  match ty with
-   | Var v' -> v = v'
-   | App (_, tys) ->
-     tys
-     |> Array.exists (occurs v2ty v << resolveTop v2ty)
+  /// Tests whether the type variable `v` occurs in the type `ty` with respect
+  /// to the given substitution of type variables to types.
+  let rec private occurs v2ty v ty =
+    match ty with
+     | Var v' -> v = v'
+     | App (_, tys) ->
+       tys
+       |> Array.exists (occurs v2ty v << resolveTop v2ty)
 
-let rec mapVars v2w ty =
-  match ty with
-   | Var v ->
-     Var (v2w v)
-   | App (tc, tys) ->
-     App (tc, tys |> Array.map (mapVars v2w))
+  let rec mapVars v2w ty =
+    match ty with
+     | Var v ->
+       Var (v2w v)
+     | App (tc, tys) ->
+       App (tc, tys |> Array.map (mapVars v2w))
 
-let rec tryMatchIn formal actual v2ty =
-  match (resolveTop v2ty formal, resolveTop v2ty actual) with
-   | (Var fv, Var av) when fv = av ->
-     Some v2ty
-   | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
-     Some (HashEqMap.add v ty v2ty)
-   | (App (formal, pars), App (actual, args)) when formal = actual ->
-     assert (pars.Length = args.Length)
-     let rec loop i v2ty =
-       if i < pars.Length then
-         tryMatchIn pars.[i] args.[i] v2ty
-         |> Option.bind (loop (i+1))
-       else
-         Some v2ty
-     loop 0 v2ty
-   | _ ->
-     None
-
-/// Given two types, determines whether they can be unified and, if so, returns
-/// substition of type variables to types.
-let tryMatch formal actual =
-  tryMatchIn formal actual HashEqMap.empty
-
-/// Given two types, determines whether they are equal, taking into
-/// consideration the implicit universal quantification of type variables.
-let areEqual aTy bTy =
-  let rec types aTy bTy v2ty =
-    match (aTy, bTy) with
-     | (Var a, Var b) ->
-       match HashEqMap.tryFind a v2ty with
-        | Some b' ->
-          if b' = b then Some v2ty else None
-        | None ->
-          Some (HashEqMap.add a b v2ty)
-     | (App (aTc, aArgs), App (bTc, bArgs)) when aTc = bTc ->
-       assert (aArgs.Length = bArgs.Length)
-       let rec args i v2ty =
-         if aArgs.Length <= i then
-           Some v2ty
+  let rec tryMatchIn formal actual v2ty =
+    match (resolveTop v2ty formal, resolveTop v2ty actual) with
+     | (Var fv, Var av) when fv = av ->
+       Some v2ty
+     | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
+       Some (HashEqMap.add v ty v2ty)
+     | (App (formal, pars), App (actual, args)) when formal = actual ->
+       assert (pars.Length = args.Length)
+       let rec loop i v2ty =
+         if i < pars.Length then
+           tryMatchIn pars.[i] args.[i] v2ty
+           |> Option.bind (loop (i+1))
          else
-           match types aArgs.[i] bArgs.[i] v2ty with
-            | None -> None
-            | Some v2ty ->
-              args (i+1) v2ty
-       args 0 v2ty
+           Some v2ty
+       loop 0 v2ty
      | _ ->
        None
-  types aTy bTy HashEqMap.empty |> Option.isSome
 
-/// Result of testing two types by `moreSpecific`.
-type MoreSpecific =
- /// Left hand side type is more specific.
- | Lhs
- /// Right hand side type is more specific.
- | Rhs
- /// The two types are equivalent.
- | Equal
- /// The types cannot be unified.
- | Unmatchable
- /// The types unify, but neither is more specific than the other.
- | Incomparable
+  /// Given two types, determines whether they can be unified and, if so,
+  /// returns substition of type variables to types.
+  let tryMatch formal actual =
+    tryMatchIn formal actual HashEqMap.empty
 
-/// Given two types, determines whether one of the two types is clearly a more
-/// specific type with respect to unification and returns that type if so.
-let moreSpecific lhs rhs =
-  match tryMatch lhs rhs with
-   | None -> Unmatchable
-   | Some v2ty ->
-     assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
-     match (areEqual (resolve v2ty lhs) lhs, areEqual (resolve v2ty rhs) rhs) with
-      | ( true,  true) -> Equal
-      | ( true, false) -> Lhs
-      | (false,  true) -> Rhs
-      | (false, false) -> Incomparable
+  /// Given two types, determines whether they are equal, taking into
+  /// consideration the implicit universal quantification of type variables.
+  let areEqual aTy bTy =
+    let rec types aTy bTy v2ty =
+      match (aTy, bTy) with
+       | (Var a, Var b) ->
+         match HashEqMap.tryFind a v2ty with
+          | Some b' ->
+            if b' = b then Some v2ty else None
+          | None ->
+            Some (HashEqMap.add a b v2ty)
+       | (App (aTc, aArgs), App (bTc, bArgs)) when aTc = bTc ->
+         assert (aArgs.Length = bArgs.Length)
+         let rec args i v2ty =
+           if aArgs.Length <= i then
+             Some v2ty
+           else
+             match types aArgs.[i] bArgs.[i] v2ty with
+              | None -> None
+              | Some v2ty ->
+                args (i+1) v2ty
+         args 0 v2ty
+       | _ ->
+         None
+    types aTy bTy HashEqMap.empty |> Option.isSome
 
-/// Reorder the type associations in the given array so that types that unify
-/// with a smaller set of types are before types that unify with larger sets of
-/// types.
-let inPlaceSelectSpecificFirst (tyrs: array<Ty<'v> * 'r>) =
-  let swap i j =
-    let iEl = tyrs.[i]
-    tyrs.[i] <- tyrs.[j]
-    tyrs.[j] <- iEl
-  for i=0 to tyrs.Length-2 do
-    let mutable j = i
-    for k=i+1 to tyrs.Length-1 do
-      if Rhs = moreSpecific (fst tyrs.[j]) (fst tyrs.[k]) then
-        j <- k
-    swap i j
+  /// Result of testing two types by `moreSpecific`.
+  type MoreSpecific =
+   /// Left hand side type is more specific.
+   | Lhs
+   /// Right hand side type is more specific.
+   | Rhs
+   /// The two types are equivalent.
+   | Equal
+   /// The types cannot be unified.
+   | Unmatchable
+   /// The types unify, but neither is more specific than the other.
+   | Incomparable
+
+  /// Given two types, determines whether one of the two types is clearly a more
+  /// specific type with respect to unification and returns that type if so.
+  let moreSpecific lhs rhs =
+    match tryMatch lhs rhs with
+     | None -> Unmatchable
+     | Some v2ty ->
+       assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
+       match (areEqual (resolve v2ty lhs) lhs,
+              areEqual (resolve v2ty rhs) rhs) with
+        | ( true,  true) -> Equal
+        | ( true, false) -> Lhs
+        | (false,  true) -> Rhs
+        | (false, false) -> Incomparable
+
+  /// Reorder the type associations in the given array so that types that unify
+  /// with a smaller set of types are before types that unify with larger sets
+  /// of types.
+  let inPlaceSelectSpecificFirst (tyrs: array<Ty<'v> * 'r>) =
+    let swap i j =
+      let iEl = tyrs.[i]
+      tyrs.[i] <- tyrs.[j]
+      tyrs.[j] <- iEl
+    for i=0 to tyrs.Length-2 do
+      let mutable j = i
+      for k=i+1 to tyrs.Length-1 do
+        if Rhs = moreSpecific (fst tyrs.[j]) (fst tyrs.[k]) then
+          j <- k
+      swap i j
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -252,7 +253,7 @@ module TyTree =
                // leaf consisting of all the remaining values.
                tyrs
                |> Array.ofList
-               |>!inPlaceSelectSpecificFirst
+               |>!Ty.inPlaceSelectSpecificFirst
                |> Array.map snd
                |> Many
              | at::ats ->

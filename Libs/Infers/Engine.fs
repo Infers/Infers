@@ -31,9 +31,9 @@ type Rule<'v> =
 
 module Rule =
   let mapVars v2w (rule: Rule<_>) =
-    let returnType = mapVars v2w rule.ReturnType
-    let parTypes = lazy Array.map (mapVars v2w) rule.ParTypes
-    let genericArgTypes = lazy Array.map (mapVars v2w) rule.GenericArgTypes
+    let returnType = Ty.mapVars v2w rule.ReturnType
+    let parTypes = lazy Array.map (Ty.mapVars v2w) rule.ParTypes
+    let genericArgTypes = lazy Array.map (Ty.mapVars v2w) rule.GenericArgTypes
     {new Rule<_> with
       member ir.ReturnType = returnType
       member ir.ParTypes = parTypes.Force ()
@@ -66,12 +66,13 @@ type RuleMethod (infRule: MethodInfo, infRules: obj) =
                   | _ -> false) -> None
 
 module RuleSet =
-  type RuleSet = {
-    rulesCache: Dictionary<Type, array<Rule<Type>>>
-    treesCache: Dictionary<HashEqSet<Type>, TyTree<Rule<Type>>>
-    rules: HashEqSet<Type>
-    tree: TyTree<Rule<Type>>
-  }
+  type Cache =
+    {rules: Dictionary<Type, array<Rule<Type>>>
+     trees: Dictionary<HashEqSet<Type>, TyTree<Rule<Type>>>}
+  type RuleSet =
+    {cache: Cache
+     rules: HashEqSet<Type>
+     tree: TyTree<Rule<Type>>}
 
   let hasInferenceRules (ty: Type) =
     ty.GetCustomAttributes<InferenceRules> true
@@ -91,12 +92,11 @@ module RuleSet =
     o.GetType ()
     |> collectRules
 
-  let newEmpty () = {
-    rulesCache = Dictionary<_, _> ()
-    treesCache = Dictionary<_, _> ()
-    rules = HashEqSet.empty
-    tree = TyTree.build []
-  }
+  let newEmpty () =
+    {cache = {rules = Dictionary<_, _> ()
+              trees = Dictionary<_, _> ()}
+     rules = HashEqSet.empty
+     tree = TyTree.build []}
 
   let maybeAddRules (o: obj) ruleSet =
     match o with
@@ -105,26 +105,27 @@ module RuleSet =
      | o ->
        let t = o.GetType ()
        if hasInferenceRules t
-          && HashEqSet.contains t ruleSet.rules |> not
-       then let rules = HashEqSet.add t ruleSet.rules
-            if ruleSet.rulesCache.ContainsKey t |> not then
-              ruleSet.rulesCache.Add (t, collectRules o |> Seq.toArray)
-            let tree =
-              match ruleSet.treesCache.TryGetValue rules with
-               | (true, tree) -> tree
-               | (false, _) ->
-                 let tree =
-                   lazy (rules
-                         |> HashEqSet.toSeq
-                         |> Seq.collect (fun t ->
-                            ruleSet.rulesCache.[t]
-                            |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                         |> TyTree.build
-                         |> force)
-                 ruleSet.treesCache.Add (rules, tree)
-                 tree
-            {ruleSet with rules = rules; tree = tree}
-       else ruleSet
+          && HashEqSet.contains t ruleSet.rules |> not then
+         let rules = HashEqSet.add t ruleSet.rules
+         if ruleSet.cache.rules.ContainsKey t |> not then
+           ruleSet.cache.rules.Add (t, collectRules o |> Seq.toArray)
+         let tree =
+           match ruleSet.cache.trees.TryGetValue rules with
+            | (true, tree) -> tree
+            | (false, _) ->
+              let tree =
+                lazy (rules
+                      |> HashEqSet.toSeq
+                      |> Seq.collect (fun t ->
+                         ruleSet.cache.rules.[t]
+                         |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                      |> TyTree.build
+                      |> force)
+              ruleSet.cache.trees.Add (rules, tree)
+              tree
+         {ruleSet with rules = rules; tree = tree}
+       else
+         ruleSet
 
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
     yield! TyTree.filter ruleSet.tree desiredTy
@@ -180,8 +181,8 @@ module Engine =
         | (objEnv, None) ->
           (objEnv, None)
         | (objEnv, Some args) ->
-          let ty = resolve tyEnv ty
-          match (lazy containsVars ty,
+          let ty = Ty.resolve tyEnv ty
+          match (lazy Ty.containsVars ty,
                  lazy (Array.chooseAll
                          <| function Value (_, v) -> Some v
                                    | Ruled _ -> None
@@ -191,7 +192,7 @@ module Engine =
            | (Force false, Force (Some argVals)) ->
              let genArgTys =
                rule.GenericArgTypes
-               |> Array.map (resolve tyEnv >> Ty.toMonoType >> Option.get) // XXX
+               |> Array.map (Ty.resolve tyEnv >> Ty.toMonoType >> Option.get) // XXX
              match rule.Invoke (genArgTys, argVals) with
               | None -> (objEnv, None)
               | Some o ->
@@ -214,15 +215,15 @@ module Engine =
          RuleSet.rulesFor rules ty
          |> Seq.map Rule.freshVars
          |> Seq.collect (fun rule ->
-            tryMatchIn rule.ReturnType ty tyEnv
+            Ty.tryMatchIn rule.ReturnType ty tyEnv
             |> Option.toSeq |> Seq.collect (fun tyEnv ->
                let rec outer args rules objEnv tyEnv ty parTys =
-                 let ty = resolve tyEnv ty
-                 let stack = stack |> List.map (resolve tyEnv)
+                 let ty = Ty.resolve tyEnv ty
+                 let stack = stack |> List.map (Ty.resolve tyEnv)
 
                  if rule.ParTypes.Length <> 0 &&
                     isRec ty |> not &&
-                    containsVars ty |> not &&
+                    Ty.containsVars ty |> not &&
                     stack |> List.exists ((=) ty) then
 
                    match HashEqMap.tryFind ty objEnv with
@@ -275,7 +276,7 @@ module Engine =
 
                          Seq.singleton (result, objEnv, tyEnv)
                     | parTy::parTys ->
-                      resolve tyEnv parTy
+                      Ty.resolve tyEnv parTy
                       |> tryGenerate' limit rules objEnv tyEnv (ty::stack)
                       |> Seq.collect (fun (result, objEnv, tyEnv) ->
                          let rec inner resolvedArgs rules objEnv = function
@@ -294,10 +295,10 @@ module Engine =
                                       <| args
                          result::args |> List.rev |> inner [] rules objEnv)
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
-         |> if containsVars ty then id else Seq.truncate 1
+         |> if Ty.containsVars ty then id else Seq.truncate 1
 
   let tryGenerate (rules: obj) : option<'a> =
-    let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
+    let desTy = typeof<'a> |> Ty.ofType |> Ty.mapVars (Fresh.newMapper ())
     let rules =
       RuleSet.newEmpty ()
       |> RuleSet.maybeAddRules rules
