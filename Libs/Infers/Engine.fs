@@ -2,8 +2,9 @@
 
 namespace Infers
 
-open System
+open System.Collections.Generic
 open System.Reflection
+open System
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -11,7 +12,7 @@ module Fresh =
   let mutable private counter = 0L
 
   let newMapper () =
-    let v2w = System.Collections.Generic.Dictionary<_, _> ()
+    let v2w = Dictionary<_, _> ()
     fun v ->
       match v2w.TryGetValue v with
        | (true, w) -> w
@@ -65,7 +66,11 @@ type RuleMethod (infRule: MethodInfo, infRules: obj) =
                   | _ -> false) -> None
 
 module RuleSet =
-  type RuleSet = {rules: HashEqMap<Type, array<Rule<Type>>>; tree: TyTree<Rule<Type>>}
+  type RuleSet = {
+    env: Dictionary<Type, array<Rule<Type>>>
+    rules: HashEqSet<Type>
+    tree: TyTree<Rule<Type>>
+  }
 
   let hasInferenceRules (ty: Type) =
     ty.GetCustomAttributes<InferenceRules> true
@@ -85,7 +90,7 @@ module RuleSet =
     o.GetType ()
     |> collectRules
 
-  let empty = {rules = HashEqMap.empty; tree = TyTree.build []}
+  let newEmpty env = {env = env; rules = HashEqSet.empty; tree = TyTree.build []}
 
   let maybeAddRules (o: obj) ruleSet =
     match o with
@@ -94,16 +99,19 @@ module RuleSet =
      | o ->
        let t = o.GetType ()
        if hasInferenceRules t
-          && HashEqMap.tryFind t ruleSet.rules |> Option.isNone
-       then let rules = HashEqMap.add t (collectRules o |> Seq.toArray) ruleSet.rules
-            {rules = rules
-             tree = lazy (rules
-                          |> HashEqMap.toSeq
-                          |> Seq.collect (fun (_, rules) ->
-                             rules
-                             |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                          |> TyTree.build
-                          |> force)}
+          && HashEqSet.contains t ruleSet.rules |> not
+       then let rules = HashEqSet.add t ruleSet.rules
+            if ruleSet.env.ContainsKey t |> not then
+              ruleSet.env.Add (t, collectRules o |> Seq.toArray)
+            {ruleSet with
+              rules = rules
+              tree = lazy (rules
+                           |> HashEqSet.toSeq
+                           |> Seq.collect (fun t ->
+                              ruleSet.env.[t]
+                              |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                           |> TyTree.build
+                           |> force)}
        else ruleSet
 
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
@@ -278,7 +286,10 @@ module Engine =
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
-    let rules = RuleSet.maybeAddRules rules RuleSet.empty
+    let rules =
+      Dictionary<_, _> ()
+      |> RuleSet.newEmpty
+      |> RuleSet.maybeAddRules rules
     seq {1 .. Int32.MaxValue}
     |> Seq.tryPick (fun limit ->
        tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy
