@@ -192,13 +192,14 @@ module Engine =
              | None ->
                (objEnv, Ruled (ty, args, rule) |> Some)
              | Some argVals ->
-               let genArgTys =
-                 rule.GenericArgTypes
-                 |> Array.map (Ty.resolve tyEnv >> Ty.toMonoType >> Option.get)
-               match rule.Invoke (genArgTys, argVals) with
-                | None -> (objEnv, None)
-                | Some o ->
-                  (HashEqMap.add ty o objEnv, Value o |> Some)
+               match rule.GenericArgTypes
+                     |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
+                | None ->
+                  failwith "Bug"
+                | Some genArgTys ->
+                  match rule.Invoke (genArgTys, argVals) with
+                   | None -> (objEnv, None)
+                   | Some o -> (HashEqMap.add ty o objEnv, Value o |> Some)
 
   let inline isRec ty =
     match ty with
@@ -218,7 +219,7 @@ module Engine =
          |> Seq.map Rule.freshVars
          |> Seq.collect (fun rule ->
             Ty.tryMatchIn rule.ReturnType ty tyEnv
-            |> Option.toSeq |> Seq.collect (fun tyEnv ->
+            |> Option.collect (fun tyEnv ->
                let rec outer args rules objEnv tyEnv ty parTys =
                  let ty = Ty.resolve tyEnv ty
                  let stack = stack |> List.map (Ty.resolve tyEnv)
@@ -234,7 +235,7 @@ module Engine =
                     | None ->
                       let recTy = App (Def typedefof<Rec<_>>, [|ty|])
                       tryGenerate' limit rules objEnv tyEnv (ty::stack) recTy
-                      |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+                      |> Seq.choose (fun (result, objEnv, tyEnv) ->
                          match result with
                           | Ruled _ -> None
                           | Value recO ->
@@ -248,7 +249,6 @@ module Engine =
                                      tyEnv)
                              | _ ->
                                failwith "Bug")
-                      |> Option.toSeq
                  else
                    match parTys with
                     | [] ->

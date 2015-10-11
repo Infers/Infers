@@ -35,11 +35,9 @@ let (|Force|) (xL: Lazy<_>) = xL.Force ()
 
 /// Additional operations on options.
 module Option =
-  /// Converts an option to a sequence.
-  let toSeq o = match o with None -> Seq.empty | Some x -> Seq.singleton x
-
-  /// Converts a nullable value to an option.
-  let ofNull x = match x with null -> None | x -> Some x
+  let inline collect x2ys = function
+    | None -> Seq.empty
+    | Some x -> x2ys x
 
 ////////////////////////////////////////////////////////////////////////////////
 
