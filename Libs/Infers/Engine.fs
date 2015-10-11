@@ -67,7 +67,8 @@ type RuleMethod (infRule: MethodInfo, infRules: obj) =
 
 module RuleSet =
   type RuleSet = {
-    env: Dictionary<Type, array<Rule<Type>>>
+    rulesCache: Dictionary<Type, array<Rule<Type>>>
+    treesCache: Dictionary<HashEqSet<Type>, TyTree<Rule<Type>>>
     rules: HashEqSet<Type>
     tree: TyTree<Rule<Type>>
   }
@@ -90,7 +91,12 @@ module RuleSet =
     o.GetType ()
     |> collectRules
 
-  let newEmpty env = {env = env; rules = HashEqSet.empty; tree = TyTree.build []}
+  let newEmpty () = {
+    rulesCache = Dictionary<_, _> ()
+    treesCache = Dictionary<_, _> ()
+    rules = HashEqSet.empty
+    tree = TyTree.build []
+  }
 
   let maybeAddRules (o: obj) ruleSet =
     match o with
@@ -101,17 +107,23 @@ module RuleSet =
        if hasInferenceRules t
           && HashEqSet.contains t ruleSet.rules |> not
        then let rules = HashEqSet.add t ruleSet.rules
-            if ruleSet.env.ContainsKey t |> not then
-              ruleSet.env.Add (t, collectRules o |> Seq.toArray)
-            {ruleSet with
-              rules = rules
-              tree = lazy (rules
-                           |> HashEqSet.toSeq
-                           |> Seq.collect (fun t ->
-                              ruleSet.env.[t]
-                              |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                           |> TyTree.build
-                           |> force)}
+            if ruleSet.rulesCache.ContainsKey t |> not then
+              ruleSet.rulesCache.Add (t, collectRules o |> Seq.toArray)
+            let tree =
+              match ruleSet.treesCache.TryGetValue rules with
+               | (true, tree) -> tree
+               | (false, _) ->
+                 let tree =
+                   lazy (rules
+                         |> HashEqSet.toSeq
+                         |> Seq.collect (fun t ->
+                            ruleSet.rulesCache.[t]
+                            |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                         |> TyTree.build
+                         |> force)
+                 ruleSet.treesCache.Add (rules, tree)
+                 tree
+            {ruleSet with rules = rules; tree = tree}
        else ruleSet
 
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
@@ -287,8 +299,7 @@ module Engine =
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
     let rules =
-      Dictionary<_, _> ()
-      |> RuleSet.newEmpty
+      RuleSet.newEmpty ()
       |> RuleSet.maybeAddRules rules
     seq {1 .. Int32.MaxValue}
     |> Seq.tryPick (fun limit ->
