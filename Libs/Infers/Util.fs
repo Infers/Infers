@@ -96,7 +96,17 @@ module HashEqSet =
 
 /// Represents a functional map of type `'k -> 'v` requiring only that `'k`
 /// provides equality and hash operations.
-type HashEqMap<'k, 'v> when 'k: equality = HEM of Map<int, list<'k * 'v>>
+type HashEqMap<'k, 'v> when 'k: equality =
+  | HEM of Map<int, list<'k * 'v>>
+  override this.ToString () =
+    match this with
+     | HEM m ->
+       m
+       |> Map.toSeq
+       |> Seq.map snd
+       |> Seq.concat
+       |> List.ofSeq
+       |> sprintf "%A"
 
 /// Operations on functional maps using hash and equality.
 module HashEqMap =
