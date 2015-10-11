@@ -65,41 +65,49 @@ type RuleMethod (infRule: MethodInfo, infRules: obj) =
                   | _ -> false) -> None
 
 module RuleSet =
-  type RuleSet = HashEqMap<obj, TyTree<Rule<Type>>>
+  type RuleSet = {rules: HashEqMap<Type, array<Rule<Type>>>; tree: TyTree<Rule<Type>>}
 
-  let getInferenceRules (ty: Type) =
+  let hasInferenceRules (ty: Type) =
     ty.GetCustomAttributes<InferenceRules> true
-    |> Seq.tryPick Some
+    |> Seq.isEmpty
+    |> not
 
-  let preprocess infRules =
+  let collectRules o =
     let rec collectRules ty =
-      match getInferenceRules ty with
-       | None -> Seq.empty
-       | Some _ ->
-         [ty.GetMethods BindingFlags.PublicDeclaredInstance
-          |> Seq.map (fun infRule ->
-             RuleMethod (infRule, infRules) :> Rule<_>)
-          collectRules ty.BaseType]
-         |> Seq.concat
-    infRules.GetType ()
+      if hasInferenceRules ty then
+        [ty.GetMethods BindingFlags.PublicDeclaredInstance
+         |> Seq.map (fun infRule ->
+            RuleMethod (infRule, o) :> Rule<_>)
+         collectRules ty.BaseType]
+        |> Seq.concat
+      else
+        Seq.empty
+    o.GetType ()
     |> collectRules
-    |> Seq.map (fun rule -> (rule.ReturnType, rule))
-    |> TyTree.build
 
-  let ofSeq infRules : RuleSet =
-    infRules
-    |> Seq.fold
-        (fun rulesMap rules ->
-          HashEqMap.add
-           rules
-           (preprocess rules)
-           rulesMap)
-        HashEqMap.empty
+  let empty = {rules = HashEqMap.empty; tree = TyTree.build []}
 
-  let rulesFor (infRuleSet: RuleSet) (desiredTy: Ty<_>) = seq {
-    yield! HashEqMap.toSeq infRuleSet
-           |> Seq.collect (fun (_, infRulesTree) ->
-              TyTree.filter infRulesTree desiredTy)
+  let maybeAddRules (o: obj) ruleSet =
+    match o with
+     | null ->
+       ruleSet
+     | o ->
+       let t = o.GetType ()
+       if hasInferenceRules t
+          && HashEqMap.tryFind t ruleSet.rules |> Option.isNone
+       then let rules = HashEqMap.add t (collectRules o |> Seq.toArray) ruleSet.rules
+            {rules = rules
+             tree = lazy (rules
+                          |> HashEqMap.toSeq
+                          |> Seq.collect (fun (_, rules) ->
+                             rules
+                             |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                          |> TyTree.build
+                          |> force)}
+       else ruleSet
+
+  let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
+    yield! TyTree.filter ruleSet.tree desiredTy
     match Ty.toMonoType desiredTy with
      | None -> ()
      | Some t ->
@@ -122,16 +130,6 @@ module RuleSet =
                       then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
                       else t).GetConstructor([||]).Invoke [||] |> Some}
   }
-
-  let maybeAddRules (o: obj) (infRuleSet: RuleSet) =
-    match o with
-     | null ->
-       infRuleSet
-     | o ->
-       if o.GetType () |> getInferenceRules |> Option.isSome
-          && HashEqMap.tryFind o infRuleSet |> Option.isNone
-       then HashEqMap.add o (preprocess o) infRuleSet
-       else infRuleSet
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -280,7 +278,7 @@ module Engine =
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
-    let rules = RuleSet.ofSeq [rules]
+    let rules = RuleSet.maybeAddRules rules RuleSet.empty
     seq {1 .. Int32.MaxValue}
     |> Seq.tryPick (fun limit ->
        tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy
