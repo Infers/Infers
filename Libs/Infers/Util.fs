@@ -29,6 +29,8 @@ let inline (|>!) x effect = effect x ; x
 /// Forces a lazy computation object.
 let inline force (x: Lazy<_>) = x.Force ()
 
+let (|Force|) (xL: Lazy<_>) = xL.Force ()
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Additional operations on options.
@@ -54,10 +56,6 @@ module Array =
            ys.[i] <- y
            lp (i+1)
     lp 0
-
-////////////////////////////////////////////////////////////////////////////////
-
-let (|Force|) (xL: Lazy<_>) = xL.Force ()
 
 ////////////////////////////////////////////////////////////////////////////////
 
