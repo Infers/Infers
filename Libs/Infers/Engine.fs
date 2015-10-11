@@ -16,7 +16,7 @@ module Fresh =
       match v2w.TryGetValue v with
        | (true, w) -> w
        | (false, _) ->
-         let w = (System.Threading.Interlocked.Increment &counter, v)
+         let w = System.Threading.Interlocked.Increment &counter
          v2w.Add (v, w)
          w
 
@@ -39,7 +39,7 @@ module Rule =
       member ir.GenericArgTypes = genericArgTypes.Force ()
       member ir.Invoke (genArgTys, argObjs) = rule.Invoke (genArgTys, argObjs)}
 
-  let freshVars (rule: Rule<Type>) : Rule<Int64 * Type> =
+  let freshVars (rule: Rule<Type>) : Rule<Int64> =
     mapVars (Fresh.newMapper ()) rule
 
 type RuleMethod (infRule: MethodInfo, infRules: obj) =
@@ -100,25 +100,27 @@ module RuleSet =
     yield! HashEqMap.toSeq infRuleSet
            |> Seq.collect (fun (_, infRulesTree) ->
               TyTree.filter infRulesTree desiredTy)
-    let t = desiredTy |> Ty.toType
-    if not t.IsAbstract then
-      match t.GetConstructor [||] with
-       | null -> ()
-       | _ ->
-         let t = if t.IsGenericType then t.GetGenericTypeDefinition() else t
-         let returnType = Ty.ofType t
-         let genArgs =
-           lazy if t.IsGenericType
-                then t.GetGenericArguments () |> Array.map Ty.ofType
-                else [||]
-         yield {new Rule<_> with
-                 member this.ReturnType = returnType
-                 member this.ParTypes = [||]
-                 member this.GenericArgTypes = genArgs.Force ()
-                 member this.Invoke (genArgTys: array<Type>, _: array<obj>) =
-                  (if t.IsGenericType
-                   then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
-                   else t).GetConstructor([||]).Invoke [||] |> Some}
+    match Ty.toMonoType desiredTy with
+     | None -> ()
+     | Some t ->
+       if not t.IsAbstract then
+         match t.GetConstructor [||] with
+          | null -> ()
+          | _ ->
+            let t = if t.IsGenericType then t.GetGenericTypeDefinition() else t
+            let returnType = Ty.ofType t
+            let genArgs =
+              lazy if t.IsGenericType
+                   then t.GetGenericArguments () |> Array.map Ty.ofType
+                   else [||]
+            yield {new Rule<_> with
+                    member this.ReturnType = returnType
+                    member this.ParTypes = [||]
+                    member this.GenericArgTypes = genArgs.Force ()
+                    member this.Invoke (genArgTys: array<Type>, _: array<obj>) =
+                     (if t.IsGenericType
+                      then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
+                      else t).GetConstructor([||]).Invoke [||] |> Some}
   }
 
   let maybeAddRules (o: obj) (infRuleSet: RuleSet) =
@@ -171,7 +173,7 @@ module Engine =
            | (Force false, Force (Some argVals)) ->
              let genArgTys =
                rule.GenericArgTypes
-               |> Array.map (resolve tyEnv >> Ty.toMonoType)
+               |> Array.map (resolve tyEnv >> Ty.toMonoType >> Option.get) // XXX
              match rule.Invoke (genArgTys, argVals) with
               | None -> (objEnv, None)
               | Some o ->
@@ -191,8 +193,7 @@ module Engine =
          Seq.singleton (Value (ty, o), objEnv, tyEnv)
        | None ->
          let limit = limit - 1
-         mapVars snd ty
-         |> RuleSet.rulesFor rules
+         RuleSet.rulesFor rules ty
          |> Seq.map Rule.freshVars
          |> Seq.collect (fun rule ->
             tryMatchIn rule.ReturnType ty tyEnv

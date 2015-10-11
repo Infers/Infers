@@ -48,37 +48,28 @@ module Ty =
     else
       App (Def t, [||])
 
-  /// Converts a `Ty` to the corresponding .Net `Type`.
-  let rec toType (ty: Ty<Type>) =
-    match ty with
-     | Var t -> t
-     | App (Arr r, [|ty|]) -> 
-       let t = toType ty
-       if r = 1
-       then t.MakeArrayType ()
-       else t.MakeArrayType r
-     | App (Arr _, _) -> failwithf "Bug: %A" ty
-     | App (Def t, [||]) -> t
-     | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map toType)
-
   let toMonoType (tyOriginal: Ty<'any>) =
-    let rec toMonoType ty : Type =
+    let rec toMonoType ty : option<Type> =
       match ty with
        | Var _ ->
-         failwithf "Ty.toMonoType: Type contained vars: '%A'" tyOriginal
+         None
        | App (Arr r, [|ty|]) ->
-         let t = toMonoType ty
-         if r = 1
-         then t.MakeArrayType ()
-         else t.MakeArrayType r
+         toMonoType ty
+         |> Option.map (fun t ->
+            if r = 1
+            then t.MakeArrayType ()
+            else t.MakeArrayType r)
        | App (Arr _, _) -> failwithf "Bug: %A" ty
-       | App (Def t, [||]) -> t
-       | App (Def t, tys) -> t.MakeGenericType (tys |> Array.map toMonoType)
+       | App (Def t, [||]) -> Some t
+       | App (Def t, tys) ->
+         tys
+         |> Array.chooseAll toMonoType
+         |> Option.map (fun tys -> t.MakeGenericType tys)
     toMonoType tyOriginal
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Determines whether the give type contains type variables.  Note that this
+/// Determines whether the given type contains type variables.  Note that this
 /// is not given a substitution.
 let rec containsVars ty =
   match ty with
@@ -334,18 +325,3 @@ module TyTree =
        // We also need to produce the `vars` types.
        yield! filter vars actual
   }
-
-////////////////////////////////////////////////////////////////////////////////
-
-let prepare (m: MethodInfo) (v2ty: HashEqMap<_, Ty<_>>) : MethodInfo =
-  if m.ContainsGenericParameters then
-    m.MakeGenericMethod
-     (m.GetGenericArguments ()
-      |> Array.map (Ty.ofType >> resolve v2ty >> Ty.toType))
-  else
-    m
-
-let tryInvoke meth formalType actualType this actuals =
-  tryMatch formalType actualType
-  |> Option.map (fun v2ty ->
-     (prepare meth v2ty).Invoke (this, actuals))
