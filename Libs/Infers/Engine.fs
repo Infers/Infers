@@ -282,9 +282,9 @@ module Engine =
     let desTy = typeof<'a> |> Ty.ofType |> mapVars (Fresh.newMapper ())
     let rules = RuleSet.ofSeq [rules]
     seq {1 .. Int32.MaxValue}
-    |> Seq.collect (fun limit ->
-       tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy)
-    |> Seq.tryPick (fun (result, _, _) ->
-       match result with
-        | Ruled _ -> None
-        | Value (_, value) -> Some (unbox<'a> value))
+    |> Seq.tryPick (fun limit ->
+       tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy
+       |> Seq.tryPick (fun (result, _, _) ->
+          match result with
+           | Ruled _ -> None
+           | Value (_, value) -> Some (unbox<'a> value)))
