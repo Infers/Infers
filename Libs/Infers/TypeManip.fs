@@ -15,8 +15,11 @@ type TyCon =
 type Ty<'v> =
   | Var of 'v
   | App of TyCon * array<Ty<'v>>
+  | Mono of Type
   override t.ToString () =
     match t with
+     | Mono t ->
+       sprintf "%A" t
      | Var v -> sprintf "%A" v
      | App (Def tc, [||]) ->
        sprintf "%A" tc
@@ -32,43 +35,61 @@ type Ty<'v> =
           else
             sprintf "%A%A" t tys
 
+let (|App'|Var'|) ty =
+  match ty with
+   | Var v -> Var' v
+   | App (tc, tys) -> App' (tc, tys)
+   | Mono t ->
+     if t.IsArray then
+       App' (Arr (t.GetArrayRank ()), [|t.GetElementType () |> Mono|])
+     elif t.IsGenericType then
+       App' (Def (t.GetGenericTypeDefinition ()),
+             t.GetGenericArguments () |> Array.map Mono)
+     else
+       App' (Def t, [||])
+
+[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
+module TyCon =
+  let apply tc ts =
+    match (tc, ts) with
+     | (Def t, ts) ->
+       t.MakeGenericType ts
+     | (Arr r, [|t|]) ->
+       if r = 1
+       then t.MakeArrayType ()
+       else t.MakeArrayType r
+     | _ ->
+       failwith "Bug: apply %A %A" tc ts
+
 module Ty =
+  let inline containsVars ty =
+    match ty with
+     | Mono _ -> false
+     | Var _ | App _ -> true
+
   let rec ofType (t: Type) =
     if t.IsArray then
-      App (Arr (t.GetArrayRank ()), [|ofType (t.GetElementType ())|])
+      match t.GetElementType () |> ofType with
+       | Mono _ ->
+         Mono t
+       | ty ->
+         App (Arr (t.GetArrayRank ()), [|ty|])
     elif t.IsGenericParameter then
       Var t
     elif t.IsGenericType then
-      App (Def (t.GetGenericTypeDefinition ()),
-           t.GetGenericArguments () |> Array.map ofType)
+      let tys = t.GetGenericArguments () |> Array.map ofType
+      if Array.exists containsVars tys
+      then App (Def (t.GetGenericTypeDefinition ()), tys)
+      else Mono t
     else
-      App (Def t, [||])
+      Mono t
 
-  let toMonoType (tyOriginal: Ty<'any>) =
-    let rec toMonoType ty : option<Type> =
-      match ty with
-       | Var _ ->
-         None
-       | App (Arr r, [|ty|]) ->
-         toMonoType ty
-         |> Option.map (fun t ->
-            if r = 1
-            then t.MakeArrayType ()
-            else t.MakeArrayType r)
-       | App (Arr _, _) -> failwithf "Bug: %A" ty
-       | App (Def t, [||]) -> Some t
-       | App (Def t, tys) ->
-         tys
-         |> Array.chooseAll toMonoType
-         |> Option.map (fun tys -> t.MakeGenericType tys)
-    toMonoType tyOriginal
+  let inline toMonoType (ty: Ty<'any>) =
+    match ty with
+     | Mono t -> Some t
+     | Var _ | App _ -> None
 
 ////////////////////////////////////////////////////////////////////////////////
-
-  let rec containsVars ty =
-    match ty with
-     | Var _ -> true
-     | App (_, tys) -> Array.exists containsVars tys
 
   let rec resolveTop v2ty ty =
     match ty with
@@ -76,17 +97,25 @@ module Ty =
        match HashEqMap.tryFind v v2ty with
         | None -> ty
         | Some ty -> resolveTop v2ty ty
-     | _ ->
+     | Mono _ | App _ ->
        ty
 
   let rec resolve v2ty ty =
     match resolveTop v2ty ty with
-     | Var v -> Var v
      | App (tc, tys) ->
-       App (tc, tys |> Array.map (resolve v2ty))
+       let tys = tys |> Array.map (resolve v2ty)
+       if Array.exists containsVars tys
+       then App (tc, tys)
+       else tys
+            |> Array.choose toMonoType
+            |> TyCon.apply tc
+            |> Mono
+     | (Mono _ | Var _) as ty ->
+       ty
 
   let rec private occurs v2ty v ty =
     match ty with
+     | Mono _ -> false
      | Var v' -> v = v'
      | App (_, tys) ->
        tys
@@ -94,6 +123,7 @@ module Ty =
 
   let rec mapVars v2w ty =
     match ty with
+     | Mono t -> Mono t
      | Var v ->
        Var (v2w v)
      | App (tc, tys) ->
@@ -101,11 +131,11 @@ module Ty =
 
   let rec tryMatchIn formal actual v2ty =
     match (resolveTop v2ty formal, resolveTop v2ty actual) with
-     | (Var fv, Var av) when fv = av ->
+     | (Var' fv, Var' av) when fv = av ->
        Some v2ty
-     | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
+     | (Var' v, ty) | (ty, Var' v) when not (occurs v2ty v ty) ->
        Some (HashEqMap.add v ty v2ty)
-     | (App (formal, pars), App (actual, args)) when formal = actual ->
+     | (App' (formal, pars), App' (actual, args)) when formal = actual ->
        assert (pars.Length = args.Length)
        let rec loop i v2ty =
          if i < pars.Length then
@@ -123,13 +153,13 @@ module Ty =
   let areEqual aTy bTy =
     let rec types aTy bTy v2ty =
       match (aTy, bTy) with
-       | (Var a, Var b) ->
+       | (Var' a, Var' b) ->
          match HashEqMap.tryFind a v2ty with
           | Some b' ->
             if b' = b then Some v2ty else None
           | None ->
             Some (HashEqMap.add a b v2ty)
-       | (App (aTc, aArgs), App (bTc, bArgs)) when aTc = bTc ->
+       | (App' (aTc, aArgs), App' (bTc, bArgs)) when aTc = bTc ->
          assert (aArgs.Length = bArgs.Length)
          let rec args i v2ty =
            if aArgs.Length <= i then
@@ -199,7 +229,7 @@ module TyTree =
        Some ty
      | i::is ->
        match getAt is ty with
-        | Some (App (_, args)) when i < args.Length ->
+        | Some (App' (_, args)) when i < args.Length ->
           Some args.[i]
         | _ ->
           None
@@ -223,10 +253,10 @@ module TyTree =
                    (fun (apps, vars) (ty, r) ->
                      match getAt at ty with
                       | None ->
-                        failwith "Bug: Only existing positions are be produced?"
-                      | Some (Var _) ->
+                        failwith "Bug: Only existing positions are produced?"
+                      | Some (Var' _) ->
                         (apps, (ty, r)::vars)
-                      | Some (App (tc, args)) ->
+                      | Some (App' (tc, args)) ->
                         (HashEqMap.addOrUpdate tc
                           (fun _ -> (args.Length, [(ty, r)]))
                           (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
@@ -255,11 +285,11 @@ module TyTree =
      | Many rs -> yield! rs
      | Branch (at, apps, vars) ->
        match getAt at actual with
-        | None | Some (Var _) ->
+        | None | Some (Var' _) ->
           yield! HashEqMap.toSeq apps
                  |> Seq.collect (fun (_, formal) ->
                     filter formal actual)
-        | Some (App (tc, _)) ->
+        | Some (App' (tc, _)) ->
           match HashEqMap.tryFind tc apps with
            | None -> ()
            | Some formal ->
