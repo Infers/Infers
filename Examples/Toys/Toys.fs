@@ -61,7 +61,7 @@ module Zipper =
        printfn "%A" (getThe z)
        let z = z |> nextThe |> Option.get
        printfn "%A" (getThe z)
-       let z = z |> setAny (Var "b") |> Option.get
+       let z = z |> setThe (Var "b")
        printfn "%A" (getThe z)
        printfn "%A" (fromZipper z)
 

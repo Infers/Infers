@@ -66,6 +66,7 @@
     <Compile Include="GFlip.fs" />
     <Compile Include="Zebra.fs" />
     <Compile Include="Goat.fs" />
+    <Compile Include="Zipper.fsi" />
     <Compile Include="Zipper.fs" />
     <Compile Include="Toys.fs" />
     <None Include="packages.config" />

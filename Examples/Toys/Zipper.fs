@@ -267,7 +267,7 @@ let getAny (xZ: Zipper<'x>) : option<'y> =
 
 let setAny (y: 'y) (xZ: Zipper<'x>) =
   match xZ with
-   | :? Zipper<'x, 'y> as xyZ -> xyZ.Set y |> Some
+   | :? Zipper<'x, 'y> as xyZ -> xyZ.Set y :> Zipper<_> |> Some
    | _ -> None
 let inline setThe (x: 'x) (xZ: Zipper<'x, 'x>) = xZ.Set x
 
