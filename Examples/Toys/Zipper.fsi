@@ -5,7 +5,7 @@ module Toys.Zipper
 ////////////////////////////////////////////////////////////////////////////////
 // Zipper classes
 
-/// Zipper over type `'w` pointint at any type of hole.
+/// Zipper over type `'w` pointing at unknown type of hole.
 type [<AbstractClass>] Zipper<'w> =
   abstract DownHeadAny: unit -> option<Zipper<'w>>
   abstract DownHeadThe: unit -> option<Zipper<'w, 'w>>
@@ -29,7 +29,7 @@ and [<AbstractClass>] Zipper<'w, 'h> =
 val fromZipper: Zipper<'x> -> 'x
 
 ////////////////////////////////////////////////////////////////////////////////
-// Heterogenous interface
+// Heterogeneous interface
 
 val toZipperAny: 'x -> Zipper<'x>
 
@@ -46,7 +46,7 @@ val inline nextAny: Zipper<'x> -> option<Zipper<'x>>
 val inline prevAny: Zipper<'x> -> option<Zipper<'x>>
 
 ////////////////////////////////////////////////////////////////////////////////
-// Homogenous interface
+// Homogeneous interface
 
 val toZipperThe: 'x -> Zipper<'x, 'x>
 
