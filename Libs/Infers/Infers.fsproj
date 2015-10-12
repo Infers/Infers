@@ -23,6 +23,7 @@
     <DocumentationFile>bin\Debug\Infers.XML</DocumentationFile>
     <NoWarn>0050</NoWarn>
     <OtherFlags>--warnon:1182</OtherFlags>
+    <GenerateTailCalls>true</GenerateTailCalls>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,6 +36,7 @@
     <NoWarn>0050</NoWarn>
     <DebugSymbols>true</DebugSymbols>
     <OtherFlags>--warnon:1182</OtherFlags>
+    <GenerateTailCalls>true</GenerateTailCalls>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
