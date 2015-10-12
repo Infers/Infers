@@ -1,7 +1,6 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Infers.Core")]
