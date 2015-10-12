@@ -254,6 +254,15 @@ type [<InferenceRules>] Zipper () =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+let rec fromZipper (xZ: Zipper<'x>) : 'x =
+  match xZ.Up () with
+   | None ->
+     match xZ with
+      | :? Zipper<'x, 'x> as xxZ -> xxZ.Get ()
+      | _ -> failwith "Bug"
+   | Some xZ ->
+     fromZipper xZ
+
 let toZipperAny (x: 'x) : Zipper<'x> =
   (StaticRules<Zipper>.Generate() : Up<'x, 'x>).Up x
 let toZipperThe (x: 'x) : Zipper<'x, 'x> =
@@ -273,7 +282,14 @@ let setAny (y: 'y) (xZ: Zipper<'x>) =
    | _ -> None
 let inline setThe (x: 'x) (xZ: Zipper<'x, 'x>) = xZ.Set x
 
-let inline upAny (xZ: Zipper<'x>) = xZ.Up ()
+let mapAny (y2y: 'y -> 'y) (xZ: Zipper<'x>) =
+  match xZ with
+   | :? Zipper<'x, 'y> as xyZ -> xyZ.Get () |> y2y |> xyZ.Set :> Zipper<_>
+   | _ -> xZ
+
+let mapThe (x2x: 'x -> 'x) (xxZ: Zipper<'x, 'x>) =
+  xxZ.Get () |> x2x |> xxZ.Set
+
 let inline downHeadAny (xZ: Zipper<'x>) = xZ.DownHeadAny ()
 let inline downHeadThe (xZ: Zipper<'x>) = xZ.DownHeadThe ()
 let inline downLastAny (xZ: Zipper<'x>) = xZ.DownLastAny ()
@@ -282,7 +298,7 @@ let inline nextAny (xZ: Zipper<'x>) = xZ.NextAny ()
 let inline nextThe (xZ: Zipper<'x>) = xZ.NextThe ()
 let inline prevAny (xZ: Zipper<'x>) = xZ.PrevAny ()
 let inline prevThe (xZ: Zipper<'x>) = xZ.PrevThe ()
-
+let inline upAny (xZ: Zipper<'x>) = xZ.Up ()
 let rec upThe (xZ: Zipper<'x>) : option<Zipper<'x, 'x>> =
   match upAny xZ with
    | None -> None
@@ -291,11 +307,67 @@ let rec upThe (xZ: Zipper<'x>) : option<Zipper<'x, 'x>> =
       | :? Zipper<'x, 'x> as xZ -> Some xZ
       | _ -> upThe xZ
 
-let rec fromZipper (xZ: Zipper<'x>) : 'x =
-  match upAny xZ with
-   | None ->
-     match xZ with
-      | :? Zipper<'x, 'x> as xxZ -> xxZ.Get ()
-      | _ -> failwith "Bug"
-   | Some xZ ->
-     fromZipper xZ
+let inline moveQ (move: 'z -> option<'z>)
+                 (qL: Lazy<'q>)
+                 (z2b: 'z -> 'q)
+                 (z: 'z) =
+  match move z with
+   | None -> qL.Force ()
+   | Some z -> z2b z
+
+let inline downHeadAnyQ x = moveQ downHeadAny x
+let inline downHeadTheQ x = moveQ downHeadThe x
+let inline downLastAnyQ x = moveQ downLastAny x
+let inline downLastTheQ x = moveQ downLastThe x
+let inline nextAnyQ x = moveQ nextAny x
+let inline nextTheQ x = moveQ nextThe x
+let inline prevAnyQ x = moveQ prevAny x
+let inline prevTheQ x = moveQ prevThe x
+let inline upAnyQ x = moveQ upAny x
+let inline upTheQ x = moveQ upThe x
+
+let inline moveT (moveInto: 'z -> option<'z>)
+                 (moveBack: 'z -> option<'z>)
+                 zL
+                 z2z
+                 (z: 'z) =
+  moveQ moveInto zL (moveQ moveBack zL id << z2z) z
+
+let inline downHeadAnyT f z = moveT downHeadAny upAny (lazy z) f z
+let inline downHeadTheT f z = moveT downHeadThe upThe (lazy z) f z
+let inline downLastAnyT f z = moveT downLastAny upAny (lazy z) f z
+let inline downLastTheT f z = moveT downLastThe upThe (lazy z) f z
+let inline nextAnyT f z = moveT nextAny prevAny (lazy z) f z
+let inline nextTheT f z = moveT nextThe prevThe (lazy z) f z
+let inline prevAnyT f z = moveT prevAny nextAny (lazy z) f z
+let inline prevTheT f z = moveT prevThe nextThe (lazy z) f z
+let upAnyT f z =
+  let rec g z = moveT prevAny nextAny (lazy h z) g z
+  and h z = moveT upAny downHeadAny (lazy z) f z
+  g z
+let upTheT f z =
+  let rec g z = moveT prevThe nextThe (lazy h z) g z
+  and h z = moveT upThe downHeadThe (lazy z) f z
+  g z
+
+let inline sibling (up: _ -> option<'z>) (down: _ -> option<'z>) (z: 'z) : 'z =
+  match up z with
+   | None -> z
+   | Some z ->
+     match down z with
+      | None -> failwith "Bug"
+      | Some z -> z
+
+let inline headAny z = sibling upAny downHeadAny z
+let inline headThe z = sibling upThe downHeadThe z
+let inline lastAny z = sibling upAny downLastAny z
+let inline lastThe z = sibling upThe downLastThe z
+
+let rec mapBottomUpThe f z =
+  let rec g z = nextTheT g (mapBottomUpThe f z)
+  mapThe f (downHeadTheT g z)
+
+let rec mapTopDownThe f z =
+  let z = mapThe f z
+  let rec g z = nextTheQ (lazy upTheQ (lazy z) g z) (mapTopDownThe f) z
+  downHeadTheQ (lazy g z) (mapTopDownThe f) z
