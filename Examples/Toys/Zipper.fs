@@ -237,8 +237,10 @@ type [<InferenceRules>] Zipper () =
 
   member r.Nest (r0: Rotate<'l, 'h, 'r, 'sp, 'p>) =
     {new Rotate<And<'l0, 'l>, 'h, 'r, 'sp, And<'l0, 'p>> () with
-      member r1.Do (p, l, h, r) = l.Elem <- p.Elem; r0.Do (&p.Rest, &l.Rest, &h, &r)
-      member r1.Un (l, h, r, p) = p.Elem <- l.Elem; r0.Un (&l.Rest, &h, &r, &p.Rest)}
+      member r1.Do (p, l, h, r) =
+        l.Elem <- p.Elem; r0.Do (&p.Rest, &l.Rest, &h, &r)
+      member r1.Un (l, h, r, p) =
+        p.Elem <- l.Elem; r0.Un (&l.Rest, &h, &r, &p.Rest)}
 
   member r.The () =
     {new Rotate<Empty, 'h, 'r, And<'h, 'r>, And<'h, 'r>> () with
