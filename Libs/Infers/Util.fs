@@ -133,8 +133,8 @@ module HashEqMap =
     Map.tryFind (hash k) m
     |> Option.bind (fun kvs ->
        List.tryFind (fst >> (=) k) kvs
-       |> Option.bind (fun (_, v) ->
-          Some v))
+       |> Option.map (fun (_, v) ->
+          v))
 
   /// Creates a new map containing the key value pairs in the given map and the
   /// key value pair produced either by `onAdd`, in case the given map doesn't
