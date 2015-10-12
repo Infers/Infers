@@ -82,7 +82,7 @@ module RuleSet =
   let collectRules o =
     let rec collectRules ty =
       if hasInferenceRules ty then
-        [ty.GetMethods BindingFlags.PublicDeclaredInstance
+        [ty.GetMethods BindingFlags.AnyDeclaredInstance
          |> Seq.map (fun infRule ->
             RuleMethod (infRule, o) :> Rule<_>)
          collectRules ty.BaseType]
