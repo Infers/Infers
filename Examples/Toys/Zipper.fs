@@ -21,9 +21,9 @@ type [<AbstractClass>] Zipper<'w, 'h> () =
 
 type [<AbstractClass>] ProductZipper<'w, 'l, 'h, 'r> () =
   inherit Zipper<'w, 'h> ()
-  [<DefaultValue>] val mutable L: 'l
-  [<DefaultValue>] val mutable H: 'h
-  [<DefaultValue>] val mutable R: 'r
+  [<DefaultValue>] val mutable internal L: 'l
+  [<DefaultValue>] val mutable internal H: 'h
+  [<DefaultValue>] val mutable internal R: 'r
   override this.Get () = this.H
 
 type [<AbstractClass>] Up<'w, 'h> () =
@@ -31,27 +31,29 @@ type [<AbstractClass>] Up<'w, 'h> () =
 
 type [<AbstractClass>] ProductUp<'w, 'l, 'h, 'r> () =
   inherit Up<'w, 'h> ()
-  [<DefaultValue>] val mutable L: 'l
-  [<DefaultValue>] val mutable R: 'r
+  [<DefaultValue>] val mutable internal L: 'l
+  [<DefaultValue>] val mutable internal R: 'r
 
 type [<AbstractClass>] Down<'w, 'h> () =
   abstract DownFirst: Up<'w, 'h> * 'h -> option<Zipper<'w>>
   abstract DownLast: Up<'w, 'h> * 'h -> option<Zipper<'w>>
 
-type [<AbstractClass;AllowNullLiteral>] ProductDown<'w, 'l, 'h, 'r, 'sp, 'c, 'p, 't> () =
+type [<AbstractClass;AllowNullLiteral>] ProductDownBase<'w, 'c, 'p, 't> () =
+  [<DefaultValue>] val mutable internal L: ProductDownBase<'w, 'c, 'p, 't>
+  [<DefaultValue>] val mutable internal R: ProductDownBase<'w, 'c, 'p, 't>
   abstract Down: Up<'w, 't> * AsProduct<'p, 't> * byref<'p> -> Zipper<'w>
+
+type [<AbstractClass>] ProductDownElem<'w, 'l, 'h, 'r, 'sp, 'c, 'p, 't> () =
+  inherit ProductDownBase<'w, 'c, 'p, 't> ()
+
+type ProductDown<'w, 'e, 'sp, 'c, 'p, 't> =
+  | P of list<ProductDownBase<'w, 'c, 'p, 't>>
 
 type UnionDown<'w, 'c, 'cs, 'u> = U of list<Down<'w, 'u>>
 
 type [<AbstractClass>] Rotate<'l, 'h, 'r, 'sp, 'p> () =
   abstract Do: byref<'p> * byref<'l> * byref<'h> * byref<'r> -> unit
   abstract Un: byref<'l> * byref<'h> * byref<'r> * byref<'p> -> unit
-
-type Out = | Out'0
-
-type Prev<'h, 'sp, 'p, 'lh, 'lsp> = | Prev'5
-type Head<'h, 'sp> = | Head'2
-type Next<'h, 'sp, 'rh, 'rsp> = | Next'4
 
 type [<InferenceRules>] Zipper () =
   member z.ToZipper (_: Rep, _: Basic, down: Down<'w, 'w>) =
@@ -75,83 +77,73 @@ type [<InferenceRules>] Zipper () =
           member d.DownLast (up, h) = (!r).DownLast (up, h)}
       member t.Set d = r := d}
 
-  member z.ProductDown () =
-    let r = ref (Unchecked.defaultof<ProductDown<_, _, _, _, _, _, _, _>>)
-    {new Rec<ProductDown<'w, 'l, 'h, 'r, 'sp, 'c, 'p, 't>> () with
-      member t.Get () =
-        {new ProductDown<_, _, _, _, _, _, _, _> () with
-          member d.Down (up, m, p) = (!r).Down(up, m, &p)}
-      member t.Set d = r := d}
-
   member z.Prim (_: Prim<'h>) =
     {new Down<'w, 'h> () with
       member d.DownFirst (_, _) = None
       member d.DownLast (_, _) = None}
 
-  member z.Elem () : ProductDown<'w, Out, Out, Out, Out, 'c, 'p, 't> =
-    null
-
   member z.Elem (_: Elem<'h, 'sp, 'c, 't>,
-                 _: Prev<'h, 'sp, 'p, 'lh, 'lsp>,
-                 _: Next<'h, 'sp, 'rh, 'rsp>,
                  rotate: Rotate<'l, 'h, 'r, 'sp, 'p>,
-                 down: Down<'w, 'h>,
-                 left: ProductDown<'w, 'll, 'lh, 'lr, 'lsp, 'c, 'p, 't>,
-                 right: ProductDown<'w, 'rl, 'rh, 'rr, 'rsp, 'c, 'p, 't>) =
-    {new ProductDown<'w, 'l, 'h, 'r, 'sp, 'c, 'p, 't> () with
-      member d.Down (up, m, p) =
-        let inline back (z: ProductZipper<_, _, _, _>) =
-          let back = {new ProductUp<'w, 'l, 'h, 'r> () with
-                       member u.Up h =
-                         let mutable h = h
-                         let mutable p = Unchecked.defaultof<'p>
-                         rotate.Un (&u.L, &h, &u.R, &p)
-                         d.Down (up, m, &p)}
-          back.L <- z.L
-          back.R <- z.R
-          back
-        let inline side (z: ProductZipper<_, _, _, _>)
-                        (side: ProductDown<_, _, _, _, _, _ ,_ , _>) =
-          match side with
-           | null -> None
-           | side ->
-             let mutable p = Unchecked.defaultof<'p>
-             rotate.Un (&z.L, &z.H, &z.R, &p)
-             side.Down (up, m, &p) |> Some
-        let z = {new ProductZipper<'w, 'l, 'h, 'r> () with
-                  member z.Set h =
-                    let mutable h = h
-                    let mutable p = Unchecked.defaultof<'p>
-                    rotate.Un (&z.L, &h, &z.R, &p)
-                    d.Down (up, m, &p)
-                  member z.Up () =
-                    let mutable p = Unchecked.defaultof<'p>
-                    rotate.Un (&z.L, &z.H, &z.R, &p)
-                    up.Up (m.Create (&p)) |> Some
-                  member z.DownFirst () = down.DownFirst (back z, z.H)
-                  member z.DownLast () = down.DownLast (back z, z.H)
-                  member z.Left () = side z left
-                  member z.Right () = side z right}
-        rotate.Do (&p, &z.L, &z.H, &z.R)
-        z :> Zipper<_>}
+                 down: Down<'w, 'h>) : ProductDown<'w, 'h, 'sp, 'c, 'p, 't> =
+    P [{new ProductDownElem<'w, 'l, 'h, 'r, 'sp, 'c, 'p, 't> () with
+         member d.Down (up, m, p) =
+           let inline back (z: ProductZipper<_, _, _, _>) =
+             let back = {new ProductUp<'w, 'l, 'h, 'r> () with
+                          member u.Up h =
+                            let mutable h = h
+                            let mutable p = Unchecked.defaultof<'p>
+                            rotate.Un (&u.L, &h, &u.R, &p)
+                            d.Down (up, m, &p)}
+             back.L <- z.L
+             back.R <- z.R
+             back
+           let inline side (z: ProductZipper<_, _, _, _>)
+                           (side: ProductDownBase<_, _, _, _>) =
+             match side with
+              | null -> None
+              | side ->
+                let mutable p = Unchecked.defaultof<'p>
+                rotate.Un (&z.L, &z.H, &z.R, &p)
+                side.Down (up, m, &p) |> Some
+           let z = {new ProductZipper<'w, 'l, 'h, 'r> () with
+                     member z.Set h =
+                       let mutable h = h
+                       let mutable p = Unchecked.defaultof<'p>
+                       rotate.Un (&z.L, &h, &z.R, &p)
+                       d.Down (up, m, &p)
+                     member z.Up () =
+                       let mutable p = Unchecked.defaultof<'p>
+                       rotate.Un (&z.L, &z.H, &z.R, &p)
+                       up.Up (m.Create (&p)) |> Some
+                     member z.DownFirst () = down.DownFirst (back z, z.H)
+                     member z.DownLast () = down.DownLast (back z, z.H)
+                     member z.Left () = side z d.L
+                     member z.Right () = side z d.R}
+           rotate.Do (&p, &z.L, &z.H, &z.R)
+           z :> Zipper<_>}]
+
+  member z.Times (P e: ProductDown<'w,     'e     , And<'e, 'r>, 'c, 'p, 't>,
+                  P r: ProductDown<'w,         'r ,         'r , 'c, 'p, 't>)
+                     : ProductDown<'w, And<'e, 'r>, And<'e, 'r>, 'c, 'p, 't> =
+    P (e @ r)
 
   member z.Product (m: AsProduct<'p, 't>,
-                    downFirst: ProductDown<'w, Empty, _, _, 'p, _, 'p, 't>,
-                    downLast: ProductDown<'w, _, 'lh, Empty, 'lh, _, 'p, 't>)
+                    P downs: ProductDown<'w, 'p, 'p, 'c, 'p, 't>)
                      : Down<'w, 't> =
+    let downs = Array.ofList downs
+    let n = downs.Length
+    for i=0 to n-1 do
+      if 0 <= i-1 then downs.[i].L <- downs.[i-1]
+      if i+1 < n then downs.[i].R <- downs.[i+1]
+    let downFirst = downs.[0]
+    let downLast = downs.[n-1]
     {new Down<'w, 't> () with
       member d.DownFirst (up, t) =
-        match downFirst with
-         | null -> None
-         | downFirst ->
-           let mutable p = m.ToProduct t
-           downFirst.Down (up, m, &p) |> Some
+        let mutable p = m.ToProduct t
+        downFirst.Down (up, m, &p) |> Some
       member d.DownLast (up, t) =
-        match downLast with
-         | null -> None
-         | downLast ->
-           let mutable p = m.ToProduct t
-           downLast.Down (up, m, &p) |> Some}
+        let mutable p = m.ToProduct t
+        downLast.Down (up, m, &p) |> Some}
 
   member z.Case (_: Case<Empty, 'cs, 'u>) : UnionDown<'w, Empty, 'cs, 'u> =
     U [{new Down<'w, 'u> () with
@@ -159,10 +151,9 @@ type [<InferenceRules>] Zipper () =
          member d.DownLast (_, _) = None}]
 
   member z.Case (m: Case<'ls, 'cs, 'u>,
-                 downFirst: ProductDown<'w, Empty, _, _, 'ls, 'cs, 'ls, 'u>,
-                 downLast: ProductDown<'w, _, 'lh, Empty, 'lh, 'cs, 'ls, 'u>)
+                 downs: ProductDown<'w, 'ls, 'ls, 'cs, 'ls, 'u>)
                   : UnionDown<'w, 'ls, 'cs, 'u> =
-    U [z.Product (m, downFirst, downLast)]
+    U [z.Product (m, downs)]
 
   member z.Plus (U c:  UnionDown<'w,        'c      , Choice<'c, 'cs>, 'u>,
                  U cs: UnionDown<'w,            'cs ,            'cs , 'u>)
@@ -178,21 +169,6 @@ type [<InferenceRules>] Zipper () =
         cs.[m.Tag u].DownFirst (up, u)
       override d.DownLast (up, u) =
         cs.[m.Tag u].DownLast (up, u)}
-
-  member r.Prev (_: Prev<'h, 'sp, 'p, 'l, 'lsp>)
-                  : Prev<'h, 'sp, And<'x, 'p>, 'l, 'lsp> = Prev'5
-
-  member r.Prev (): Prev<'h, 'sp, And<'l, 'sp>, 'l, And<'l, 'sp>> = Prev'5
-
-  member r.PrevNone (_: Head<'h, 'sp>)
-                      : Prev<'h, 'sp, 'sp, Out, Out> = Prev'5
-
-  member r.Next (_: Head<'n, 'r>)
-                  : Next<'h, And<'h, 'r>, 'n, 'r> = Next'4
-  member r.NextNone () : Next<'l, 'l, Out, Out> = Next'4
-
-  member r.HeadElem () : Head<'h, And<'h, 'r>> = Head'2
-  member r.HeadLast () : Head<'h, 'h> = Head'2
 
   member r.Nest (r0: Rotate<'l, 'h, 'r, 'sp, 'p>) =
     {new Rotate<And<'l0, 'l>, 'h, 'r, 'sp, And<'l0, 'p>> () with
