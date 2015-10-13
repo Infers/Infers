@@ -5,9 +5,9 @@ module Toys.Solver
 open System.Text.RegularExpressions
 open Infers
 
-type Solution = | Solution'0
+type Solution = Solution'0
 
-type Result<'x> = | Result'1
+type Result<'x> = Result'1
 
 let prefix = Regex "[a-zA-Z0-9.-]+[+.]"
 let suffix = Regex "`[0-9]+"

@@ -5,8 +5,8 @@ module Toys.List
 open Infers
 open Toys.Basic
 
-type Nil = | Nil'0
-type Cons<'h, 't> = | Cons'2
+type Nil = Nil'0
+type Cons<'h, 't> = Cons'2
 
 type List<'x0> = Cons<'x0, Nil>
 type List<'x0, 'x1> = Cons<'x0, List<'x1>>
@@ -14,15 +14,15 @@ type List<'x0, 'x1, 'x2> = Cons<'x0, List<'x1, 'x2>>
 type List<'x0, 'x1, 'x2, 'x3> = Cons<'x0, List<'x1, 'x2, 'x3>>
 type List<'x0, 'x1, 'x2, 'x3, 'x4> = Cons<'x0, List<'x1, 'x2, 'x3, 'x4>>
 
-type IsList<'xs> = | IsList'1
+type IsList<'xs> = IsList'1
 
-type Append<'xs, 'ys, 'zs> = | Append'3
+type Append<'xs, 'ys, 'zs> = Append'3
 
-type Member<'x, 'xs> = | Member'2
+type Member<'x, 'xs> = Member'2
 
-type Sublist<'xs, 'ys> = | Sublist'2
+type Sublist<'xs, 'ys> = Sublist'2
 
-type Adjacent<'a, 'b, 'xs> = | Adjacent'3
+type Adjacent<'a, 'b, 'xs> = Adjacent'3
 
 type [<InferenceRules>] List () =
   member g.IsList (): IsList<Nil> = IsList'1

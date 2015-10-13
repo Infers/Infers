@@ -14,18 +14,18 @@ open Toys.Solver
 type S = class end
 type D = class end
 
-type Opp<'x, 'y> = | Opp'2
+type Opp<'x, 'y> = Opp'2
 
-type Valid<'s> = | Valid'1
+type Valid<'s> = Valid'1
 
-type Move<'s1, 's2> = | Move'2
+type Move<'s1, 's2> = Move'2
 
 type Farmer<'x> = class end
 type Goat<'x> = class end
 type Cabbage<'x> = class end
 type Wolf<'x> = class end
 
-type Search<'p, 'r> = | Search'2
+type Search<'p, 'r> = Search'2
 
 /// Rules for solving the Goat problem.  This is similar to the original Prolog
 /// program, but has been modified in a couple of ways.  Most importantly,

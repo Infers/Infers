@@ -4,9 +4,9 @@ module Toys.Basic
 
 open Infers
 
-type Eq<'x, 'y> = | Eq'2
-type Eq<'x, 'y, 'z> = | Eq'3
-type Or<'l, 'r> = | Or'2
+type Eq<'x, 'y> = Eq'2
+type Eq<'x, 'y, 'z> = Eq'3
+type Or<'l, 'r> = Or'2
 
 type [<InferenceRules>] Basic () =
   member g.Eq'2 () : Eq<'x, 'x> = Eq'2
