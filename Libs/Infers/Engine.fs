@@ -74,23 +74,21 @@ module RuleSet =
      rules: HashEqSet<Type>
      tree: TyTree<Rule<Type>>}
 
-  let hasInferenceRules (ty: Type) =
-    ty.GetCustomAttributes<InferenceRules> true
+  let hasRules (t: Type) =
+    t.GetCustomAttributes<InferenceRules> true
     |> Seq.isEmpty
     |> not
 
-  let collectRules o =
-    let rec collectRules ty =
-      if hasInferenceRules ty then
-        [ty.GetMethods BindingFlags.AnyDeclaredInstance
-         |> Seq.map (fun infRule ->
-            RuleMethod (infRule, o) :> Rule<_>)
-         collectRules ty.BaseType]
-        |> Seq.concat
-      else
-        Seq.empty
-    o.GetType ()
-    |> collectRules
+  let rec ruleClassesOf t =
+    if hasRules t
+    then t :: ruleClassesOf t.BaseType
+    else []
+
+  let rulesOf o (t: Type) =
+    t.GetMethods BindingFlags.AnyDeclaredInstance
+    |> Array.filter (fun r -> not r.IsAbstract)
+    |> Array.map (fun r ->
+       RuleMethod (r, o) :> Rule<_>)
 
   let newEmpty () =
     {cache = {rules = Dictionary<_, _> ()
@@ -103,29 +101,37 @@ module RuleSet =
      | null ->
        ruleSet
      | o ->
-       let t = o.GetType ()
-       if hasInferenceRules t
-          && HashEqSet.contains t ruleSet.rules |> not then
-         let rules = HashEqSet.add t ruleSet.rules
-         if ruleSet.cache.rules.ContainsKey t |> not then
-           ruleSet.cache.rules.Add (t, collectRules o |> Seq.toArray)
-         let tree =
-           match ruleSet.cache.trees.TryGetValue rules with
-            | (true, tree) -> tree
-            | (false, _) ->
-              let tree =
-                lazy (rules
-                      |> HashEqSet.toSeq
-                      |> Seq.collect (fun t ->
-                         ruleSet.cache.rules.[t]
-                         |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                      |> TyTree.build
-                      |> force)
-              ruleSet.cache.trees.Add (rules, tree)
-              tree
-         {ruleSet with rules = rules; tree = tree}
-       else
-         ruleSet
+       let ty = o.GetType ()
+       match ruleClassesOf ty with
+        | [] -> ruleSet
+        | tys ->
+          match tys
+                |> List.takeWhile (fun ty ->
+                   HashEqSet.contains ty ruleSet.rules |> not) with
+           | [] -> ruleSet
+           | tys ->
+             tys
+             |> List.iter (fun t ->
+                if ruleSet.cache.rules.ContainsKey t |> not then
+                  ruleSet.cache.rules.Add (t, rulesOf o t))
+             let rules =
+               tys
+               |> List.fold (fun r t -> HashEqSet.add t r) ruleSet.rules
+             let tree =
+               match ruleSet.cache.trees.TryGetValue rules with
+                | (true, tree) -> tree
+                | (false, _) ->
+                  let tree =
+                    lazy (rules
+                          |> HashEqSet.toSeq
+                          |> Seq.collect (fun t ->
+                             ruleSet.cache.rules.[t]
+                             |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                          |> TyTree.build
+                          |> force)
+                  ruleSet.cache.trees.Add (rules, tree)
+                  tree
+             {ruleSet with rules = rules; tree = tree}
 
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
     yield! TyTree.filter ruleSet.tree desiredTy
