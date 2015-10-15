@@ -5,29 +5,25 @@ module Toys.Iso
 open Infers
 open Infers.Rep
 
-/// `Iso<'x, 'y>` represents an isomorphism between `'x` and `'y`.
-type Iso<'x, 'y> = ('x -> 'y) * ('y -> 'x)
+type Iso<'x, 'y> = I of ('x -> 'y) * ('y -> 'x)
 
-/// A few rules for deriving isomorphisms.
 type [<InferenceRules>] Iso () =
-  member g.Id () = (id, id)
-  member g.Inv ((t, o): Iso<_, _>) : Iso<_, _> = (o, t)
-  member g.Compose ((x2y, y2x): Iso<_, _>,
-                    (y2z, z2y): Iso<_, _>) =
-    (x2y >> y2z, z2y >> y2x)
-  member g.Swap () : Iso<_, _> =
-    ((fun (x, y) -> (y, x)),
-     (fun (x, y) -> (y, x)))
-  member g.Jump () : Iso<_, _> =
-    ((fun (x, (y, z)) -> (y, (x, z))),
-     (fun (y, (x, z)) -> (x, (y, z))))
-  member g.Pair ((a2c, c2a): Iso<_, _>,
-                 (b2d, d2b): Iso<_, _>) : Iso<_, _> =
-    ((fun (a, b) -> (a2c a, b2d b)),
-     (fun (c, d) -> (c2a c, d2b d)))
-  member g.AndIsoPair () : Iso<And<_, _>, _ * _> =
-    ((fun (And (a, b)) -> (a, b)),
-     (fun (a, b) -> And (a, b)))
+  member g.Identity () = I (id, id)
+  member g.Invert (I (t, o)) = I (o, t)
+  member g.Compose (I (x2y, y2x), I (y2z, z2y)) =
+    I (x2y >> y2z, z2y >> y2x)
 
-let iso () : Iso<'x, 'y> = StaticRules<Iso>.Generate ()
-let convert (x: 'x) : 'y = fst <| iso () <| x
+  member g.Swap () = let swap (x, y) = (y, x) in I (swap, swap)
+  member g.Restructure () = let re (x, (y, z)) = (y, (x, z)) in I (re, re)
+  member g.First (I (a2c, c2a)) =
+    I ((fun (a, b) -> (a2c a, b)),
+       (fun (c, b) -> (c2a c, b)))
+
+  member g.``And<->Pair`` () =
+    I ((fun (And (a, b)) -> (a, b)),
+       (fun (a, b) -> And (a, b)))
+
+let iso<'x, 'y> : Iso<'x, 'y> = StaticRules<Iso>.Generate ()
+let fwd (I (x2y, _)) = x2y
+let bwd (I (_, y2x)) = y2x
+let convert (x: 'x) : 'y = fwd iso x
