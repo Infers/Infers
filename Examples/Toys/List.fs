@@ -34,8 +34,8 @@ type [<InferenceRules>] List () =
   member g.Append (_: Append<'xs, 'ys, 'zs>)
                     : Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>> = Append'3
 
-  member g.Sublist (_: Append<'ps, 'xs, 'qs>,
-                    _: Append<'qs, 'rs, 'ys>)
+  member g.Sublist (_: Append<_, 'xs, 'qs>,
+                    _: Append<'qs, _, 'ys>)
                      : Sublist<'xs, 'ys> = Sublist'2
 
   member g.Member (_: Sublist<List<'x>, 'xs>)

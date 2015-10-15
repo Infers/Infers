@@ -54,8 +54,8 @@ type [<InferenceRules>] List =
   member Append: Append<'xs, 'ys, 'zs>
               -> Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>>
 
-  member Sublist: Append<'ps, 'xs, 'qs>
-                * Append<'qs, 'rs, 'ys>
+  member Sublist: Append<_, 'xs, 'qs>
+                * Append<'qs, _, 'ys>
                -> Sublist<'xs, 'ys>
 
   member Member: Sublist<List<'x>, 'xs> -> Member<'x, 'xs>
