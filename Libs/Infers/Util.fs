@@ -167,16 +167,16 @@ module HashEqMap =
 
 /// Additional `BindingFlags` combinations.
 module BindingFlags =
-  open System.Reflection
+  type B = System.Reflection.BindingFlags
 
   /// Both public and non-public members.
-  let [<Literal>] Any = BindingFlags.Public ||| BindingFlags.NonPublic
+  let [<Literal>] Any = B.Public ||| B.NonPublic
   /// Only declared and instance members.
-  let [<Literal>] DeclaredInstance = BindingFlags.DeclaredOnly ||| BindingFlags.Instance
+  let [<Literal>] DeclaredInstance = B.DeclaredOnly ||| B.Instance
   /// Only declared instance members that may be either public or non-public.
   let [<Literal>] AnyDeclaredInstance = Any ||| DeclaredInstance
   /// Only public declared instance members.
-  let [<Literal>] PublicDeclaredInstance = BindingFlags.Public ||| DeclaredInstance
+  let [<Literal>] PublicDeclaredInstance = B.Public ||| DeclaredInstance
 
 ////////////////////////////////////////////////////////////////////////////////
 
