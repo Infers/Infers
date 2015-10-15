@@ -59,6 +59,7 @@
     <Compile Include="List.fs" />
     <Compile Include="Solver.fsi" />
     <Compile Include="Solver.fs" />
+    <Compile Include="Iso.fsi" />
     <Compile Include="Iso.fs" />
     <Compile Include="GMap.fsi" />
     <Compile Include="GMap.fs" />
