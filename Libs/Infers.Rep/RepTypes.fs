@@ -10,6 +10,7 @@ type [<Struct>] And<'x, 'xs> =
   val mutable Elem: 'x
   val mutable Rest: 'xs
   new (x, xs) = {Elem = x; Rest = xs}
+  override t.ToString () = sprintf "And (%A, %A)" t.Elem t.Rest
 
 [<AutoOpen>]
 module And =
