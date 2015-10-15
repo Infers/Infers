@@ -65,9 +65,18 @@ module Zipper =
        printfn "%A" (getThe z)
        printfn "%A" (fromZipper z)
 
+module Iso =
+  module Iso = Toys.Iso
+  open Infers.Rep
+
+  let test () =
+    let t : And<int, And<float, string>> = Iso.convert (And (And(1.0, "2"), 3))
+    printfn "%A" t
+
 [<EntryPoint>]
 let main _ =
   try
+    time Iso.test
     time GMap.test
     time GFlip.test
     time GUncurry.Optimized.test
