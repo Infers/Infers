@@ -100,9 +100,3 @@ let test () : unit =
   if Engine.tryGenerate (Solver<Puzzle> ()) = Some Solution'0
   then printfn "Got solution!"
   else printfn "No solution?"
-
-// Tuple[Tuple[Norwegian,  Fox,    Kools,         Water,       Yellow],
-//       Tuple[Ukrainian,  Horse,  Chesterfields, Tea,         Blue],
-//       Tuple[Englishman, Snails, OldGolds,      Milk,        Red],
-//       Tuple[Spaniard,   Dog,    LuckyStrikes,  OrangeJuice, Ivory],
-//       Tuple[Japanese,   Zebra,  Parliaments,   Coffee,      Green]]

@@ -26,37 +26,40 @@ and [<AbstractClass>] Zipper<'w, 'h> =
 ////////////////////////////////////////////////////////////////////////////////
 // Common interface
 
-val fromZipper: Zipper<'x> -> 'x
+val fromZipper: Zipper<'w> -> 'w
 
 ////////////////////////////////////////////////////////////////////////////////
 // Heterogeneous interface
 
-val toZipperAny: 'x -> Zipper<'x>
+val toZipperAny: 'w -> Zipper<'w>
 
-val getAny: Zipper<'x> -> option<'y>
+val getAny: Zipper<'w> -> option<'h>
 
-val setAny: 'y -> Zipper<'x> -> option<Zipper<'x>>
+val setAny: 'h -> Zipper<'w> -> option<Zipper<'w>>
 
-val inline downHeadAny: Zipper<'x> -> option<Zipper<'x>>
-val inline downLastAny: Zipper<'x> -> option<Zipper<'x>>
+val inline downHeadAny: Zipper<'w> -> option<Zipper<'w>>
+val inline downLastAny: Zipper<'w> -> option<Zipper<'w>>
 
-val inline upAny: Zipper<'x> -> option<Zipper<'x>>
+val inline upAny: Zipper<'w> -> option<Zipper<'w>>
 
-val inline nextAny: Zipper<'x> -> option<Zipper<'x>>
-val inline prevAny: Zipper<'x> -> option<Zipper<'x>>
+val inline nextAny: Zipper<'w> -> option<Zipper<'w>>
+val inline prevAny: Zipper<'w> -> option<Zipper<'w>>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Homogeneous interface
 
-val toZipperThe: 'x -> Zipper<'x, 'x>
+val toZipperThe: 'w -> Zipper<'w, 'w>
 
-val inline getThe: Zipper<'x, 'x> -> 'x
-val inline setThe: 'x -> Zipper<'x, 'x> -> Zipper<'x, 'x>
+val inline getThe: Zipper<'w, 'w> -> 'w
+val inline setThe: 'w -> Zipper<'w, 'w> -> Zipper<'w, 'w>
 
-val inline downHeadThe: Zipper<'x> -> option<Zipper<'x, 'x>>
-val inline downLastThe: Zipper<'x> -> option<Zipper<'x, 'x>>
+val inline downHeadThe: Zipper<'w> -> option<Zipper<'w, 'w>>
+val inline downLastThe: Zipper<'w> -> option<Zipper<'w, 'w>>
 
-val upThe: Zipper<'x> -> option<Zipper<'x, 'x>>
+val upThe: Zipper<'w> -> option<Zipper<'w, 'w>>
 
-val inline nextThe: Zipper<'x> -> option<Zipper<'x, 'x>>
-val inline prevThe: Zipper<'x> -> option<Zipper<'x, 'x>>
+val inline nextThe: Zipper<'w> -> option<Zipper<'w, 'w>>
+val inline prevThe: Zipper<'w> -> option<Zipper<'w, 'w>>
+
+val mapBottomUpThe: ('w -> 'w) -> Zipper<'w, 'w> -> Zipper<'w, 'w>
+val mapTopDownThe: ('w -> 'w) -> Zipper<'w, 'w> -> Zipper<'w, 'w>

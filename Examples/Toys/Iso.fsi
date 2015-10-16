@@ -20,7 +20,7 @@ type [<InferenceRules>] Iso =
   member Restructure: unit -> Iso<'x * ('y * 'z), 'y * ('x * 'z)>
   member First: Iso<'x1, 'x2> -> Iso<'x1 * 'y, 'x2 * 'y>
 
-  member ``And<->Pair``: unit -> Iso<And<'x, 'y>, 'x * 'y>
+  member ``Pair<->Tuple``: unit -> Iso<Pair<'x, 'y>, 'x * 'y>
 
 val iso<'x, 'y> : Iso<'x, 'y>
 val fwd: Iso<'x, 'y> -> ('x -> 'y)

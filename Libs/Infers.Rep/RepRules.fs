@@ -13,20 +13,12 @@ open Infers
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Additional `BindingFlags` combinations.
 module BindingFlags =
-  open System.Reflection
-
-  /// Both public and non-public members.
-  let [<Literal>] Any = BindingFlags.Public ||| BindingFlags.NonPublic
-  /// Only declared and instance members.
-  let [<Literal>] DeclaredInstance =
-    BindingFlags.DeclaredOnly ||| BindingFlags.Instance
-  /// Only declared instance members that may be either public or non-public.
+  type B = System.Reflection.BindingFlags
+  let [<Literal>] Any = B.Public ||| B.NonPublic
+  let [<Literal>] DeclaredInstance = B.DeclaredOnly ||| B.Instance
   let [<Literal>] AnyDeclaredInstance = Any ||| DeclaredInstance
-  /// Only public declared instance members.
-  let [<Literal>] PublicDeclaredInstance =
-    BindingFlags.Public ||| DeclaredInstance
+  let [<Literal>] PublicDeclaredInstance = B.Public ||| DeclaredInstance
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -225,7 +217,7 @@ type Builder =
 
 module Products =
 
-  let products ts = build typedefof<And<_, _>> ts
+  let products ts = build typedefof<Pair<_, _>> ts
 
   let defineExtractAndCreate t
                              emitCtor
@@ -315,7 +307,7 @@ module Unions =
                     (choices: array<Type>)
                     (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsChoice<_, _>>.MakeGenericType [|choices.[0]; t|])
+     (typedefof<AsSum<_, _>>.MakeGenericType [|choices.[0]; t|])
      [||]
      defineRest
 
@@ -443,9 +435,9 @@ type [<InferenceRules>] Rep () =
   member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
   member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
 
-  member this.asChoice (_: Union<'t>, c: AsChoice<'c, 't>) = c
+  member this.asSum (_: Union<'t>, c: AsSum<'c, 't>) = c
   member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p
-  member this.viewAsProduct (_: AsChoice<'p, 'u>, m: Case<'p, 'p, 'u>) =
+  member this.viewAsProduct (_: AsSum<'p, 'u>, m: Case<'p, 'p, 'u>) =
     m :> AsProduct<'p, 'u>
 
   member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =

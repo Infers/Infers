@@ -47,10 +47,27 @@ module Zipper =
        let z = z |> prevAny |> Option.get
        printfn "%d" (getAny z |> Option.get)
        printfn "%A" (fromZipper z)
+    do let xs = [1;1;1;1;1;1]
+       printfn "%A" xs
+       let inc x = x := !x+1 ; !x
+       let i = ref 0
+       xs |> toZipperThe |> mapTopDownThe (function [] -> [] | _::xs -> inc i::xs) |> fromZipper |> printfn "%A"
+       let i = ref 0
+       xs |> toZipperThe |> mapBottomUpThe (function [] -> [] | _::xs -> inc i::xs) |> fromZipper |> printfn "%A"
     do let x = App (Lambda ("x", If (Var "x", Var "a", Var "a")), Var "true")
        printfn "%A" x
        let z = toZipperThe x
        printfn "%A" (getThe z)
+       do let i = ref 0
+          let f = function Var x -> i := !i+1 ; Var (sprintf "%s/%d" x !i)
+                         | other -> other
+          let z = mapTopDownThe f z
+          printfn "%A" (getThe z)
+       do let i = ref 0
+          let f = function Var x -> i := !i+1 ; Var (sprintf "%s/%d" x !i)
+                         | other -> other
+          let z = mapBottomUpThe f z
+          printfn "%A" (getThe z)
        let z = z |> downHeadThe |> Option.get
        printfn "%A" (getThe z)
        let z = z |> downHeadThe |> Option.get
@@ -70,7 +87,8 @@ module Iso =
   open Infers.Rep
 
   let test () =
-    let t : And<int, And<float, string>> = Iso.convert (And (And(1.0, "2"), 3))
+    let t : Pair<int, Pair<float, string>> =
+      Iso.convert (Pair (Pair (1.0, "2"), 3))
     printfn "%A" t
 
 module Elems =
@@ -83,11 +101,11 @@ module Elems =
     | App of Term * Term * Range
     | If of Term * Term * Term * Range
 
-  let rec allRanges (term: Term) : seq<Range> =
+  let rec allRanges term : seq<Range> =
     Seq.append (Elems.fetch term)
                (Elems.fetch term |> Seq.collect allRanges)
 
-  let rec incRanges (term: Term) : Term =
+  let rec incRanges term =
     term
     |> Elems.map incRanges
     |> Elems.map (fun (R i) -> R (i+1))

@@ -24,14 +24,14 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a primitive type representation for the type `'t`.
   member prim: Rep<'t> -> Prim<'t>
 
-  /// Attempts to construct a nested choice for the type `'t`'.
-  member asChoice: Union<'t> * AsChoice<'c, 't> -> AsChoice<'c, 't>
+  /// Attempts to construct a nested sum for the type `'t`'.
+  member asSum: Union<'t> * AsSum<'c, 't> -> AsSum<'c, 't>
 
   /// Attempts to construct a nested product for the type `'t`'.
   member asProduct: Product<'t> * AsProduct<'p, 't> -> AsProduct<'p, 't>
 
   /// View a single case union type as a product type.
-  member viewAsProduct: AsChoice<'p, 'u> * Case<'p, 'p, 'u> -> AsProduct<'p, 'u>
+  member viewAsProduct: AsSum<'p, 'u> * Case<'p, 'p, 'u> -> AsProduct<'p, 'u>
 
   /// Attempts to constructs a tuple type representation for the type `'t`.
   member tuple: Rep<'t> -> Tuple<'t>

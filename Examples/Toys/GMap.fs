@@ -5,46 +5,41 @@ module Toys.GMap
 open Infers
 open Infers.Rep
 
-type GMap<'w, 'p> = ('p -> 'p) -> 'w -> 'w
+type GMap<'w, 'h> = ('h -> 'h) -> 'w -> 'w
 
-type GM<'w, 'p> = {gm: GMap<'w, 'p>}
-type ProductGM<'e, 'r, 'w, 'p> = P of GMap<'e, 'p>
-type SumGM<'c, 's, 'w, 'p> = S of list<GMap<'w, 'p>>
+type GM<'w, 'h> = {gm: GMap<'w, 'h>}
+type GMP<'e, 'r, 'o, 'w, 'h> = P of GMap<'e, 'h>
+type GMS<'p, 'o, 'w, 'h> = S of list<GMap<'w, 'h>>
 
 type [<InferenceRules>] GMap () =
-  member g.Same () : GMap<'p, 'p> = id
-  member g.NotSame (_: Rep, _: RecFn, gm: GM<'w, 'p>) = gm.gm
+  member g.Same () : GMap<'h, 'h> = id
+  member g.NotSame (_: Rep, _: RecFn, gm: GM<'w, 'h>) = gm.gm
 
-  member g.Prim (_: Prim<'w>) : GM<'w, 'p> = {gm = fun _ -> id}
+  member g.Prim (_: Prim<'w>) : GM<'w, 'h> = {gm = fun _ -> id}
 
-  member g.Elem (_: Elem<'e, 'r, 'c, 'w>,
-                 eG: GMap<'e, 'p>) : ProductGM<'e, 'r, 'w, 'p> =
-    P eG
+  member g.Elem (_: Elem<'e, 'r, 'o, 'w>, eG: GMap<'e, 'h>) =
+    P eG : GMP<'e, 'r, 'o, 'w, 'h>
 
-  member g.Times (P eG: ProductGM<    'e     , And<'e, 'r>, 'w, 'p>,
-                  P rG: ProductGM<        'r ,         'r , 'w, 'p>)
-                      : ProductGM<And<'e, 'r>, And<'e, 'r>, 'w, 'p> =
-    P <| fun p2p (And (e, r)) -> And (eG p2p e, rG p2p r)
+  member g.Pair (P eG: GMP<     'e     , Pair<'e, 'r>, 'o, 'w, 'h>,
+                 P rG: GMP<         'r ,          'r , 'o, 'w, 'h>)
+                     : GMP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'w, 'h> =
+    P <| fun h2h (Pair (e, r)) -> Pair (eG h2h e, rG h2h r)
 
-  member g.Product (m: AsProduct<'r, 'w>, P rG: ProductGM<'r, 'r, 'w, 'p>) =
-    {gm = fun p2p -> m.ToProduct >> rG p2p >> m.OfProduct}
+  member g.Product (m: AsProduct<'p, 'w>, P rG: GMP<'p, 'p, 'o, 'w, 'h>) =
+    {gm = fun h2h -> m.ToProduct >> rG h2h >> m.OfProduct}
 
-  member g.Case (_: Case<Empty, 's, 'w>) : SumGM<Empty, 's, 'w, 'p> =
+  member g.Case (_: Case<Empty, 'o, 'w>) : GMS<Empty, 'o, 'w, 'h> =
     S [fun _ -> id]
 
-  member g.Case (m: Case<'e, 's, 'w>,
-                 eG: ProductGM<'e, 'e, 'w, 'p>) : SumGM<'e, 's, 'w, 'p> =
-    S [g.Product(m, eG).gm]
+  member g.Case (m: Case<'p, 'o, 'w>, pG: GMP<'p, 'p, 'o, 'w, 'h>) =
+    S [g.Product(m, pG).gm] : GMS<'p, 'o, 'w, 'h>
 
-  member g.Plus (S eG: SumGM<       'e     , Choice<'e, 'r>, 'w, 'p>,
-                 S rG: SumGM<           'r ,            'r , 'w, 'p>)
-                     : SumGM<Choice<'e, 'r>, Choice<'e, 'r>, 'w, 'p> =
-    S (eG @ rG)
+  member g.Choice (S pG: GMS<       'p     , Choice<'p, 'o>, 'w, 'h>,
+                   S oG: GMS<           'o ,            'o , 'w, 'h>) =
+    S (pG @ oG)        : GMS<Choice<'p, 'o>, Choice<'p, 'o>, 'w, 'h>
 
-  member g.Sum (m: Union<'w>,
-                _: AsChoice<'s, 'w>,
-                S sG: SumGM<'s, 's, 'w, 'p>) =
-    let cs = Array.ofList sG
-    {gm = fun p2p w -> cs.[m.Tag w] p2p w}
+  member g.Sum (m: Union<'w>, _: AsSum<'s, 'w>, S sG: GMS<'s, 's, 'w, 'h>) =
+    let sG = Array.ofList sG
+    {gm = fun h2h w -> sG.[m.Tag w] h2h w}
 
-let gmap (p2p: 'p -> 'p) : 'w -> 'w = StaticRules<GMap>.Generate() p2p
+let gmap (h2h: 'h -> 'h) (w: 'w) : 'w = StaticRules<GMap>.Generate() h2h w

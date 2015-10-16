@@ -69,13 +69,3 @@ let test () : unit =
   if Engine.tryGenerate (Solver<Goat> ()) = Some Solution'0
   then printfn "Got solution!"
   else printfn "No solution?"
-
-// Cons[Tuple[Farmer[S],Goat[S],Cabbage[S],Wolf[S]],
-// Cons[Tuple[Farmer[D],Goat[D],Cabbage[S],Wolf[S]],
-// Cons[Tuple[Farmer[S],Goat[D],Cabbage[S],Wolf[S]],
-// Cons[Tuple[Farmer[D],Goat[D],Cabbage[S],Wolf[D]],
-// Cons[Tuple[Farmer[S],Goat[S],Cabbage[S],Wolf[D]],
-// Cons[Tuple[Farmer[D],Goat[S],Cabbage[D],Wolf[D]],
-// Cons[Tuple[Farmer[S],Goat[S],Cabbage[D],Wolf[D]],
-// Cons[Tuple[Farmer[D],Goat[D],Cabbage[D],Wolf[D]],
-// Nil]]]]]]]]

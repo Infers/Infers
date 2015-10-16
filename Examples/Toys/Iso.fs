@@ -19,9 +19,9 @@ type [<InferenceRules>] Iso () =
     I ((fun (a, b) -> (a2c a, b)),
        (fun (c, b) -> (c2a c, b)))
 
-  member g.``And<->Pair`` () =
-    I ((fun (And (a, b)) -> (a, b)),
-       (fun (a, b) -> And (a, b)))
+  member g.``Pair<->Tuple`` () =
+    I ((fun (Pair (a, b)) -> (a, b)),
+       (fun (a, b) -> Pair (a, b)))
 
 let iso<'x, 'y> : Iso<'x, 'y> = StaticRules<Iso>.Generate ()
 let fwd (I (x2y, _)) = x2y

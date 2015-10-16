@@ -14,7 +14,7 @@ module Naive =
                       p: AsProduct<'xsa, 'xst>,
                       u: 'xs2y -> 'xsa -> 'y) : 'xs2y -> 'xst -> 'y =
       fun xs2y -> p.ToProduct >> u xs2y
-    member g.Nested u = fun x2xs2y (And (x, xs)) -> u (x2xs2y x) xs
+    member g.Nested u = fun x2xs2y (Pair (x, xs)) -> u (x2xs2y x) xs
     member g.Finish () = id
 
   /// Derives a function that uncurries a given n-ary curried function.
@@ -45,7 +45,7 @@ module Optimized =
         let mutable xsa = p.ToProduct xst
         u.Do (xs2y, &xsa)
     member g.Nested (u: GUncurry<_, _, _>) =
-      {new GUncurry<_, And<_, _>, _> () with
+      {new GUncurry<_, Pair<_, _>, _> () with
         override g.Do (x2xs2y, xxs) =
           u.Do (x2xs2y xxs.Elem, &xxs.Rest)}
     member g.Finish () =

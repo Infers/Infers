@@ -39,13 +39,13 @@ type Empty = struct end
 ///
 /// would be
 ///
-///> And<char, And<int, And<float, bool>>>
+///> Pair<char, Pair<int, Pair<float, bool>>>
 ///
 /// The `Rep` rules generate products in this manner and it is good to know
 /// this so that the processing of the singleton `Elem` field and the remainder
 /// product `Rest` can be done in the desired order.
 #endif
-type [<Struct>] And<'x, 'xs> =
+type [<Struct>] Pair<'x, 'xs> =
   /// The current element.
   val mutable Elem: 'x
 
@@ -53,16 +53,16 @@ type [<Struct>] And<'x, 'xs> =
   val mutable Rest: 'xs
 
   /// Constructs a pair.
-  new: 'x * 'xs -> And<'x, 'xs>
+  new: 'x * 'xs -> Pair<'x, 'xs>
 
 [<AutoOpen>]
-module And =
+module Pair =
   /// Active pattern for convenient matching of pair structs.
-  val inline (|And|): And<'x, 'xs> -> 'x * 'xs
+  val inline (|Pair|): Pair<'x, 'xs> -> 'x * 'xs
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation of the type `'t` as nested structs of type `'p`.
+/// Representation of the type `'t` as nested pairs of type `'p`.
 #if DOC
 ///
 /// A product object also contains members for accessing the elements of the
@@ -92,8 +92,7 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation of a discriminated union type `'u` as nested choices of
-/// type `'c`.
+/// Representation of the type `'u` as nested choices of type `'c`.
 #if DOC
 ///
 /// A choice object also contains members for accessing individual cases of the
@@ -104,12 +103,12 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
 /// where `'lp` is a representation of the case as product and `'sc` is a nested
 /// choice that identifies the particular case.
 #endif
-type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> = class
+type [<AbstractClass; InferenceRules>] AsSum<'c, 'u> = class
   /// 
-//  abstract ToChoice: 'u -> 'c
+//  abstract ToSum: 'u -> 'c
 
   ///
-//  abstract OfChoice: 'c -> 'u
+//  abstract OfSum: 'c -> 'u
   end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +179,7 @@ type [<AbstractClass>] Item<'e, 'p, 't> =
 ///
 /// A union object also contains a member of the form
 ///
-///> member _: AsChoice<'c, 'u>
+///> member _: AsSum<'c, 'u>
 ///
 /// where type `'c` is a representation of the union as nested binary choices.
 /// The member is visible to inference rules, but it cannot be given a signature

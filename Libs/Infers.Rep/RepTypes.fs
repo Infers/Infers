@@ -6,15 +6,15 @@ open Infers
 
 type Empty = struct end
 
-type [<Struct>] And<'x, 'xs> =
+type [<Struct>] Pair<'x, 'xs> =
   val mutable Elem: 'x
   val mutable Rest: 'xs
   new (x, xs) = {Elem = x; Rest = xs}
-  override t.ToString () = sprintf "And (%A, %A)" t.Elem t.Rest
+  override t.ToString () = sprintf "Pair (%A, %A)" t.Elem t.Rest
 
 [<AutoOpen>]
-module And =
-  let inline (|And|) (xxs: And<_, _>) = (xxs.Elem, xxs.Rest)
+module Pair =
+  let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
   abstract Extract: 't * byref<'p> -> unit
@@ -29,7 +29,7 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
     let mutable p = p
     this.Create (&p)
 
-type [<AbstractClass; InferenceRules>] AsChoice<'c, 'u> () = class
+type [<AbstractClass; InferenceRules>] AsSum<'c, 'u> () = class
   end
 
 type [<InferenceRules>] Rep<'x> () = class
