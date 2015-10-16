@@ -76,10 +76,41 @@ module Iso =
 module Elems =
   open Toys.Elems
 
+  type Range = R of int
+  type Term =
+    | Var of string * Range
+    | Lambda of string * Term * Range
+    | App of Term * Term * Range
+    | If of Term * Term * Term * Range
+
+  let rec allRanges (term: Term) : seq<Range> =
+    Seq.append (elems term)
+               (elems term |> Seq.collect allRanges)
+
+  let rec incRanges (term: Term) : Term =
+    term
+    |> subst (term
+              |> elems
+              |> Array.map incRanges)
+    |> subst (term
+              |> elems
+              |> Array.map (fun (R i) -> R (i+1)))
+
+  let term = App (Lambda ("x",
+                          If (Var ("x", R 7),
+                              Var ("a", R 6),
+                              Var ("a", R 5),
+                              R 4), R 3),
+                  Var ("true", R 2),
+                  R 1)
+
   let test () =
-    ((11, 2.0, (3,4), 55)
-     |> subst [|1; 5|]
-     |> elems : array<int>) |> printfn "%A"
+    allRanges term
+    |> Array.ofSeq
+    |> printfn "%A"
+
+    incRanges term
+    |> printfn "%A"
 
 [<EntryPoint>]
 let main _ =
