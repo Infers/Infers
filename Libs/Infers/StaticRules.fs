@@ -8,5 +8,5 @@ type [<Sealed>] StaticRules<'rules when 'rules : (new : unit -> 'rules)> () =
   static member Generate () : 'result =
     StaticMap<'rules>.Memoize <| fun () ->
     match Engine.tryGenerate (rules :> obj) with
-     | None -> failwithf "%A: Unsupported type %A" typeof<'rules> typeof<'result>
+     | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
      | Some result -> result
