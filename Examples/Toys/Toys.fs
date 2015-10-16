@@ -73,9 +73,18 @@ module Iso =
     let t : And<int, And<float, string>> = Iso.convert (And (And(1.0, "2"), 3))
     printfn "%A" t
 
+module Elems =
+  open Toys.Elems
+
+  let test () =
+    ((11, 2.0, (3,4), 55)
+     |> subst [|1; 5|]
+     |> elems : array<int>) |> printfn "%A"
+
 [<EntryPoint>]
 let main _ =
   try
+    time Elems.test
     time Iso.test
     time GMap.test
     time GFlip.test
