@@ -209,8 +209,9 @@ module Engine =
      | App (Def tc, _) -> tc = typedefof<Rec<_>>
      | _ -> false
 
-  let rec tryGenerate' limit rules objEnv tyEnv stack ty =
+  let rec tryGen limit reached rules objEnv tyEnv stack ty =
     if limit <= 0 then
+      reached := true
       Seq.empty
     else
       match HashEqMap.tryFind ty objEnv with
@@ -227,31 +228,31 @@ module Engine =
                  let ty = Ty.resolve tyEnv ty
                  let stack = stack |> List.map (Ty.resolve tyEnv)
 
-                 if rule.ParTypes.Length <> 0 &&
-                    isRec ty |> not &&
-                    Ty.containsVars ty |> not &&
-                    stack |> List.exists ((=) ty) then
-
-                   match HashEqMap.tryFind ty objEnv with
-                    | Some o ->
-                      Seq.singleton (Value o, objEnv, tyEnv)
-                    | None ->
-                      let recTy = App (Def typedefof<Rec<_>>, [|ty|])
-                      tryGenerate' limit rules objEnv tyEnv (ty::stack) recTy
-                      |> Seq.choose (fun (result, objEnv, tyEnv) ->
-                         match result with
-                          | Ruled _ -> None
-                          | Value recO ->
-                            match recO with
-                             | :? IRecObj as recO' ->
-                               let o = recO'.GetObj ()
-                               Some (Value o,
-                                     objEnv
-                                     |> HashEqMap.add recTy recO
-                                     |> HashEqMap.add ty o,
-                                     tyEnv)
-                             | _ ->
-                               failwith "Bug")
+                 if rule.ParTypes.Length <> 0
+                    && stack |> List.exists ((=) ty) then
+                  if isRec ty || Ty.containsVars ty then
+                    Seq.empty
+                  else
+                    match HashEqMap.tryFind ty objEnv with
+                     | Some o ->
+                       Seq.singleton (Value o, objEnv, tyEnv)
+                     | None ->
+                       let recTy = App (Def typedefof<Rec<_>>, [|ty|])
+                       tryGen limit reached rules objEnv tyEnv (ty::stack) recTy
+                       |> Seq.choose (fun (result, objEnv, tyEnv) ->
+                          match result with
+                           | Ruled _ -> None
+                           | Value recO ->
+                             match recO with
+                              | :? IRecObj as recO' ->
+                                let o = recO'.GetObj ()
+                                Some (Value o,
+                                      objEnv
+                                      |> HashEqMap.add recTy recO
+                                      |> HashEqMap.add ty o,
+                                      tyEnv)
+                              | _ ->
+                                failwith "Bug")
                  else
                    match parTys with
                     | [] ->
@@ -282,7 +283,7 @@ module Engine =
                          Seq.singleton (result, objEnv, tyEnv)
                     | parTy::parTys ->
                       Ty.resolve tyEnv parTy
-                      |> tryGenerate' limit rules objEnv tyEnv (ty::stack)
+                      |> tryGen limit reached rules objEnv tyEnv (ty::stack)
                       |> Seq.collect (fun (result, objEnv, tyEnv) ->
                          let rec inner resolvedArgs rules objEnv = function
                            | [] ->
@@ -307,10 +308,16 @@ module Engine =
     let rules =
       RuleSet.newEmpty ()
       |> RuleSet.maybeAddRules rules
-    seq {1 .. Int32.MaxValue}
-    |> Seq.tryPick (fun limit ->
-       tryGenerate' limit rules HashEqMap.empty HashEqMap.empty [] desTy
-       |> Seq.tryPick (fun (result, _, _) ->
-          match result with
-           | Ruled _ -> None
-           | Value value -> Some (unbox<'a> value)))
+    let rec gen limit =
+      let reached = ref false
+      match tryGen limit reached rules HashEqMap.empty HashEqMap.empty [] desTy
+            |> Seq.tryPick (fun (result, _, _) ->
+               match result with
+                | Ruled _ -> None
+                | Value value -> Some (unbox<'a> value)) with
+       | None ->
+         if !reached
+         then gen (limit + 1)
+         else None
+       | some -> some
+    gen 1
