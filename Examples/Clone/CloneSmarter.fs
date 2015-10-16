@@ -16,19 +16,19 @@ type [<AllowNullLiteral; AbstractClass>] CloneSmarter<'x> () =
   abstract Clone: 'x -> 'x
 
 /// Type of an intermediate step in cloning a product type.
-type [<AllowNullLiteral; AbstractClass>] CloneP<'e, 'es, 't> () =
+type [<AllowNullLiteral; AbstractClass>] CloneP<'e, 'r, 'o, 't> () =
   abstract Clone: byref<'e> -> unit
   abstract ForAll: (obj -> bool) -> bool
 
 /// Type of a partial sum cloning function (or list of such functions).
-type CloneS<'c, 'cs, 't> = CloneS of list<CloneSmarter<'t>>
+type CloneS<'p, 'o, 't> = CloneS of list<CloneSmarter<'t>>
 
 ////////////////////////////////////////////////////////////////////////////////
  
 /// A helper function for products (including individual union cases).
 let toCloneSmart (isMutable: bool)
-                 (asProduct: AsProduct<'es, 't>)
-                 (cloneProduct': CloneP<'es, 'es, 't>) : CloneSmarter<'t> =
+                 (asProduct: AsProduct<'p, 'o, 't>)
+                 (cloneProduct': CloneP<'p, 'p, 'o, 't>) : CloneSmarter<'t> =
   match cloneProduct' with
    | null ->
      null
@@ -40,7 +40,7 @@ let toCloneSmart (isMutable: bool)
        {new CloneSmarter<'t> () with
          override t.Clone (original) =
           // First we allocate space for elements of the clone from stack.
-          let mutable elems = Unchecked.defaultof<'es>
+          let mutable elems = Unchecked.defaultof<'p>
           // We then extract the original elements of the product.
           asProduct.Extract (original, &elems)
           // Then we clone the elements in-place.
@@ -107,6 +107,61 @@ type [<InferenceRules>] Clone () =
          override t.Clone (original) =
           Array.map (fun x -> cloneX.Clone (x)) original}
 
+  // Rules for product types ---------------------------------------------------
+
+  /// A rule for cloning an arbitrary product (tuple, record or union case).
+  member t.Product (product: Product<'t>,
+                    asProduct: AsProduct<'p, 'o, 't>,
+                    cloneProduct': CloneP<'p, 'p, 'o, 't>) =
+    // Do we need to copy something?
+    match (product.IsMutable, cloneProduct') with
+     | (false, null) ->
+       null
+     | (isMutable, cloneProduct) ->
+       toCloneSmart isMutable asProduct cloneProduct
+
+  /// A rule for cloning a part of a product consisting of an `Elem: 'e` and
+  /// `Rest: 'es`.
+  member t.Pair (cloneE': CloneP<'e, Pair<'e, 'r>, 'o, 't>,
+                 cloneR': CloneP<'r,          'r , 'o, 't>) =
+    // What do we need to clone?
+    match (cloneE', cloneR') with
+     | (null, null) ->
+       null
+     | (null, cloneR) ->
+       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> () with
+         override t.Clone (er: byref<Pair<'e, 'r>>) =
+          cloneR.Clone (&er.Rest)
+         override t.ForAll (pred) =
+          cloneR.ForAll pred}
+     | (cloneE, null) ->
+       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> () with
+         override t.Clone (er: byref<Pair<'e, 'r>>) =
+          cloneE.Clone (&er.Elem)
+         override t.ForAll (pred) =
+          cloneE.ForAll pred}
+     | (cloneE, cloneR) ->
+       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> () with
+         override t.Clone (er: byref<Pair<'e, 'r>>) =
+          cloneE.Clone (&er.Elem)
+          cloneR.Clone (&er.Rest)
+         override t.ForAll (pred) =
+          cloneE.ForAll pred &&
+          cloneR.ForAll pred}
+
+  /// A rule for cloning a specific element of type `'e` within a product.
+  member t.Elem (_: Elem<'e, 'r, 'o, 't>, cloneElem': CloneSmarter<'e>) =
+    match cloneElem' with
+     | null ->
+       null
+     | cloneElem ->
+       {new CloneP<'e, 'r, 'o, 't> () with
+         override t.Clone (e: byref<'e>) =
+          // We just mutate the element in-place within the stack allocated space.
+          e <- cloneElem.Clone (e)
+         override t.ForAll (pred) =
+          pred cloneElem}
+
   // Rules for sum types -------------------------------------------------------
 
   /// A rule for cloning an arbitrary sum type.
@@ -145,8 +200,8 @@ type [<InferenceRules>] Clone () =
    CloneS (cloneC @ cloneO)
 
   /// A rule for cloning a non-nullary union case.
-  member t.Case (case: Case<'ls, 'cs, 't>,
-                 cloneProduct': CloneP<'ls, 'ls, 't>) : CloneS<'ls, 'cs, 't> =
+  member t.Case (case: Case<'p, 'o, 't>,
+                 cloneProduct': CloneP<'p, 'p, 'o, 't>) : CloneS<'p, 'o, 't> =
     // We forward here to a helper function to avoid duplicating code.
     let cloneCase = toCloneSmart false case cloneProduct'
     // Then we return just this case. 
@@ -156,58 +211,3 @@ type [<InferenceRules>] Clone () =
   member t.Case (_: Case<Empty, 'cs, 't>) : CloneS<Empty, 'cs, 't> =
     // There is nothing to copy.
     CloneS [null]
-
-  // Rules for product types ---------------------------------------------------
-
-  /// A rule for cloning an arbitrary product (tuple, record or union case).
-  member t.Product (product: Product<'t>,
-                    asProduct: AsProduct<'es, 't>,
-                    cloneProduct': CloneP<'es, 'es, 't>) : CloneSmarter<'t> =
-    // Do we need to copy something?
-    match (product.IsMutable, cloneProduct') with
-     | (false, null) ->
-       null
-     | (isMutable, cloneProduct) ->
-       toCloneSmart isMutable asProduct cloneProduct
-
-  /// A rule for cloning a part of a product consisting of an `Elem: 'e` and
-  /// `Rest: 'es`.
-  member t.Pair (cloneE': CloneP<'e, Pair<'e, 'r>, 't>,
-                 cloneR': CloneP<'r,          'r , 't>) =
-    // What do we need to clone?
-    match (cloneE', cloneR') with
-     | (null, null) ->
-       null
-     | (null, cloneR) ->
-       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 't> () with
-         override t.Clone (er: byref<Pair<'e, 'r>>) =
-          cloneR.Clone (&er.Rest)
-         override t.ForAll (pred) =
-          cloneR.ForAll pred}
-     | (cloneE, null) ->
-       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 't> () with
-         override t.Clone (er: byref<Pair<'e, 'r>>) =
-          cloneE.Clone (&er.Elem)
-         override t.ForAll (pred) =
-          cloneE.ForAll pred}
-     | (cloneE, cloneR) ->
-       {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 't> () with
-         override t.Clone (er: byref<Pair<'e, 'r>>) =
-          cloneE.Clone (&er.Elem)
-          cloneR.Clone (&er.Rest)
-         override t.ForAll (pred) =
-          cloneE.ForAll pred &&
-          cloneR.ForAll pred}
-
-  /// A rule for cloning a specific element of type `'e` within a product.
-  member t.Elem (_: Elem<'e, 'es, _, 't>, cloneElem': CloneSmarter<'e>) =
-    match cloneElem' with
-     | null ->
-       null
-     | cloneElem ->
-       {new CloneP<'e, 'es, 't> () with
-         override t.Clone (e: byref<'e>) =
-          // We just mutate the element in-place within the stack allocated space.
-          e <- cloneElem.Clone (e)
-         override t.ForAll (pred) =
-          pred cloneElem}

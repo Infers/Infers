@@ -293,7 +293,7 @@ module Products =
                      (products: array<Type>)
                      (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsProduct<_, _>>.MakeGenericType [|products.[0]; t|])
+     (typedefof<AsProduct<_, _, _>>.MakeGenericType [|products.[0]; t; t|])
      [||]
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
       defineRest)
@@ -436,9 +436,9 @@ type [<InferenceRules>] Rep () =
   member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
 
   member this.asSum (_: Union<'t>, c: AsSum<'c, 't>) = c
-  member this.asProduct (_: Product<'t>, p: AsProduct<'p, 't>) = p
+  member this.asProduct (_: Product<'t>, p: AsProduct<'p, 'o, 't>) = p
   member this.viewAsProduct (_: AsSum<'p, 'u>, m: Case<'p, 'p, 'u>) =
-    m :> AsProduct<'p, 'u>
+    m :> AsProduct<'p, 'p, 'u>
 
   member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =
     i :> Elem<'e, 'p, 't, 't>

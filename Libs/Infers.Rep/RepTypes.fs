@@ -16,7 +16,7 @@ type [<Struct>] Pair<'x, 'xs> =
 module Pair =
   let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
-type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> () =
+type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> () =
   abstract Extract: 't * byref<'p> -> unit
   abstract Create: byref<'p> -> 't
   abstract ToProduct: 't -> 'p
@@ -67,8 +67,8 @@ type [<AbstractClass>] Union<'u> =
   val Arity: int
   abstract Tag: 'u -> int
 
-type [<AbstractClass>] Case<'lp, 'sc, 'u> =
-  inherit AsProduct<'lp, 'u>
+type [<AbstractClass>] Case<'p, 'o, 'u> =
+  inherit AsProduct<'p, 'o, 'u>
   new (name, arity, tag) = {Name = name; Arity = arity; Tag = tag}
   val Name: string
   val Arity: int

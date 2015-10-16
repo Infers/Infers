@@ -24,7 +24,7 @@ type [<InferenceRules>] GMap =
              * GMP<         'r ,          'r , 'o, 'w, 'h>
             -> GMP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'w, 'h>
 
-  member Product: AsProduct<'p, 'w> * GMP<'p, 'p, 'o, 'w, 'h> -> GM<'w, 'h>
+  member Product: AsProduct<'p, 'o, 'w> * GMP<'p, 'p, 'o, 'w, 'h> -> GM<'w, 'h>
 
   member Case: Case<Empty, 'o, 'w> -> GMS<Empty, 'o, 'w, 'h>
 

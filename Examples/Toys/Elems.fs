@@ -28,7 +28,7 @@ type [<InferenceRules>] Fetch () =
      | (Hit (n, e), Miss) | (Miss, Hit (n, e)) -> Hit (n, e)
      | (Hit (numE, extE), Hit (numR, extR)) ->
        Hit (numE + numR, fun w i hs -> extE w i hs; extR w (i + numE) hs)
-  member g.Product (_: AsProduct<'p, 'w>, pF: FetchP<'p, 'p, 'o, 'h, 'w>) =
+  member g.Product (_: AsProduct<'p, 'o, 'w>, pF: FetchP<'p, 'p, 'o, 'h, 'w>) =
     match pF with
      | Miss -> missE
      | Hit (n, ext) -> fun w -> let hs = Array.zeroCreate n in ext w 0 hs; hs
@@ -86,7 +86,7 @@ type [<InferenceRules>] Subst () =
        {new SubstP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'h, 'w> () with
           member t.Subst (hs, i, r) =
            rS.Subst (hs, eS.Subst (hs, i, &r), &r.Rest)}
-  member g.Product (m: AsProduct<'p, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
+  member g.Product (m: AsProduct<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
     match pS with
      | null -> missS
      | pS -> fun hs w ->

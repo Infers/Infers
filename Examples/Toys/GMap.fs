@@ -25,7 +25,7 @@ type [<InferenceRules>] GMap () =
                      : GMP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'w, 'h> =
     P <| fun h2h (Pair (e, r)) -> Pair (eG h2h e, rG h2h r)
 
-  member g.Product (m: AsProduct<'p, 'w>, P rG: GMP<'p, 'p, 'o, 'w, 'h>) =
+  member g.Product (m: AsProduct<'p, 'o, 'w>, P rG: GMP<'p, 'p, 'o, 'w, 'h>) =
     {gm = fun h2h -> m.ToProduct >> rG h2h >> m.OfProduct}
 
   member g.Case (_: Case<Empty, 'o, 'w>) : GMS<Empty, 'o, 'w, 'h> =

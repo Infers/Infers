@@ -76,7 +76,7 @@ module Pair =
 /// Those members are visible to inference rules, but they cannot be given a
 /// signature in F#.
 #endif
-type [<AbstractClass; InferenceRules>] AsProduct<'p, 't> =
+type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
   /// Copies the fields of the type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
@@ -210,8 +210,8 @@ type [<AbstractClass>] Union<'u> =
   abstract Tag: 'u -> int
 
 /// Representation of a case of the F# discriminated union type `'u`.
-type [<AbstractClass>] Case<'lp, 'sc, 'u> =
-  inherit AsProduct<'lp, 'u>
+type [<AbstractClass>] Case<'p, 'o, 'u> =
+  inherit AsProduct<'p, 'o, 'u>
 
   /// The name of the case.
   val Name: string

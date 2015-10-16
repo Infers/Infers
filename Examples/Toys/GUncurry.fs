@@ -11,7 +11,7 @@ module Naive =
   type [<InferenceRules>] GUncurry () =
     member g.Uncurry (_: Rep,
                       _: Tuple<'xst>,
-                      p: AsProduct<'xsa, 'xst>,
+                      p: AsProduct<'xsa, 'xst, 'xst>,
                       u: 'xs2y -> 'xsa -> 'y) : 'xs2y -> 'xst -> 'y =
       fun xs2y -> p.ToProduct >> u xs2y
     member g.Nested u = fun x2xs2y (Pair (x, xs)) -> u (x2xs2y x) xs
@@ -39,7 +39,7 @@ module Optimized =
   type [<InferenceRules>] GUncurry () =
     member g.Uncurry (_: Rep,
                       _: Tuple<'xst>,
-                      p: AsProduct<'xsa, 'xst>,
+                      p: AsProduct<'xsa, 'xst, 'xst>,
                       u: GUncurry<'xs2y, 'xsa, 'y>) : 'xs2y -> 'xst -> 'y =
       fun xs2y xst ->
         let mutable xsa = p.ToProduct xst

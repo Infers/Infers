@@ -11,29 +11,18 @@ open Infers.Rep
 type Clone<'x> = 'x -> 'x
 
 /// Type of an intermediate step in cloning a product type.
-type [<AbstractClass>] CloneP<'e, 'es, 't> () =
+type [<AbstractClass>] CloneP<'e, 'r, 'o, 't> () =
   abstract Clone: byref<'e> -> unit
 
 /// Type of a partial sum cloning function (or list of such functions).
-type CloneS<'c, 'cs, 't> = CloneS of list<Clone<'t>>
+type CloneS<'p, 'o, 't> = CloneS of list<Clone<'t>>
 
 ////////////////////////////////////////////////////////////////////////////////
- 
-/// A helper function for products (including individual union cases).
-let inline toClone (asProduct: AsProduct<'es, 't>)
-                   (cloneP: CloneP<'es, 'es, 't>) : Clone<'t> =
-  fun original ->
-    // First we allocate space for elements of the clone from stack.
-    let mutable clone = Unchecked.defaultof<'es>
-    // We then extract the original elements of the product.
-    asProduct.Extract (original, &clone)
-    // Then we clone the elements in-place.
-    cloneP.Clone (&clone)
-    // Finally we create a clone from the cloned elements.
-    asProduct.Create (&clone)
 
 /// Inference rules for creating cloning functions.
 type [<InferenceRules>] Clone () =
+  inherit Rep ()
+
   // Recursion rule ------------------------------------------------------------
 
   // Rule for creating a proxy when defining a recursive cloning function.
@@ -58,11 +47,43 @@ type [<InferenceRules>] Clone () =
   member this.Array (cloneT: Clone<'t>) : Clone<array<'t>> =
     Array.map cloneT
 
+  // Rules for product types ---------------------------------------------------
+
+  /// A rule for cloning an arbitrary product (tuple, record or union case).
+  member this.Product (asProduct: AsProduct<'p, 'o, 't>,
+                       cloneP: CloneP<'p, 'p, 'o, 't>) : Clone<'t> =
+    fun original ->
+      // First we allocate space for elements of the clone from stack.
+      let mutable clone = Unchecked.defaultof<'p>
+      // We then extract the original elements of the product.
+      asProduct.Extract (original, &clone)
+      // Then we clone the elements in-place.
+      cloneP.Clone (&clone)
+      // Finally we create a clone from the cloned elements.
+      asProduct.Create (&clone)
+
+  /// A rule for cloning a part of a product consisting of an `Elem: 'e` and
+  /// `Rest: 'es`.
+  member this.Pair (cloneElem: CloneP<'e, Pair<'e, 'r>, 'o, 't>,
+                    cloneRest: CloneP<'r,          'r , 'o, 't>) =
+    {new CloneP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> () with
+      override this.Clone (ees: byref<Pair<'e, 'r>>) =
+       // First we clone the elem.  This happens in the stack allocated space.
+       cloneElem.Clone (&ees.Elem)
+       // And then the rest.  This also happens in the stack allocated space.
+       cloneRest.Clone (&ees.Rest)}
+
+  /// A rule for cloning a specific element of type `'e` within a product.
+  member this.Elem (_: Rep, _: Elem<'e, 'r, 'o, 't>, cloneElem: Clone<'e>) =
+    {new CloneP<'e, 'r, 'o, 't> () with
+      override this.Clone (e: byref<'e>) =
+       // We just mutate the element in-place within the stack allocated space.
+       e <- cloneElem e}
+
   // Rules for sum types -------------------------------------------------------
 
   /// A rule for cloning an arbitrary sum type.
-  member this.Sum (_: Rep,
-                   union: Union<'t>,
+  member this.Sum (union: Union<'t>,
                    _: AsSum<'cs, 't>,
                    CloneS cloneSum: CloneS<'cs, 'cs, 't>) =
     // First we stage an array for fast indexing of cases.  It is important that
@@ -87,11 +108,10 @@ type [<InferenceRules>] Clone () =
    CloneS (cloneCase @ cloneCases)
 
   /// A rule for cloning a non-nullary union case.
-  member this.Case (case: Case<'ls, 'cs, 't>,
-                    cloneProduct: CloneP<'ls, 'ls, 't>) : CloneS<'ls, 'cs, 't> =
+  member this.Case (case: Case<'p, 'o, 't>,
+                    cloneProduct: CloneP<'p, 'p, 'o, 't>) : CloneS<'p, 'o, 't> =
     // We forward here to a helper function to avoid duplicating code.
-    let cloneCase : Clone<'t> =
-      toClone (case :> AsProduct<'ls, 't>) cloneProduct
+    let cloneCase : Clone<'t> = this.Product (case, cloneProduct)
     // Then we return just this case. 
     CloneS [cloneCase]
 
@@ -101,30 +121,3 @@ type [<InferenceRules>] Clone () =
     let cloneCase : Clone<'t> = fun x -> x
     // Then we return just this case. 
     CloneS [cloneCase]
-
-  // Rules for product types ---------------------------------------------------
-
-  /// A rule for cloning an arbitrary product (tuple, record or union case).
-  member this.Product (_: Rep,
-                       asProduct: AsProduct<'es, 't>,
-                       cloneProduct: CloneP<'es, 'es, 't>) : Clone<'t> =
-    // We forward here to a helper function to avoid duplicating this case.
-    toClone asProduct cloneProduct
-
-  /// A rule for cloning a part of a product consisting of an `Elem: 'e` and
-  /// `Rest: 'es`.
-  member this.Pair (cloneElem: CloneP< 'e, Pair<'e, 'es>, 't>,
-                    cloneRest: CloneP<'es,          'es , 't>) =
-    {new CloneP<Pair<'e, 'es>, Pair<'e, 'es>, 't> () with
-      override this.Clone (ees: byref<Pair<'e, 'es>>) =
-       // First we clone the elem.  This happens in the stack allocated space.
-       cloneElem.Clone (&ees.Elem)
-       // And then the rest.  This also happens in the stack allocated space.
-       cloneRest.Clone (&ees.Rest)}
-
-  /// A rule for cloning a specific element of type `'e` within a product.
-  member this.Elem (_: Rep, _: Elem<'e, 'es, _, 't>, cloneElem: Clone<'e>) =
-    {new CloneP<'e, 'es, 't> () with
-      override this.Clone (e: byref<'e>) =
-       // We just mutate the element in-place within the stack allocated space.
-       e <- cloneElem e}

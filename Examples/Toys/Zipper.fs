@@ -47,7 +47,7 @@ type [<AbstractClass;AllowNullLiteral>] DownPAny<'w, 'o, 'p, 't> () =
   [<DefaultValue>] val mutable internal PrevThe: DownPThe<'w, 'w, 'o, 'p, 't>
   [<DefaultValue>] val mutable internal NextAny: DownPAny<'w,     'o, 'p, 't>
   [<DefaultValue>] val mutable internal NextThe: DownPThe<'w, 'w, 'o, 'p, 't>
-  abstract Down: Up<'w, 't> * AsProduct<'p, 't> * byref<'p> -> Zipper<'w>
+  abstract Down: Up<'w, 't> * AsProduct<'p, 'o, 't> * byref<'p> -> Zipper<'w>
 
 and [<AbstractClass;AllowNullLiteral>] DownPThe<'w, 'h, 'o, 'p, 't> () =
   inherit DownPAny<'w, 'o, 'p, 't> ()
@@ -162,7 +162,7 @@ type [<InferenceRules>] Zipper () =
                     : DownP<'w, Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 't> =
     P (e @ r)
 
-  member z.Product (m: AsProduct<'p, 't>,
+  member z.Product (m: AsProduct<'p, 'o, 't>,
                     P downs: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
     let downs = Array.ofList downs
     let n = downs.Length
