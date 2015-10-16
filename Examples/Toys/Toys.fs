@@ -85,8 +85,11 @@ let main _ =
     time Goat.test
     time Zebra.test
   with
-   | :? System.Reflection.TargetInvocationException as e ->
-     printfn "%s\n%s" e.InnerException.Message e.InnerException.StackTrace
    | e ->
-     printfn "%s\n%s" e.Message e.StackTrace
+     let rec explain (e: System.Exception) =
+       match e.InnerException with
+        | null -> ()
+        | e -> explain e
+       printfn "%s\n%s" e.Message e.StackTrace
+     explain e
   0
