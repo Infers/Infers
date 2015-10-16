@@ -74,7 +74,7 @@ module Iso =
     printfn "%A" t
 
 module Elems =
-  open Toys.Elems
+  module Elems = Toys.Elems
 
   type Range = R of int
   type Term =
@@ -84,17 +84,13 @@ module Elems =
     | If of Term * Term * Term * Range
 
   let rec allRanges (term: Term) : seq<Range> =
-    Seq.append (elems term)
-               (elems term |> Seq.collect allRanges)
+    Seq.append (Elems.fetch term)
+               (Elems.fetch term |> Seq.collect allRanges)
 
   let rec incRanges (term: Term) : Term =
     term
-    |> subst (term
-              |> elems
-              |> Array.map incRanges)
-    |> subst (term
-              |> elems
-              |> Array.map (fun (R i) -> R (i+1)))
+    |> Elems.map incRanges
+    |> Elems.map (fun (R i) -> R (i+1))
 
   let term = App (Lambda ("x",
                           If (Var ("x", R 7),

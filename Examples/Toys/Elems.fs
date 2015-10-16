@@ -5,15 +5,15 @@ module Toys.Elems
 open Infers
 open Infers.Rep
 
-type Elems<'p, 'w> = 'w -> array<'p>
+type Fetch<'p, 'w> = 'w -> array<'p>
 
-type ProductE<'e, 'r, 'cs, 'p, 'w> =
+type ProductF<'e, 'r, 'cs, 'p, 'w> =
   | Miss
   | Hit of num: int * ext: ('w -> int -> array<'p> -> unit)
-type SumE<'c, 's, 'p, 'w> = SE of list<Elems<'p, 'w>>
+type SumF<'c, 's, 'p, 'w> = SE of list<Fetch<'p, 'w>>
 
 let missE _ = [||]
-let makeE (re: ProductE<'r, 'r, 'cs, 'p, 'w>) =
+let makeE (re: ProductF<'r, 'r, 'cs, 'p, 'w>) =
   match re with
    | Miss -> missE
    | Hit (num, ext) -> fun w ->
@@ -21,15 +21,15 @@ let makeE (re: ProductE<'r, 'r, 'cs, 'p, 'w>) =
      ext w 0 ps
      ps
 
-type [<InferenceRules>] Elems () =
+type [<InferenceRules>] Fetch () =
   inherit Rep ()
-  member g.ElemMiss (_: Elem<'e, 'er, 'cs, 'w>) : ProductE<'e, 'er, 'cs, 'p, 'w> =
+  member g.ElemMiss (_: Elem<'e, 'er, 'cs, 'w>) : ProductF<'e, 'er, 'cs, 'p, 'w> =
     Miss
-  member g.ElemHit (e: Elem<'p, 'er, 'cs, 'w>) : ProductE<'p, 'er, 'cs, 'p, 'w> =
+  member g.ElemHit (e: Elem<'p, 'er, 'cs, 'w>) : ProductF<'p, 'er, 'cs, 'p, 'w> =
     Hit (1, fun w i ps -> ps.[i] <- e.Get w)
-  member g.Times (ee: ProductE<    'e     , And<'e, 'r>, 'cs, 'p, 'w>,
-                  re: ProductE<        'r ,         'r , 'cs, 'p, 'w>)
-                    : ProductE<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> =
+  member g.Times (ee: ProductF<    'e     , And<'e, 'r>, 'cs, 'p, 'w>,
+                  re: ProductF<        'r ,         'r , 'cs, 'p, 'w>)
+                    : ProductF<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> =
     match (ee, re) with
      | (Miss, Miss) -> Miss
      | (Hit (n, e), Miss)
@@ -40,27 +40,27 @@ type [<InferenceRules>] Elems () =
               extE w  i         ps
               extR w (i + numE) ps)
   member g.Product (_: Product<'w>,
-                    _: AsProduct<'r, 'w>, r: ProductE<'r, 'r, 'w, 'p, 'w>) =
+                    _: AsProduct<'r, 'w>, r: ProductF<'r, 'r, 'w, 'p, 'w>) =
     makeE r
 
-  member g.Case (_: Case<Empty, 's, 'w>) : SumE<Empty, 's, 'p, 'w> =
+  member g.Case (_: Case<Empty, 's, 'w>) : SumF<Empty, 's, 'p, 'w> =
     SE [missE]
   member g.Case (_: Case<'r, 's, 'w>,
-                 r: ProductE<'r, 'r, 's, 'p, 'w>) : SumE<'r, 's, 'p, 'w> =
+                 r: ProductF<'r, 'r, 's, 'p, 'w>) : SumF<'r, 's, 'p, 'w> =
     SE [makeE r]
-  member g.Plus (SE c: SumE<        'c    , Choice<'c, 's>, 'p, 'w>,
-                 SE s: SumE<           's ,            's , 'p, 'w>)
-                     : SumE<Choice<'c, 's>, Choice<'c, 's>, 'p, 'w> =
+  member g.Plus (SE c: SumF<        'c    , Choice<'c, 's>, 'p, 'w>,
+                 SE s: SumF<           's ,            's , 'p, 'w>)
+                     : SumF<Choice<'c, 's>, Choice<'c, 's>, 'p, 'w> =
     SE (c @ s)
-  member g.Sum (m: Union<'w>, _: AsChoice<'s, 'w>, SE s: SumE<'s, 's, 'p, 'w>) =
+  member g.Sum (m: Union<'w>, _: AsChoice<'s, 'w>, SE s: SumF<'s, 's, 'p, 'w>) =
     let s = Array.ofList s
     fun w -> s.[m.Tag w] w
 
-  member g.Prim (_: Prim<'w>) : Elems<'p, 'w> =
-    failwithf "Elems only works on sums and products. Given: %A." typeof<'w>
+  member g.Prim (_: Prim<'w>) : Fetch<'p, 'w> =
+    failwithf "Fetch only works on sums and products. Given: %A." typeof<'w>
 
-let elems (w: 'w) : array<'p> =
-  (StaticRules<Elems>.Generate () : Elems<'p, 'w>) w
+let fetch (w: 'w) : array<'p> =
+  (StaticRules<Fetch>.Generate () : Fetch<'p, 'w>) w
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -132,3 +132,8 @@ type [<InferenceRules>] Subst () =
 
 let subst (ps: array<'p>) (w: 'w) : 'w =
   (StaticRules<Subst>.Generate () : Subst<'p, 'w>) ps w
+
+////////////////////////////////////////////////////////////////////////////////
+
+let map (p2p: 'p -> 'p) (w: 'w) : 'w =
+  subst (fetch w |> Array.map p2p) w
