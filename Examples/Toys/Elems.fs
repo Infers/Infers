@@ -7,28 +7,29 @@ open Infers.Rep
 
 type Elems<'p, 'w> = 'w -> array<'p>
 
-type ProductE<'e, 'r, 'p, 'w> =
+type ProductE<'e, 'r, 'cs, 'p, 'w> =
   | Miss
   | Hit of num: int * ext: ('w -> int -> array<'p> -> unit)
 type SumE<'c, 's, 'p, 'w> = SE of list<Elems<'p, 'w>>
 
 let missE _ = [||]
-let makeE = function
-  | Miss -> missE
-  | Hit (num, ext) -> fun w ->
-    let ps = Array.zeroCreate num
-    ext w 0 ps
-    ps
+let makeE (re: ProductE<'r, 'r, 'cs, 'p, 'w>) =
+  match re with
+   | Miss -> missE
+   | Hit (num, ext) -> fun w ->
+     let ps = Array.zeroCreate num
+     ext w 0 ps
+     ps
 
 type [<InferenceRules>] Elems () =
   inherit Rep ()
-  member g.ElemMiss (_: Elem<'e, 'er, _, 'w>) : ProductE<'e, 'er, 'p, 'w> =
+  member g.ElemMiss (_: Elem<'e, 'er, 'cs, 'w>) : ProductE<'e, 'er, 'cs, 'p, 'w> =
     Miss
-  member g.ElemHit (e: Elem<'p, 'er, _, 'w>) : ProductE<'p, 'er, 'p, 'w> =
+  member g.ElemHit (e: Elem<'p, 'er, 'cs, 'w>) : ProductE<'p, 'er, 'cs, 'p, 'w> =
     Hit (1, fun w i ps -> ps.[i] <- e.Get w)
-  member g.Times (ee: ProductE<    'e     , And<'e, 'r>, 'p, 'w>,
-                  re: ProductE<        'r ,         'r , 'p, 'w>)
-                    : ProductE<And<'e, 'r>, And<'e, 'r>, 'p, 'w> =
+  member g.Times (ee: ProductE<    'e     , And<'e, 'r>, 'cs, 'p, 'w>,
+                  re: ProductE<        'r ,         'r , 'cs, 'p, 'w>)
+                    : ProductE<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> =
     match (ee, re) with
      | (Miss, Miss) -> Miss
      | (Hit (n, e), Miss)
@@ -38,13 +39,14 @@ type [<InferenceRules>] Elems () =
             fun w i ps ->
               extE w  i         ps
               extR w (i + numE) ps)
-  member g.Product (_: AsProduct<'r, 'w>, r: ProductE<'r, 'r, 'p, 'w>) =
+  member g.Product (_: Product<'w>,
+                    _: AsProduct<'r, 'w>, r: ProductE<'r, 'r, 'w, 'p, 'w>) =
     makeE r
 
   member g.Case (_: Case<Empty, 's, 'w>) : SumE<Empty, 's, 'p, 'w> =
     SE [missE]
   member g.Case (_: Case<'r, 's, 'w>,
-                 r: ProductE<'r, 'r, 'p, 'w>) : SumE<'r, 's, 'p, 'w> =
+                 r: ProductE<'r, 'r, 's, 'p, 'w>) : SumE<'r, 's, 'p, 'w> =
     SE [makeE r]
   member g.Plus (SE c: SumE<        'c    , Choice<'c, 's>, 'p, 'w>,
                  SE s: SumE<           's ,            's , 'p, 'w>)
@@ -64,7 +66,7 @@ let elems (w: 'w) : array<'p> =
 
 type Subst<'p, 'w> = array<'p> -> 'w -> 'w
 
-type [<AbstractClass;AllowNullLiteral>] ProductS<'e, 'r, 'p, 'w> () =
+type [<AbstractClass;AllowNullLiteral>] ProductS<'e, 'r, 'cs, 'p, 'w> () =
   abstract Subst: array<'p> * int * byref<'r> -> int
 
 type SumS<'c, 's, 'p, 'w> = SS of list<Subst<'p, 'w>>
@@ -74,7 +76,7 @@ let check (ps: array<_>) n =
     failwithf "Expected %d elems, but was given %d elems" n ps.Length
 
 let missS ps w = check ps 0; w
-let makeS (m: AsProduct<'r, 'w>) (rs: ProductS<'r, 'r, 'p, 'w>) =
+let makeS (m: AsProduct<'r, 'w>) (rs: ProductS<'r, 'r, 'cs, 'p, 'w>) =
   match rs with
    | null -> missS
    | rs -> fun ps w ->
@@ -84,36 +86,36 @@ let makeS (m: AsProduct<'r, 'w>) (rs: ProductS<'r, 'r, 'p, 'w>) =
 
 type [<InferenceRules>] Subst () =
   inherit Rep ()
-  member g.ElemMiss (_: Elem<'e, 'er, _, 'w>) : ProductS<'e, 'er, 'p, 'w> = null
-  member g.ElemHit (_: Elem<'p, 'p, _, 'w>) =
-    {new ProductS<'p, 'p, 'p, 'w> () with
+  member g.ElemMiss (_: Elem<'e, 'er, 'cs, 'w>) : ProductS<'e, 'er, 'cs, 'p, 'w> = null
+  member g.ElemHit (_: Elem<'p, 'p, 'cs, 'w>) =
+    {new ProductS<'p, 'p, 'cs, 'p, 'w> () with
       member t.Subst (ps, i, p) = p <- ps.[i]; i+1}
-  member g.ElemHit (_: Elem<'p, And<'p, 'r>, _, 'w>) =
-    {new ProductS<'p, And<'p, 'r>, 'p, 'w> () with
+  member g.ElemHit (_: Elem<'p, And<'p, 'r>, 'cs, 'w>) =
+    {new ProductS<'p, And<'p, 'r>, 'cs, 'p, 'w> () with
       member t.Subst (ps, i, p) = p.Elem <- ps.[i] ; i+1}
-  member g.Times (es: ProductS<    'e     , And<'e, 'r>, 'p, 'w>,
-                  rs: ProductS<        'r ,         'r , 'p, 'w>)
-                    : ProductS<And<'e, 'r>, And<'e, 'r>, 'p, 'w> =
+  member g.Times (es: ProductS<    'e     , And<'e, 'r>, 'cs, 'p, 'w>,
+                  rs: ProductS<        'r ,         'r , 'cs, 'p, 'w>)
+                    : ProductS<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> =
     match (es, rs) with
      | (null, null) -> null
      | (es, null) ->
-       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'p, 'w> () with
+       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> () with
           member t.Subst (ps, i, r) = es.Subst (ps, i, &r)}
      | (null, rs) ->
-       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'p, 'w> () with
+       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> () with
           member t.Subst (ps, i, r) = rs.Subst (ps, i, &r.Rest)}
      | (es, rs) ->
-       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'p, 'w> () with
+       {new ProductS<And<'e, 'r>, And<'e, 'r>, 'cs, 'p, 'w> () with
           member t.Subst (ps, i, r) =
            rs.Subst (ps, es.Subst (ps, i, &r), &r.Rest)}
 
-  member g.Product (m: AsProduct<'r, 'w>, rs: ProductS<'r, 'r, 'p, 'w>) =
+  member g.Product (m: AsProduct<'r, 'w>, rs: ProductS<'r, 'r, 'w, 'p, 'w>) =
     makeS m rs
 
   member g.Case (_: Case<Empty, 's, 'w>) : SumS<Empty, 's, 'p, 'w> =
     SS [missS]
   member g.Case (m: Case<'r, 's, 'w>,
-                 r: ProductS<'r, 'r, 'p, 'w>) : SumS<'r, 's, 'p, 'w> =
+                 r: ProductS<'r, 'r, 's, 'p, 'w>) : SumS<'r, 's, 'p, 'w> =
     SS [makeS m r]
   member g.Plus (SS c: SumS<        'c    , Choice<'c, 's>, 'p, 'w>,
                  SS s: SumS<           's ,            's , 'p, 'w>)
