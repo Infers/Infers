@@ -43,27 +43,28 @@ module Rule =
   let freshVars (rule: Rule<Type>) : Rule<Int64> =
     mapVars (Fresh.newMapper ()) rule
 
-type RuleMethod (infRule: MethodInfo, infRules: obj) =
-  let returnType = Ty.ofType infRule.ReturnType
+type RuleMethod (m: MethodInfo, o: obj) =
+  let returnType = Ty.ofType m.ReturnType
   let parTypes =
-    lazy (infRule.GetParameters ()
+    lazy (m.GetParameters ()
           |> Array.map (fun p -> Ty.ofType p.ParameterType))
   let genArgs =
-    lazy if infRule.ContainsGenericParameters
-         then infRule.GetGenericArguments () |> Array.map Ty.ofType
+    lazy if m.ContainsGenericParameters
+         then m.GetGenericArguments () |> Array.map Ty.ofType
          else [||]
   interface Rule<Type> with
    member ir.ReturnType = returnType
    member ir.ParTypes = parTypes.Force ()
    member ir.GenericArgTypes = genArgs.Force ()
    member ir.Invoke (genArgTys, argObjs) =
-    try (if infRule.ContainsGenericParameters
-         then infRule.MakeGenericMethod genArgTys
-         else infRule).Invoke (infRules, argObjs) |> Some
-    with :? TargetInvocationException as e
-           when (match e.InnerException with
-                  | Backtrack -> true
-                  | _ -> false) -> None
+    let m = if m.ContainsGenericParameters
+            then m.MakeGenericMethod genArgTys
+            else m
+    try m.Invoke (o, argObjs) |> Some
+    with :? TargetInvocationException as e ->
+      match e.InnerException with
+       | Backtrack -> None
+       | e -> raise <| Exception ("Rule raised an exception.", e)
 
 module RuleSet =
   type Cache =
