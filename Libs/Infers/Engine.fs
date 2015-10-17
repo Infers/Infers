@@ -28,23 +28,18 @@ module Fresh =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type [<AbstractClass>] Rule<'v> () =
-  abstract ReturnType: Ty<'v>
-  abstract ParTypes: array<Ty<'v>>
-  abstract GenericArgTypes: array<Ty<'v>>
-  abstract Invoke: array<Type> * array<Type> * array<obj> -> option<obj>
+type Rule<'v> =
+  {ReturnType: Ty<'v>
+   ParTypes: array<Ty<'v>>
+   GenericArgTypes: array<Ty<'v>>
+   Invoke: array<Type> -> array<Type> -> array<obj> -> option<obj>}
 
 module Rule =
   let mapVars v2w (rule: Rule<_>) =
-    let returnType = Ty.mapVars v2w rule.ReturnType
-    let parTypes = lazy Array.map (Ty.mapVars v2w) rule.ParTypes
-    let genericArgTypes = lazy Array.map (Ty.mapVars v2w) rule.GenericArgTypes
-    {new Rule<_> () with
-      member ir.ReturnType = returnType
-      member ir.ParTypes = parTypes.Force ()
-      member ir.GenericArgTypes = genericArgTypes.Force ()
-      member ir.Invoke (genArgTys, argTys, argObjs) =
-       rule.Invoke (genArgTys, argTys, argObjs)}
+    {ReturnType = Ty.mapVars v2w rule.ReturnType
+     ParTypes = Array.map (Ty.mapVars v2w) rule.ParTypes
+     GenericArgTypes = Array.map (Ty.mapVars v2w) rule.GenericArgTypes
+     Invoke = rule.Invoke}
 
   let freshVars (rule: Rule<Type>) : Rule<Int64> =
     mapVars (Fresh.newMapper ()) rule
@@ -83,19 +78,14 @@ module RuleSet =
     t.GetMethods (B.DeclaredOnly ||| B.Instance ||| B.Public ||| B.NonPublic)
     |> Array.filter (fun m -> not m.IsAbstract)
     |> Array.map (fun m ->
-       let returnType = Ty.ofType m.ReturnType
-       let parTypes =
-         lazy (m.GetParameters ()
-               |> Array.map (fun p -> Ty.ofType p.ParameterType))
-       let genArgs =
-         lazy if m.ContainsGenericParameters
-              then m.GetGenericArguments () |> Array.map Ty.ofType
-              else [||]
-       {new Rule<_> () with
-         member ir.ReturnType = returnType
-         member ir.ParTypes = parTypes.Force ()
-         member ir.GenericArgTypes = genArgs.Force ()
-         member ir.Invoke (genArgTys, _, argObjs) =
+       {ReturnType = Ty.ofType m.ReturnType
+        ParTypes =
+          m.GetParameters () |> Array.map (fun p -> Ty.ofType p.ParameterType)
+        GenericArgTypes =
+          if m.ContainsGenericParameters
+          then m.GetGenericArguments () |> Array.map Ty.ofType
+          else [||]
+        Invoke = fun genArgTys _ argObjs ->
           let m = if m.ContainsGenericParameters
                   then m.MakeGenericMethod genArgTys
                   else m
@@ -134,19 +124,15 @@ module RuleSet =
          let rules =
            tc.GetConstructors ()
            |> Array.map (fun c ->
-              let returnType = Ty.ofType tc
-              let parTypes =
-                lazy (c.GetParameters ()
-                      |> Array.map (fun p -> Ty.ofType p.ParameterType))
-              let genArgs =
-                lazy if tc.ContainsGenericParameters
-                     then tc.GetGenericArguments () |> Array.map Ty.ofType
-                     else [||]
-              {new Rule<_> () with
-                member t.ReturnType = returnType
-                member t.ParTypes = parTypes.Force ()
-                member t.GenericArgTypes = genArgs.Force ()
-                member t.Invoke (genArgTys, argTys, argObjs) =
+              {ReturnType = Ty.ofType tc
+               ParTypes =
+                 c.GetParameters ()
+                 |> Array.map (fun p -> Ty.ofType p.ParameterType)
+               GenericArgTypes =
+                 if tc.ContainsGenericParameters
+                 then tc.GetGenericArguments () |> Array.map Ty.ofType
+                 else [||]
+               Invoke = fun genArgTys argTys argObjs ->
                  let tc = if tc.ContainsGenericParameters
                           then tc.MakeGenericType genArgTys
                           else tc
@@ -226,7 +212,7 @@ module Engine =
                  | None ->
                    failwith "Bug"
                  | Some genArgTys ->
-                   rule.Invoke (genArgTys, argTys, argVals)
+                   rule.Invoke genArgTys argTys argVals
                    |> Option.map (fun o ->
                       (HashEqMap.add monoTy o objEnv, Value (monoTy, o))))
 
