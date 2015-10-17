@@ -27,7 +27,7 @@ type [<InferenceRules>] Rec () =
         override pR.Set er = eR.Set (&er.Elem) ; rR.Set (&er.Rest)}
 
   member t.Product (_: Rep,
-                    m: AsProduct<'p, 'o, 't>,
+                    m: AsPairs<'p, 'o, 't>,
                     P pR: RecP<'p, 'p, 'o, 't>) =
     {new Rec<_> () with
       override tR.Get () =
@@ -35,5 +35,5 @@ type [<InferenceRules>] Rec () =
         pR.Get (&p)
         m.Create (&p)
       override tR.Set t =
-        let mutable p = m.ToProduct t
+        let mutable p = m.ToPairs t
         pR.Set (&p)}

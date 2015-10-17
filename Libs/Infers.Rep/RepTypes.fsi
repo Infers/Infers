@@ -76,7 +76,7 @@ module Pair =
 /// Those members are visible to inference rules, but they cannot be given a
 /// signature in F#.
 #endif
-type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
+type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
   /// The number of elements the product type has.
   val Arity: int
 
@@ -86,15 +86,14 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
   /// Copies the fields of the type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
-  /// Creates a new instance of type `'t` from the generic product of type
-  /// `'p`.
+  /// Creates a new instance of type `'t` from the nested pairs of type `'p`.
   abstract Create: byref<'p> -> 't
 
-  /// Convenience function to convert from product type to nested product.
-  abstract ToProduct: 't -> 'p
+  /// Convenience function to convert from product type to nested pairs.
+  abstract ToPairs: 't -> 'p
 
-  /// Convenience function to convert from nested product to product type.
-  abstract OfProduct: 'p -> 't
+  /// Convenience function to convert from nested pairs to product type.
+  abstract OfPairs: 'p -> 't
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -109,7 +108,7 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
 /// where `'p` is a representation of the case as a product and `'o` is a nested
 /// choice that identifies the particular case.
 #endif
-type [<AbstractClass; InferenceRules>] AsSum<'s, 't> =
+type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
   /// The number of cases the discriminated union type `'t` has.
   val Arity: int
 
@@ -208,7 +207,7 @@ type [<AbstractClass>] Union<'t> =
 
 /// Representation of a case of the F# discriminated union type `'t`.
 type [<AbstractClass>] Case<'p, 'o, 't> =
-  inherit AsProduct<'p, 'o, 't>
+  inherit AsPairs<'p, 'o, 't>
 
   /// The name of the case.
   val Name: string

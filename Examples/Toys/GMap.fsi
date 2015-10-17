@@ -24,7 +24,7 @@ type [<InferenceRules>] GMap =
              * GMP<         'r ,          'r , 'o, 'w, 'h>
             -> GMP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'w, 'h>
 
-  member Product: AsProduct<'p, 'o, 'w> * GMP<'p, 'p, 'o, 'w, 'h> -> GM<'w, 'h>
+  member Product: AsPairs<'p, 'o, 'w> * GMP<'p, 'p, 'o, 'w, 'h> -> GM<'w, 'h>
 
   member Case: Case<Empty, 'o, 'w> -> GMS<Empty, 'o, 'w, 'h>
 
@@ -34,6 +34,6 @@ type [<InferenceRules>] GMap =
                * GMS<           'o ,            'o , 'w, 'h>
               -> GMS<Choice<'p, 'o>, Choice<'p, 'o>, 'w, 'h>
 
-  member Sum: AsSum<'s, 'w> * GMS<'s, 's, 'w, 'h> -> GM<'w, 'h>
+  member Sum: AsChoices<'s, 'w> * GMS<'s, 's, 'w, 'h> -> GM<'w, 'h>
 
 val gmap: ('h -> 'h) -> 'w -> 'w

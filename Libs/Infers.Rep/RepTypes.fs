@@ -16,23 +16,23 @@ type [<Struct>] Pair<'x, 'xs> =
 module Pair =
   let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
-type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
+type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
   new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
   val Arity: int
   val IsMutable: bool
   abstract Extract: 't * byref<'p> -> unit
   abstract Create: byref<'p> -> 't
-  abstract ToProduct: 't -> 'p
-  abstract OfProduct: 'p -> 't
-  default this.ToProduct (t: 't) : 'p =
+  abstract ToPairs: 't -> 'p
+  abstract OfPairs: 'p -> 't
+  default this.ToPairs (t: 't) : 'p =
     let mutable p = Unchecked.defaultof<_>
     this.Extract (t, &p)
     p
-  default this.OfProduct (p: 'p) : 't =
+  default this.OfPairs (p: 'p) : 't =
     let mutable p = p
     this.Create (&p)
 
-type [<AbstractClass; InferenceRules>] AsSum<'s, 't> =
+type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
   new (arity) = {Arity = arity}
   val Arity: int
   abstract Tag: 't -> int
@@ -65,9 +65,9 @@ type [<AbstractClass>] Union<'t> () =
   inherit Rep<'t> ()
 
 type [<AbstractClass>] Case<'p, 'o, 't> =
-  inherit AsProduct<'p, 'o, 't>
+  inherit AsPairs<'p, 'o, 't>
   new (name, arity, tag) =
-    {inherit AsProduct<'p, 'o, 't>(arity, false); Name = name; Tag = tag}
+    {inherit AsPairs<'p, 'o, 't>(arity, false); Name = name; Tag = tag}
   val Name: string
   val Tag: int
 

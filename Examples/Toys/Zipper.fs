@@ -47,7 +47,7 @@ type [<AbstractClass;AllowNullLiteral>] DownPAny<'w, 'o, 'p, 't> () =
   [<DefaultValue>] val mutable internal PrevThe: DownPThe<'w, 'w, 'o, 'p, 't>
   [<DefaultValue>] val mutable internal NextAny: DownPAny<'w,     'o, 'p, 't>
   [<DefaultValue>] val mutable internal NextThe: DownPThe<'w, 'w, 'o, 'p, 't>
-  abstract Down: Up<'w, 't> * AsProduct<'p, 'o, 't> * byref<'p> -> Zipper<'w>
+  abstract Down: Up<'w, 't> * AsPairs<'p, 'o, 't> * byref<'p> -> Zipper<'w>
 
 and [<AbstractClass;AllowNullLiteral>] DownPThe<'w, 'h, 'o, 'p, 't> () =
   inherit DownPAny<'w, 'o, 'p, 't> ()
@@ -162,7 +162,7 @@ type [<InferenceRules>] Zipper () =
                     : DownP<'w, Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 't> =
     P (e @ r)
 
-  member z.Product (m: AsProduct<'p, 'o, 't>,
+  member z.Product (m: AsPairs<'p, 'o, 't>,
                     P downs: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
     let downs = Array.ofList downs
     let n = downs.Length
@@ -189,13 +189,13 @@ type [<InferenceRules>] Zipper () =
       match way with
        | null -> None
        | way ->
-         let mutable p = m.ToProduct t
+         let mutable p = m.ToPairs t
          way.Down (up, m, &p) |> Some
     let inline downThe (way: DownPThe<_, _, _, _, _>) up t =
       match way with
        | null -> None
        | way ->
-         let mutable p = m.ToProduct t
+         let mutable p = m.ToPairs t
          match way.Down (up, m, &p) with
           | :? Zipper<'w, 'w> as z -> Some z
           | _ -> failwith "Bug"
@@ -222,7 +222,7 @@ type [<InferenceRules>] Zipper () =
                        : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't> =
     U (pD @ oD)
 
-  member z.Sum (m: AsSum<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
+  member z.Sum (m: AsChoices<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
     let cs = Array.ofList u
     {new Down<'w, 't> () with
       override d.DownHeadAny (up, u) = cs.[m.Tag u].DownHeadAny (up, u)

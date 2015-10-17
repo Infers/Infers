@@ -287,13 +287,13 @@ module Products =
         emitCtor >>
         Builder.emit (OpCodes.Ret))
 
-  let asProductField (t: Type)
-                     (emitCtor: ILGenerator -> ILGenerator)
-                     (props: array<PropertyInfo>)
-                     (products: array<Type>)
-                     (defineRest: Builder<unit>) =
+  let asPairsField (t: Type)
+                   (emitCtor: ILGenerator -> ILGenerator)
+                   (props: array<PropertyInfo>)
+                   (products: array<Type>)
+                   (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsProduct<_, _, _>>.MakeGenericType [|products.[0]; t; t|])
+     (typedefof<AsPairs<_, _, _>>.MakeGenericType [|products.[0]; t; t|])
      [|box props.Length
        box (props |> Array.exists (fun p -> p.CanWrite))|]
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
@@ -304,11 +304,11 @@ module Products =
 module Unions =
   let choices ts = build typedefof<Choice<_, _>> ts
 
-  let asSumField (t: Type)
-                 (choices: array<Type>)
-                 (defineRest: Builder<unit>) =
+  let asChoicesField (t: Type)
+                     (choices: array<Type>)
+                     (defineRest: Builder<unit>) =
     Builder.metaField
-     (typedefof<AsSum<_, _>>.MakeGenericType [|choices.[0]; t|])
+     (typedefof<AsChoices<_, _>>.MakeGenericType [|choices.[0]; t|])
      [|box choices.Length|]
      ((match FSharpValue.PreComputeUnionTagMemberInfo
               (t, BindingFlags.Any) with
@@ -336,7 +336,7 @@ type [<InferenceRules>] Rep () =
           Products.products (fields |> Array.map (fun p -> p.PropertyType))
 
         Builder.metaType typeof<Record<'t>> [||]
-         (Products.asProductField t
+         (Products.asPairsField t
            (Builder.emit
              (OpCodes.Newobj,
               FSharpValue.PreComputeRecordConstructorInfo
@@ -371,7 +371,7 @@ type [<InferenceRules>] Rep () =
           |> Unions.choices
 
         Builder.metaType typeof<Union<'t>> [||]
-         (Unions.asSumField t choices
+         (Unions.asChoicesField t choices
            (Builder.forTo 0 (cases.Length-1) (fun i ->
              Builder.metaField
               (typedefof<Case<_, _, _>>.MakeGenericType
@@ -406,7 +406,7 @@ type [<InferenceRules>] Rep () =
         let products = Products.products elems
 
         Builder.metaType typeof<Rep.Tuple<'t>> [||]
-         (Products.asProductField t
+         (Products.asPairsField t
            (Builder.emit
              (OpCodes.Newobj,
               match FSharpValue.PreComputeTupleConstructorInfo t with
@@ -434,10 +434,10 @@ type [<InferenceRules>] Rep () =
   member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
   member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
 
-  member this.asSum (_: Union<'t>, c: AsSum<'s, 't>) = c
-  member this.asProduct (_: Product<'t>, p: AsProduct<'p, 'o, 't>) = p
-  member this.viewAsProduct (_: AsSum<'p, 't>, m: Case<'p, 'p, 't>) =
-    m :> AsProduct<'p, 'p, 't>
+  member this.asChoices (_: Union<'t>, c: AsChoices<'s, 't>) = c
+  member this.asPairs (_: Product<'t>, p: AsPairs<'p, 'o, 't>) = p
+  member this.viewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
+    m :> AsPairs<'p, 'p, 't>
 
   member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
     i :> Elem<'e, 'r, 't, 't>

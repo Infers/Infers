@@ -16,4 +16,4 @@ type [<InferenceRules>] Rec =
   member Pair: RecP<     'e     , Pair<'e, 'r>, 'o, 't>
              * RecP<         'r ,          'r , 'o, 't>
             -> RecP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
-  member Product: Rep * AsProduct<'p, 'o, 't> * RecP<'p, 'p, 'o, 't> -> Rec<'t>
+  member Product: Rep * AsPairs<'p, 'o, 't> * RecP<'p, 'p, 'o, 't> -> Rec<'t>

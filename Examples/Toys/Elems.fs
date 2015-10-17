@@ -28,7 +28,7 @@ type [<InferenceRules>] Fetch () =
      | (Hit (n, e), Miss) | (Miss, Hit (n, e)) -> Hit (n, e)
      | (Hit (numE, extE), Hit (numR, extR)) ->
        Hit (numE + numR, fun w i hs -> extE w i hs; extR w (i + numE) hs)
-  member g.Product (_: AsProduct<'p, 'o, 'w>, pF: FetchP<'p, 'p, 'o, 'h, 'w>) =
+  member g.Product (_: AsPairs<'p, 'o, 'w>, pF: FetchP<'p, 'p, 'o, 'h, 'w>) =
     match pF with
      | Miss -> missE
      | Hit (n, ext) -> fun w -> let hs = Array.zeroCreate n in ext w 0 hs; hs
@@ -39,7 +39,7 @@ type [<InferenceRules>] Fetch () =
   member g.Choice (SE pF: FetchS<       'p     , Choice<'p, 'o>, 'h, 'w>,
                    SE oF: FetchS<           'o ,            'o , 'h, 'w>) =
     SE (pF @ oF)        : FetchS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-  member g.Sum (m: AsSum<'s, 'w>, SE sF: FetchS<'s, 's, 'h, 'w>) =
+  member g.Sum (m: AsChoices<'s, 'w>, SE sF: FetchS<'s, 's, 'h, 'w>) =
     let sF = Array.ofList sF
     fun w -> sF.[m.Tag w] w
 
@@ -86,11 +86,11 @@ type [<InferenceRules>] Subst () =
        {new SubstP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'h, 'w> () with
           member t.Subst (hs, i, r) =
            rS.Subst (hs, eS.Subst (hs, i, &r), &r.Rest)}
-  member g.Product (m: AsProduct<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
+  member g.Product (m: AsPairs<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
     match pS with
      | null -> missS
      | pS -> fun hs w ->
-       let mutable r = m.ToProduct w
+       let mutable r = m.ToPairs w
        check hs <| pS.Subst (hs, 0, &r)
        m.Create (&r)
   member g.Case (_: Case<Empty, 'o, 'w>) : SubstS<Empty, 'o, 'h, 'w> =
@@ -100,7 +100,7 @@ type [<InferenceRules>] Subst () =
   member g.Choice (SS pS: SubstS<       'p     , Choice<'p, 'o>, 'h, 'w>,
                    SS oS: SubstS<           'o ,            'o , 'h, 'w>) =
     SS (pS @ oS)        : SubstS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-  member g.Sum (m: AsSum<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
+  member g.Sum (m: AsChoices<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
     let s = Array.ofList s
     fun hs w -> s.[m.Tag w] hs w
 

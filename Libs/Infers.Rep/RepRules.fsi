@@ -9,7 +9,7 @@ type [<InferenceRules>] Rep =
   /// Default constructor.
   new: unit -> Rep
 
-  /// Attempts to construct a type representation for the type `'t`.
+  /// Construct a type representation for the type `'t`.
   member rep: unit -> Rep<'t>
 
   /// Attempts to constructs a union type representation for the type `'t`.
@@ -21,20 +21,20 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a record type representation for the type `'t`.
   member record: Rep<'t> -> Record<'t>
 
+  /// Attempts to constructs a tuple type representation for the type `'t`.
+  member tuple: Rep<'t> -> Tuple<'t>
+
   /// Attempts to construct a primitive type representation for the type `'t`.
   member prim: Rep<'t> -> Prim<'t>
 
-  /// Attempts to construct a nested sum for the type `'t`'.
-  member asSum: Union<'t> * AsSum<'s, 't> -> AsSum<'s, 't>
+  /// Construct a representation as nested choices for the type `'t`'.
+  member asChoices: Union<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
 
-  /// Attempts to construct a nested product for the type `'t`'.
-  member asProduct: Product<'t> * AsProduct<'p, 'o, 't> -> AsProduct<'p, 'o, 't>
+  /// Construct a representation as nested pairs for the type `'t`'.
+  member asPairs: Product<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
 
-  /// View a single case union type as a product type.
-  member viewAsProduct: AsSum<'p, 't> * Case<'p, 'p, 't> -> AsProduct<'p, 'p, 't>
-
-  /// Attempts to constructs a tuple type representation for the type `'t`.
-  member tuple: Rep<'t> -> Tuple<'t>
+  /// View a single case union type as nested pairs.
+  member viewAsPairs: AsChoices<'p, 't> * Case<'p, 'p, 't> -> AsPairs<'p, 'p, 't>
 
   /// Trivially view a labelled elem as an elem.
   member asElem: Labelled<'e, 'r, 'o, 't> -> Elem<'e, 'r, 'o, 't>

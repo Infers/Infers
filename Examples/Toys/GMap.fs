@@ -25,8 +25,8 @@ type [<InferenceRules>] GMap () =
                      : GMP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'w, 'h> =
     P <| fun h2h (Pair (e, r)) -> Pair (eG h2h e, rG h2h r)
 
-  member g.Product (m: AsProduct<'p, 'o, 'w>, P rG: GMP<'p, 'p, 'o, 'w, 'h>) =
-    {gm = fun h2h -> m.ToProduct >> rG h2h >> m.OfProduct}
+  member g.Product (m: AsPairs<'p, 'o, 'w>, P rG: GMP<'p, 'p, 'o, 'w, 'h>) =
+    {gm = fun h2h -> m.ToPairs >> rG h2h >> m.OfPairs}
 
   member g.Case (_: Case<Empty, 'o, 'w>) : GMS<Empty, 'o, 'w, 'h> =
     S [fun _ -> id]
@@ -38,7 +38,7 @@ type [<InferenceRules>] GMap () =
                    S oG: GMS<           'o ,            'o , 'w, 'h>) =
     S (pG @ oG)        : GMS<Choice<'p, 'o>, Choice<'p, 'o>, 'w, 'h>
 
-  member g.Sum (m: AsSum<'s, 'w>, S sG: GMS<'s, 's, 'w, 'h>) =
+  member g.Sum (m: AsChoices<'s, 'w>, S sG: GMS<'s, 's, 'w, 'h>) =
     let sG = Array.ofList sG
     {gm = fun h2h w -> sG.[m.Tag w] h2h w}
 
