@@ -9,18 +9,22 @@ open System
 
 ////////////////////////////////////////////////////////////////////////////////
 
+module Dictionary =
+  let inline getOr (d: Dictionary<_, _>) k u2v =
+    let mutable v = Unchecked.defaultof<_>
+    if d.TryGetValue (k, &v) |> not then
+      v <- u2v ()
+      d.Add (k, v)
+    v
+
 module Fresh =
   let mutable private counter = 0L
 
   let newMapper () =
     let v2w = Dictionary<_, _> ()
     fun v ->
-      match v2w.TryGetValue v with
-       | (true, w) -> w
-       | (false, _) ->
-         let w = Interlocked.Increment &counter
-         v2w.Add (v, w)
-         w
+      Dictionary.getOr v2w v <| fun () ->
+        Interlocked.Increment &counter
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -112,19 +116,14 @@ module RuleSet =
       tys
       |> List.fold (fun r t -> HashEqSet.add t r) ruleSet.rules
     let tree =
-      match ruleSet.cache.trees.TryGetValue rules with
-       | (true, tree) -> tree
-       | (false, _) ->
-         let tree =
-           lazy (rules
-                 |> HashEqSet.toSeq
-                 |> Seq.collect (fun t ->
-                    ruleSet.cache.rules.[t]
-                    |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                 |> TyTree.build
-                 |> force)
-         ruleSet.cache.trees.Add (rules, tree)
-         tree
+      Dictionary.getOr ruleSet.cache.trees rules <| fun () ->
+        lazy (rules
+              |> HashEqSet.toSeq
+              |> Seq.collect (fun t ->
+                 ruleSet.cache.rules.[t]
+                 |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+              |> TyTree.build
+              |> force)
     {ruleSet with rules = rules; tree = tree}
 
   let maybeAddRulesTy ty ruleSet =
