@@ -2,6 +2,7 @@
 
 namespace Infers
 
+open System.Threading
 open System.Collections.Generic
 open System.Reflection
 open System
@@ -17,13 +18,13 @@ module Fresh =
       match v2w.TryGetValue v with
        | (true, w) -> w
        | (false, _) ->
-         let w = System.Threading.Interlocked.Increment &counter
+         let w = Interlocked.Increment &counter
          v2w.Add (v, w)
          w
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type Rule<'v> =
+type [<AbstractClass>] Rule<'v> () =
   abstract ReturnType: Ty<'v>
   abstract ParTypes: array<Ty<'v>>
   abstract GenericArgTypes: array<Ty<'v>>
@@ -34,7 +35,7 @@ module Rule =
     let returnType = Ty.mapVars v2w rule.ReturnType
     let parTypes = lazy Array.map (Ty.mapVars v2w) rule.ParTypes
     let genericArgTypes = lazy Array.map (Ty.mapVars v2w) rule.GenericArgTypes
-    {new Rule<_> with
+    {new Rule<_> () with
       member ir.ReturnType = returnType
       member ir.ParTypes = parTypes.Force ()
       member ir.GenericArgTypes = genericArgTypes.Force ()
@@ -43,29 +44,6 @@ module Rule =
 
   let freshVars (rule: Rule<Type>) : Rule<Int64> =
     mapVars (Fresh.newMapper ()) rule
-
-type RuleMethod (m: MethodInfo, o: obj) =
-  let returnType = Ty.ofType m.ReturnType
-  let parTypes =
-    lazy (m.GetParameters ()
-          |> Array.map (fun p -> Ty.ofType p.ParameterType))
-  let genArgs =
-    lazy if m.ContainsGenericParameters
-         then m.GetGenericArguments () |> Array.map Ty.ofType
-         else [||]
-  interface Rule<Type> with
-   member ir.ReturnType = returnType
-   member ir.ParTypes = parTypes.Force ()
-   member ir.GenericArgTypes = genArgs.Force ()
-   member ir.Invoke (genArgTys, _, argObjs) =
-    let m = if m.ContainsGenericParameters
-            then m.MakeGenericMethod genArgTys
-            else m
-    try m.Invoke (o, argObjs) |> Some
-    with :? TargetInvocationException as e ->
-      match e.InnerException with
-       | Backtrack -> None
-       | e -> raise <| Exception ("Rule raised an exception.", e)
 
 module RuleSet =
   type Rules<'x> = Rules'1
@@ -94,12 +72,34 @@ module RuleSet =
     then rulesTy t :: ruleClassesOf t.BaseType
     else []
 
+  type B = BindingFlags
+
   let rulesOf o (t: Type) =
     let t = tyOfRulesTy t
-    t.GetMethods BindingFlags.AnyDeclaredInstance
-    |> Array.filter (fun r -> not r.IsAbstract)
-    |> Array.map (fun r ->
-       RuleMethod (r, o) :> Rule<_>)
+    t.GetMethods (B.DeclaredOnly ||| B.Instance ||| B.Public ||| B.NonPublic)
+    |> Array.filter (fun m -> not m.IsAbstract)
+    |> Array.map (fun m ->
+       let returnType = Ty.ofType m.ReturnType
+       let parTypes =
+         lazy (m.GetParameters ()
+               |> Array.map (fun p -> Ty.ofType p.ParameterType))
+       let genArgs =
+         lazy if m.ContainsGenericParameters
+              then m.GetGenericArguments () |> Array.map Ty.ofType
+              else [||]
+       {new Rule<_> () with
+         member ir.ReturnType = returnType
+         member ir.ParTypes = parTypes.Force ()
+         member ir.GenericArgTypes = genArgs.Force ()
+         member ir.Invoke (genArgTys, _, argObjs) =
+          let m = if m.ContainsGenericParameters
+                  then m.MakeGenericMethod genArgTys
+                  else m
+          try m.Invoke (o, argObjs) |> Some
+          with :? TargetInvocationException as e ->
+            match e.InnerException with
+             | Backtrack -> None
+             | e -> raise <| Exception ("Rule raised an exception.", e)})
 
   let newEmpty () =
     {cache = {rules = Dictionary<_, _> ()
@@ -143,7 +143,7 @@ module RuleSet =
                 lazy if tc.ContainsGenericParameters
                      then tc.GetGenericArguments () |> Array.map Ty.ofType
                      else [||]
-              {new Rule<Type> with
+              {new Rule<_> () with
                 member t.ReturnType = returnType
                 member t.ParTypes = parTypes.Force ()
                 member t.GenericArgTypes = genArgs.Force ()

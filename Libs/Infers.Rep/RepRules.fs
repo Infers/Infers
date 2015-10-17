@@ -13,12 +13,11 @@ open Infers
 
 ////////////////////////////////////////////////////////////////////////////////
 
-module BindingFlags =
-  type B = System.Reflection.BindingFlags
-  let [<Literal>] Any = B.Public ||| B.NonPublic
-  let [<Literal>] DeclaredInstance = B.DeclaredOnly ||| B.Instance
-  let [<Literal>] AnyDeclaredInstance = Any ||| DeclaredInstance
-  let [<Literal>] PublicDeclaredInstance = B.Public ||| DeclaredInstance
+type B = BindingFlags
+type C = CallingConventions
+type F = FieldAttributes
+type M = MethodAttributes
+type T = TypeAttributes
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -72,23 +71,16 @@ type Builder =
                          (basePars: array<obj>)
                          (builder: Builder<unit>) =
     lock repModule <| fun () ->
-    let typeBuilder =
-      repModule.DefineType
-       (uniqueName (),
-        TypeAttributes.Public,
-        baseType)
+    let typeBuilder = repModule.DefineType (uniqueName (), T.Public, baseType)
     let (values, ()) = builder (typeBuilder, [])
     let baseArgTypes =
       match baseType.GetConstructors
-              (BindingFlags.Any ||| BindingFlags.Instance) with
+             (B.Instance ||| B.Public ||| B.NonPublic) with
        | [|baseCtor|] when baseCtor.GetParameters().Length = basePars.Length ->
          let baseArgTypes =
            baseCtor.GetParameters () |> Array.map (fun p -> p.ParameterType)
          let ctor =
-           typeBuilder.DefineConstructor
-            (MethodAttributes.Public,
-             CallingConventions.Standard,
-             baseArgTypes)
+           typeBuilder.DefineConstructor (M.Public, C.Standard, baseArgTypes)
          let ilGen = ctor.GetILGenerator ()
          for i=0 to basePars.Length do
            ilGen.Emit (OpCodes.Ldarg, i)
@@ -101,12 +93,7 @@ type Builder =
           baseType basePars.Length cs
     values
     |> List.iter (fun (name, field, baseType, _) ->
-       let meth =
-         typeBuilder.DefineMethod
-          (name,
-           MethodAttributes.Public,
-           baseType,
-           [||])
+       let meth = typeBuilder.DefineMethod (name, M.Public, baseType, [||])
        let ilGen = meth.GetILGenerator ()
        ilGen.Emit (OpCodes.Ldsfld, field)
        ilGen.Emit (OpCodes.Ret))
@@ -138,11 +125,7 @@ type Builder =
   static member metaField baseType basePars (definition: Builder<unit>) =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let name = uniqueName ()
-    let fb =
-      typeBuilder.DefineField
-       (name,
-        baseType,
-        FieldAttributes.Static ||| FieldAttributes.Public)
+    let fb = typeBuilder.DefineField (name, baseType, F.Static ||| F.Public)
     Builder.metaValue
      name fb baseType
      (Builder.metaType baseType basePars definition)
@@ -166,12 +149,7 @@ type Builder =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let methodBuilder =
       typeBuilder.DefineMethod
-       (name,
-        MethodAttributes.Public
-        ||| MethodAttributes.HideBySig
-        ||| MethodAttributes.Virtual,
-        resultType,
-        paramTypes)
+       (name, M.Public ||| M.HideBySig ||| M.Virtual, resultType, paramTypes)
     let ilgen = methodBuilder.GetILGenerator ()
     code ilgen |> ignore
     Builder.result ()
@@ -311,7 +289,7 @@ module Unions =
      (typedefof<AsChoices<_, _>>.MakeGenericType [|choices.[0]; t|])
      [|box choices.Length|]
      ((match FSharpValue.PreComputeUnionTagMemberInfo
-              (t, BindingFlags.Any) with
+              (t, B.Public ||| B.NonPublic) with
         | :? PropertyInfo as prop ->
           Builder.overrideGetMethod "Tag" t prop
         | :? MethodInfo as meth when meth.IsStatic ->
@@ -330,8 +308,8 @@ type [<InferenceRules>] Rep () =
     let t = typeof<'t>
 
     match
-      if FSharpType.IsRecord (t, BindingFlags.Any) then
-        let fields = FSharpType.GetRecordFields (t, BindingFlags.Any)
+      if FSharpType.IsRecord (t, B.Public ||| B.NonPublic) then
+        let fields = FSharpType.GetRecordFields (t, B.Public ||| B.NonPublic)
         let products =
           Products.products (fields |> Array.map (fun p -> p.PropertyType))
 
@@ -340,7 +318,7 @@ type [<InferenceRules>] Rep () =
            (Builder.emit
              (OpCodes.Newobj,
               FSharpValue.PreComputeRecordConstructorInfo
-               (t, BindingFlags.Any)))
+               (t, B.Public ||| B.NonPublic)))
            fields
            products
            (Builder.forTo 0 (fields.Length-1) (fun i ->
@@ -351,10 +329,8 @@ type [<InferenceRules>] Rep () =
                [|box i; fields.[i].Name; box fields.[i].CanWrite|]
                (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
                 Builder.overrideSetMethodWhenCanWrite "Set" fields.[i]))))
-      elif FSharpType.IsUnion (t, BindingFlags.Any) then
-        let cases =
-          FSharpType.GetUnionCases
-           (t, BindingFlags.Public ||| BindingFlags.NonPublic)
+      elif FSharpType.IsUnion (t, B.Public ||| B.NonPublic) then
+        let cases = FSharpType.GetUnionCases (t, B.Public ||| B.NonPublic)
         let caseFields =
           cases
           |> Array.map (fun case ->
@@ -382,7 +358,7 @@ type [<InferenceRules>] Rep () =
                 (Builder.emit
                   (OpCodes.Call,
                    FSharpValue.PreComputeUnionConstructorInfo
-                    (cases.[i], BindingFlags.Any)))
+                    (cases.[i], B.Public ||| B.NonPublic)))
                 caseFields.[i]
                 caseProducts.[i] >>= fun () ->
                Builder.forTo 0 (caseFields.[i].Length-1) (fun j ->

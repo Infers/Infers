@@ -165,21 +165,6 @@ module HashEqMap =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Additional `BindingFlags` combinations.
-module BindingFlags =
-  type B = System.Reflection.BindingFlags
-
-  /// Both public and non-public members.
-  let [<Literal>] Any = B.Public ||| B.NonPublic
-  /// Only declared and instance members.
-  let [<Literal>] DeclaredInstance = B.DeclaredOnly ||| B.Instance
-  /// Only declared instance members that may be either public or non-public.
-  let [<Literal>] AnyDeclaredInstance = Any ||| DeclaredInstance
-  /// Only public declared instance members.
-  let [<Literal>] PublicDeclaredInstance = B.Public ||| DeclaredInstance
-
-////////////////////////////////////////////////////////////////////////////////
-
 /// An untyped helper interface for dealing with recursion proxies.
 type IRecObj =
   abstract GetObj: unit -> obj
