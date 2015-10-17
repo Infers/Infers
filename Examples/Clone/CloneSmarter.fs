@@ -110,11 +110,10 @@ type [<InferenceRules>] Clone () =
   // Rules for product types ---------------------------------------------------
 
   /// A rule for cloning an arbitrary product (tuple, record or union case).
-  member t.Product (product: Product<'t>,
-                    asProduct: AsProduct<'p, 'o, 't>,
+  member t.Product (asProduct: AsProduct<'p, 'o, 't>,
                     cloneProduct': CloneP<'p, 'p, 'o, 't>) =
     // Do we need to copy something?
-    match (product.IsMutable, cloneProduct') with
+    match (asProduct.IsMutable, cloneProduct') with
      | (false, null) ->
        null
      | (isMutable, cloneProduct) ->
@@ -165,9 +164,8 @@ type [<InferenceRules>] Clone () =
   // Rules for sum types -------------------------------------------------------
 
   /// A rule for cloning an arbitrary sum type.
-  member t.Sum (union: Union<'t>,
-                _: AsSum<'cs, 't>,
-                CloneS cloneSum: CloneS<'cs, 'cs, 't>) =
+  member t.Sum (asSum: AsSum<'s, 't>,
+                CloneS cloneSum: CloneS<'s, 's, 't>) =
     /// Is there something to copy?
     if List.forall ((=) null) cloneSum then
       null
@@ -184,7 +182,7 @@ type [<InferenceRules>] Clone () =
       {new CloneSmarter<'t> () with
         override t.Clone (original) =
           // First we extract the case index.
-          let caseIndex = union.Tag original
+          let caseIndex = asSum.Tag original
           // And then we invoke the case specific cloning function.
           cloneSum.[caseIndex].Clone (original)}
 

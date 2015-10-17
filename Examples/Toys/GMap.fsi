@@ -34,6 +34,6 @@ type [<InferenceRules>] GMap =
                * GMS<           'o ,            'o , 'w, 'h>
               -> GMS<Choice<'p, 'o>, Choice<'p, 'o>, 'w, 'h>
 
-  member Sum: Union<'w> * AsSum<'s, 'w> * GMS<'s, 's, 'w, 'h> -> GM<'w, 'h>
+  member Sum: AsSum<'s, 'w> * GMS<'s, 's, 'w, 'h> -> GM<'w, 'h>
 
 val gmap: ('h -> 'h) -> 'w -> 'w

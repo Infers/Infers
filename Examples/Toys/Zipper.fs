@@ -222,7 +222,7 @@ type [<InferenceRules>] Zipper () =
                        : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't> =
     U (pD @ oD)
 
-  member z.Sum (m: Union<'t>, _: AsSum<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
+  member z.Sum (m: AsSum<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
     let cs = Array.ofList u
     {new Down<'w, 't> () with
       override d.DownHeadAny (up, u) = cs.[m.Tag u].DownHeadAny (up, u)

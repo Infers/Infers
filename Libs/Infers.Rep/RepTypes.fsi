@@ -19,7 +19,7 @@ open Infers
 /// Represents an empty product as a special case for union cases.
 type Empty = struct end
 
-/// Represents a pair of the types `'x` and `'xs`.
+/// Represents a pair of the types `'e` and `'r`.
 #if DOC
 ///
 /// Note that the idea behind using a struct type is to make it possible to
@@ -45,20 +45,20 @@ type Empty = struct end
 /// this so that the processing of the singleton `Elem` field and the remainder
 /// product `Rest` can be done in the desired order.
 #endif
-type [<Struct>] Pair<'x, 'xs> =
+type [<Struct>] Pair<'e, 'r> =
   /// The current element.
-  val mutable Elem: 'x
+  val mutable Elem: 'e
 
   /// The remainder of the product.
-  val mutable Rest: 'xs
+  val mutable Rest: 'r
 
   /// Constructs a pair.
-  new: 'x * 'xs -> Pair<'x, 'xs>
+  new: 'e * 'r -> Pair<'e, 'r>
 
 [<AutoOpen>]
 module Pair =
   /// Active pattern for convenient matching of pair structs.
-  val inline (|Pair|): Pair<'x, 'xs> -> 'x * 'xs
+  val inline (|Pair|): Pair<'e, 'r> -> 'e * 'r
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -77,6 +77,12 @@ module Pair =
 /// signature in F#.
 #endif
 type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
+  /// The number of elements the product type has.
+  val Arity: int
+
+  /// Whether the product type is mutable.
+  val IsMutable: bool
+
   /// Copies the fields of the type `'t` to the generic product of type `'p`.
   abstract Extract: 't * byref<'p> -> unit
 
@@ -92,36 +98,37 @@ type [<AbstractClass; InferenceRules>] AsProduct<'p, 'o, 't> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation of the type `'u` as nested choices of type `'c`.
+/// Representation of the type `'t` as nested choices of type `'s`.
 #if DOC
 ///
 /// A choice object also contains members for accessing individual cases of the
 /// choice.  Those members are of the form
 ///
-///> member _: Case<'lp, 'sc, 'u>
+///> member _: Case<'p, 'o, 't>
 ///
-/// where `'lp` is a representation of the case as product and `'sc` is a nested
+/// where `'p` is a representation of the case as a product and `'o` is a nested
 /// choice that identifies the particular case.
 #endif
-type [<AbstractClass; InferenceRules>] AsSum<'c, 'u> = class
-  /// 
-//  abstract ToSum: 'u -> 'c
+type [<AbstractClass; InferenceRules>] AsSum<'s, 't> =
+  /// The number of cases the discriminated union type `'t` has.
+  val Arity: int
 
-  ///
+  /// Returns the integer tag of the given discriminated union value.
+  abstract Tag: 't -> int
+
+//  abstract ToSum: 'u -> 'c
 //  abstract OfSum: 'c -> 'u
-  end
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Base class for type representations.
-type [<InferenceRules>] Rep<'x> = class
-  end
+type [<InferenceRules>] Rep<'t> = class end
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Representation for primitive types.
-type [<AbstractClass>] Prim<'x> =
-  inherit Rep<'x>
+type [<AbstractClass>] Prim<'t> =
+  inherit Rep<'t>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -130,25 +137,19 @@ type [<AbstractClass>] Prim<'x> =
 ///
 /// A product object also contains a member of the form
 ///
-///> member _: AsProduct<'p, 't>
+///> member _: AsProduct<'p, 't, 't>
 ///
 /// where the type `'p` is a representation of the product as a nested record.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
 ///
-/// See also `Union<'u>`.
+/// See also `Union<'t>`.
 #endif
 type [<AbstractClass>] Product<'t> =
   inherit Rep<'t>
 
-  /// The number of elements the product type has.
-  val Arity: int
-
-  /// Whether the product type is mutable.
-  val IsMutable: bool
-
 /// Representation of an element of type `'e` of the product type `'t`.
-type [<AbstractClass>] Elem<'e, 'p, 'c, 't> =
+type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
   /// The index of the element.
   val Index: int
 
@@ -156,8 +157,8 @@ type [<AbstractClass>] Elem<'e, 'p, 'c, 't> =
   abstract Get: 't -> 'e
 
 /// Representation of a possibly labelled element of type `'e`.
-type [<AbstractClass>] Labelled<'e, 'p, 'c, 't> =
-  inherit Elem<'e, 'p, 'c, 't>
+type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
+  inherit Elem<'e, 'r, 'o, 't>
   
   /// The name of the label.
   val Name: string
@@ -169,19 +170,19 @@ type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
 
 /// Representation of an element of type `'e` of a tuple of type `'t`.
-type [<AbstractClass>] Item<'e, 'p, 't> =
-  inherit Elem<'e, 'p, 't, 't>
+type [<AbstractClass>] Item<'e, 'r, 't> =
+  inherit Elem<'e, 'r, 't, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Type representation for the F# discriminated union type `'u`.
+/// Type representation for the F# discriminated union type `'t`.
 #if DOC
 ///
 /// A union object also contains a member of the form
 ///
-///> member _: AsSum<'c, 'u>
+///> member _: AsSum<'s, 't>
 ///
-/// where type `'c` is a representation of the union as nested binary choices.
+/// where type `'s` is a representation of the union as nested binary choices.
 /// The member is visible to inference rules, but it cannot be given a signature
 /// in F#.
 ///
@@ -193,52 +194,45 @@ type [<AbstractClass>] Item<'e, 'p, 't> =
 ///
 /// can be viewed as a product
 ///
-///> AsProduct<And<int, And<string, float>>, foo>
+///> AsProduct<Pair<int, Pair<string, float>>,
+///>           Pair<int, Pair<string, float>>,
+///>           foo>
 ///
 /// and the `Rep.viewAsProduct` rule provides this directly.  If you need to
 /// handle product types and union types separately, say in a pretty printing
 /// generic, you should have the `Union<_>` and `Product<_>` predicates in your
 /// rules.
 #endif
-type [<AbstractClass>] Union<'u> =
-  inherit Rep<'u>
+type [<AbstractClass>] Union<'t> =
+  inherit Rep<'t>
 
-  /// The number of cases the discriminated union type `'u` has.
-  val Arity: int
-
-  /// Returns the integer tag of the given discriminated union value.
-  abstract Tag: 'u -> int
-
-/// Representation of a case of the F# discriminated union type `'u`.
-type [<AbstractClass>] Case<'p, 'o, 'u> =
-  inherit AsProduct<'p, 'o, 'u>
+/// Representation of a case of the F# discriminated union type `'t`.
+type [<AbstractClass>] Case<'p, 'o, 't> =
+  inherit AsProduct<'p, 'o, 't>
 
   /// The name of the case.
   val Name: string
 
-  /// The number of elements, or labels, the case contains.
-  val Arity: int
-
   /// The integer tag of the case.
   val Tag: int
 
-/// Representation of a possibly labelled element of type `'l` of a case of the
-/// F# discriminated union type `'u`.
-type [<AbstractClass>] Label<'l, 'sp, 'sc, 'u> =
-  inherit Labelled<'l, 'sp, 'sc, 'u>
+/// Representation of a possibly labelled element of type `'e` of a case of the
+/// F# discriminated union type `'t`.
+type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
+  inherit Labelled<'e, 'r, 'o, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Type representation for the F# record type `'r`.
-type [<AbstractClass>] Record<'r> =
-  inherit Product<'r>
+/// Type representation for the F# record type `'t`.
+type [<AbstractClass>] Record<'t> =
+  inherit Product<'t>
 
-/// Representation of a field of type `'f` of the record type `'r`.
-type [<AbstractClass>] Field<'f, 'sp, 'r> =
-  inherit Labelled<'f, 'sp, 'r, 'r>
+/// Representation of a field of type `'e` of the record type `'t`.
+type [<AbstractClass>] Field<'e, 'r, 't> =
+  inherit Labelled<'e, 'r, 't, 't>
 
   /// Whether the field is mutable.
   val IsMutable: bool
 
   /// Sets the value of the field assuming this is a mutable field.
-  abstract Set: 'r * 'f -> unit
+  abstract Set: 't * 'e -> unit

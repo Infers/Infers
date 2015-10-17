@@ -10,8 +10,10 @@ let time ef =
   printf "Took %A\n\n" start.Elapsed
 
 module GMap =
+  type P = {name: string; number: int}
+
   let test () : unit =
-    GMap.gmap ((+) 1) [("vesa", 1)] |> printfn "%A"
+    GMap.gmap ((+) 1) [{name = "vesa"; number = 1}] |> printfn "%A"
     GMap.gmap (fun (x: string) -> x.ToUpper ()) [("vesa", 1)] |> printfn "%A"
 
 module Zipper =

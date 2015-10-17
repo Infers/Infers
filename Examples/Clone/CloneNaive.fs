@@ -83,16 +83,15 @@ type [<InferenceRules>] Clone () =
   // Rules for sum types -------------------------------------------------------
 
   /// A rule for cloning an arbitrary sum type.
-  member this.Sum (union: Union<'t>,
-                   _: AsSum<'cs, 't>,
-                   CloneS cloneSum: CloneS<'cs, 'cs, 't>) =
+  member this.Sum (asSum: AsSum<'s, 't>,
+                   CloneS cloneSum: CloneS<'s, 's, 't>) =
     // First we stage an array for fast indexing of cases.  It is important that
     // we do this outside of the cloning function that we actually return.
     let cases = Array.ofList cloneSum
     // The cloning function.
     fun original ->
       // First we extract the case index.
-      let caseIndex = union.Tag original
+      let caseIndex = asSum.Tag original
       // And then we invoke the case specific cloning function.
       cases.[caseIndex] original
 
@@ -100,12 +99,12 @@ type [<InferenceRules>] Clone () =
   ///
   /// Note that the type for the result is not the type that would be inferred
   /// by F#, so specifying the result type here is necessary.
-  member this.Choice (CloneS cloneCase:  CloneS<       'c,       Choice<'c, 'cs>, 't>,
-                      CloneS cloneCases: CloneS<           'cs,             'cs , 't>)
-                                       : CloneS<Choice<'c, 'cs>, Choice<'c, 'cs>, 't> =
+  member this.Choice (CloneS cloneP: CloneS<       'p,      Choice<'p, 'o>, 't>,
+                      CloneS cloneO: CloneS<           'o,             'o , 't>)
+                                   : CloneS<Choice<'p, 'o>, Choice<'p, 'o>, 't> =
    // We just concatenate the individual case (of length 1) and the other cases
    // together.
-   CloneS (cloneCase @ cloneCases)
+   CloneS (cloneP @ cloneO)
 
   /// A rule for cloning a non-nullary union case.
   member this.Case (case: Case<'p, 'o, 't>,

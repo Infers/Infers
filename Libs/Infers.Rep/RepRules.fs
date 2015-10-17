@@ -294,7 +294,8 @@ module Products =
                      (defineRest: Builder<unit>) =
     Builder.metaField
      (typedefof<AsProduct<_, _, _>>.MakeGenericType [|products.[0]; t; t|])
-     [||]
+     [|box props.Length
+       box (props |> Array.exists (fun p -> p.CanWrite))|]
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
       defineRest)
 
@@ -303,13 +304,24 @@ module Products =
 module Unions =
   let choices ts = build typedefof<Choice<_, _>> ts
 
-  let asChoiceField (t: Type)
-                    (choices: array<Type>)
-                    (defineRest: Builder<unit>) =
+  let asSumField (t: Type)
+                 (choices: array<Type>)
+                 (defineRest: Builder<unit>) =
     Builder.metaField
      (typedefof<AsSum<_, _>>.MakeGenericType [|choices.[0]; t|])
-     [||]
-     defineRest
+     [|box choices.Length|]
+     ((match FSharpValue.PreComputeUnionTagMemberInfo
+              (t, BindingFlags.Any) with
+        | :? PropertyInfo as prop ->
+          Builder.overrideGetMethod "Tag" t prop
+        | :? MethodInfo as meth when meth.IsStatic ->
+          Builder.overrideMethod "Tag" typeof<int> [|t|]
+           (Builder.emit (OpCodes.Ldarg_1) >>
+            Builder.emit (OpCodes.Call, meth) >>
+            Builder.emit (OpCodes.Ret))
+        | _ ->
+          failwith "Expected PropertyInfo or static MethodInfo.") >>= fun () ->
+      defineRest)
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -323,9 +335,7 @@ type [<InferenceRules>] Rep () =
         let products =
           Products.products (fields |> Array.map (fun p -> p.PropertyType))
 
-        Builder.metaType typeof<Record<'t>>
-         [|box fields.Length
-           box (fields |> Array.exists (fun p -> p.CanWrite))|]
+        Builder.metaType typeof<Record<'t>> [||]
          (Products.asProductField t
            (Builder.emit
              (OpCodes.Newobj,
@@ -360,19 +370,8 @@ type [<InferenceRules>] Rep () =
           |> Array.map (fun ts -> ts.[0])
           |> Unions.choices
 
-        Builder.metaType typeof<Union<'t>> [|box cases.Length|]
-         ((match FSharpValue.PreComputeUnionTagMemberInfo
-                  (t, BindingFlags.Any) with
-            | :? PropertyInfo as prop ->
-              Builder.overrideGetMethod "Tag" t prop
-            | :? MethodInfo as meth when meth.IsStatic ->
-              Builder.overrideMethod "Tag" typeof<int> [|t|]
-               (Builder.emit (OpCodes.Ldarg_1) >>
-                Builder.emit (OpCodes.Call, meth) >>
-                Builder.emit (OpCodes.Ret))
-            | _ ->
-              failwith "Expected PropertyInfo or static MethodInfo.") >>= fun () ->
-          Unions.asChoiceField t choices
+        Builder.metaType typeof<Union<'t>> [||]
+         (Unions.asSumField t choices
            (Builder.forTo 0 (cases.Length-1) (fun i ->
              Builder.metaField
               (typedefof<Case<_, _, _>>.MakeGenericType
@@ -406,7 +405,7 @@ type [<InferenceRules>] Rep () =
           t.GetProperty (sprintf "Item%d" (i + 1))
         let products = Products.products elems
 
-        Builder.metaType typeof<Rep.Tuple<'t>> [|box elems.Length|]
+        Builder.metaType typeof<Rep.Tuple<'t>> [||]
          (Products.asProductField t
            (Builder.emit
              (OpCodes.Newobj,
@@ -429,20 +428,20 @@ type [<InferenceRules>] Rep () =
     | _ ->
       failwith "Bug"
 
-  member this.union (rep: Rep<'u>) : Union<'u> = cast rep
-  member this.product (rep: Rep<'p>) : Product<'p> = cast rep
-  member this.record (rep: Rep<'r>) : Record<'r> = cast rep
+  member this.union (rep: Rep<'t>) : Union<'t> = cast rep
+  member this.product (rep: Rep<'t>) : Product<'t> = cast rep
+  member this.record (rep: Rep<'t>) : Record<'t> = cast rep
   member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
   member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
 
-  member this.asSum (_: Union<'t>, c: AsSum<'c, 't>) = c
+  member this.asSum (_: Union<'t>, c: AsSum<'s, 't>) = c
   member this.asProduct (_: Product<'t>, p: AsProduct<'p, 'o, 't>) = p
-  member this.viewAsProduct (_: AsSum<'p, 'u>, m: Case<'p, 'p, 'u>) =
-    m :> AsProduct<'p, 'p, 'u>
+  member this.viewAsProduct (_: AsSum<'p, 't>, m: Case<'p, 'p, 't>) =
+    m :> AsProduct<'p, 'p, 't>
 
-  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'p, 't>) =
-    i :> Elem<'e, 'p, 't, 't>
-  member this.asElem (l: Labelled<'e, 'p, 'c, 't>) = l :> Elem<'e, 'p, 'c, 't>
-  member this.asLabelled (f: Field<'f, 'p, 'r>) = f :> Labelled<'f, 'p, 'r, 'r>
-  member this.asLabelled (_: Union<'u>, l: Label<'l, 'sp, 'sc, 'u>) =
-    l :> Labelled<'l, 'sp, 'sc, 'u>
+  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
+    i :> Elem<'e, 'r, 't, 't>
+  member this.asElem (l: Labelled<'e, 'r, 'o, 't>) = l :> Elem<'e, 'r, 'o, 't>
+  member this.asLabelled (f: Field<'e, 'r, 't>) = f :> Labelled<'e, 'r, 't, 't>
+  member this.asLabelled (_: Union<'t>, l: Label<'e, 'r, 'o, 't>) =
+    l :> Labelled<'e, 'r, 'o, 't>

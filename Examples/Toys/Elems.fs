@@ -39,7 +39,7 @@ type [<InferenceRules>] Fetch () =
   member g.Choice (SE pF: FetchS<       'p     , Choice<'p, 'o>, 'h, 'w>,
                    SE oF: FetchS<           'o ,            'o , 'h, 'w>) =
     SE (pF @ oF)        : FetchS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-  member g.Sum (m: Union<'w>, _: AsSum<'s, 'w>, SE sF: FetchS<'s, 's, 'h, 'w>) =
+  member g.Sum (m: AsSum<'s, 'w>, SE sF: FetchS<'s, 's, 'h, 'w>) =
     let sF = Array.ofList sF
     fun w -> sF.[m.Tag w] w
 
@@ -100,7 +100,7 @@ type [<InferenceRules>] Subst () =
   member g.Choice (SS pS: SubstS<       'p     , Choice<'p, 'o>, 'h, 'w>,
                    SS oS: SubstS<           'o ,            'o , 'h, 'w>) =
     SS (pS @ oS)        : SubstS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-  member g.Sum (m: Union<'w>, _: AsSum<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
+  member g.Sum (m: AsSum<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
     let s = Array.ofList s
     fun hs w -> s.[m.Tag w] hs w
 

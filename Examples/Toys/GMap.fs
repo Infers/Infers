@@ -38,7 +38,7 @@ type [<InferenceRules>] GMap () =
                    S oG: GMS<           'o ,            'o , 'w, 'h>) =
     S (pG @ oG)        : GMS<Choice<'p, 'o>, Choice<'p, 'o>, 'w, 'h>
 
-  member g.Sum (m: Union<'w>, _: AsSum<'s, 'w>, S sG: GMS<'s, 's, 'w, 'h>) =
+  member g.Sum (m: AsSum<'s, 'w>, S sG: GMS<'s, 's, 'w, 'h>) =
     let sG = Array.ofList sG
     {gm = fun h2h w -> sG.[m.Tag w] h2h w}
 
