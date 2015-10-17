@@ -68,6 +68,14 @@ type RuleMethod (m: MethodInfo, o: obj) =
        | e -> raise <| Exception ("Rule raised an exception.", e)
 
 module RuleSet =
+  type Rules<'x> = Rules'1
+  let rulesTy t = typedefof<Rules<_>>.MakeGenericType [|t|]
+  let tyOfRulesTy (t: Type) =
+    if not t.IsGenericType ||
+       t.GetGenericTypeDefinition () <> typedefof<Rules<_>>
+    then failwith "Bug"
+    else t.GetGenericArguments().[0]
+
   type Cache =
     {rules: Dictionary<Type, array<Rule<Type>>>
      trees: Dictionary<HashEqSet<Type>, TyTree<Rule<Type>>>}
@@ -83,10 +91,11 @@ module RuleSet =
 
   let rec ruleClassesOf t =
     if hasRules t
-    then t :: ruleClassesOf t.BaseType
+    then rulesTy t :: ruleClassesOf t.BaseType
     else []
 
   let rulesOf o (t: Type) =
+    let t = tyOfRulesTy t
     t.GetMethods BindingFlags.AnyDeclaredInstance
     |> Array.filter (fun r -> not r.IsAbstract)
     |> Array.map (fun r ->
@@ -97,6 +106,61 @@ module RuleSet =
               trees = Dictionary<_, _> ()}
      rules = HashEqSet.empty
      tree = TyTree.build []}
+
+  let addRules tys ruleSet =
+    let rules =
+      tys
+      |> List.fold (fun r t -> HashEqSet.add t r) ruleSet.rules
+    let tree =
+      match ruleSet.cache.trees.TryGetValue rules with
+       | (true, tree) -> tree
+       | (false, _) ->
+         let tree =
+           lazy (rules
+                 |> HashEqSet.toSeq
+                 |> Seq.collect (fun t ->
+                    ruleSet.cache.rules.[t]
+                    |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+                 |> TyTree.build
+                 |> force)
+         ruleSet.cache.trees.Add (rules, tree)
+         tree
+    {ruleSet with rules = rules; tree = tree}
+
+  let maybeAddRulesTy ty ruleSet =
+    match ty with
+     | App' (Def tc, _) when not tc.IsAbstract
+                          && not <| HashEqSet.contains tc ruleSet.rules ->
+       if ruleSet.cache.rules.ContainsKey tc |> not then
+         let rules =
+           tc.GetConstructors ()
+           |> Array.map (fun c ->
+              let returnType = Ty.ofType tc
+              let parTypes =
+                lazy (c.GetParameters ()
+                      |> Array.map (fun p -> Ty.ofType p.ParameterType))
+              let genArgs =
+                lazy if tc.ContainsGenericParameters
+                     then tc.GetGenericArguments () |> Array.map Ty.ofType
+                     else [||]
+              {new Rule<Type> with
+                member t.ReturnType = returnType
+                member t.ParTypes = parTypes.Force ()
+                member t.GenericArgTypes = genArgs.Force ()
+                member t.Invoke (genArgTys, argTys, argObjs) =
+                 let tc = if tc.ContainsGenericParameters
+                          then tc.MakeGenericType genArgTys
+                          else tc
+                 match tc.GetConstructor argTys with
+                  | null -> failwith "Bug"
+                  | c ->
+                    match c.Invoke argObjs with
+                     | null -> None
+                     | o -> Some o})
+         ruleSet.cache.rules.Add (tc, rules)
+       addRules [tc] ruleSet
+     | _ ->
+       ruleSet
 
   let maybeAddRulesObj (o: obj) ruleSet =
     match o with
@@ -116,51 +180,10 @@ module RuleSet =
              |> List.iter (fun t ->
                 if ruleSet.cache.rules.ContainsKey t |> not then
                   ruleSet.cache.rules.Add (t, rulesOf o t))
-             let rules =
-               tys
-               |> List.fold (fun r t -> HashEqSet.add t r) ruleSet.rules
-             let tree =
-               match ruleSet.cache.trees.TryGetValue rules with
-                | (true, tree) -> tree
-                | (false, _) ->
-                  let tree =
-                    lazy (rules
-                          |> HashEqSet.toSeq
-                          |> Seq.collect (fun t ->
-                             ruleSet.cache.rules.[t]
-                             |> Seq.map (fun rule -> (rule.ReturnType, rule)))
-                          |> TyTree.build
-                          |> force)
-                  ruleSet.cache.trees.Add (rules, tree)
-                  tree
-             {ruleSet with rules = rules; tree = tree}
+             addRules tys ruleSet
 
-  let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) = seq {
-    yield! TyTree.filter ruleSet.tree desiredTy
-    match Ty.toMonoType desiredTy with
-     | None -> ()
-     | Some t ->
-       if not t.IsAbstract then
-         match t.GetConstructor [||] with
-          | null -> ()
-          | _ ->
-            let t = if t.IsGenericType then t.GetGenericTypeDefinition() else t
-            let returnType = Ty.ofType t
-            let genArgs =
-              lazy if t.IsGenericType
-                   then t.GetGenericArguments () |> Array.map Ty.ofType
-                   else [||]
-            yield {new Rule<_> with
-                    member this.ReturnType = returnType
-                    member this.ParTypes = [||]
-                    member this.GenericArgTypes = genArgs.Force ()
-                    member this.Invoke (genArgTys: array<Type>,
-                                        argTys: array<Type>,
-                                        _: array<obj>) =
-                     (if t.IsGenericType
-                      then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
-                      else t).GetConstructor([||]).Invoke [||] |> Some}
-  }
+  let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) =
+    TyTree.filter ruleSet.tree desiredTy
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -210,7 +233,7 @@ module Engine =
 
   let inline isRec ty =
     match ty with
-     | App (Def tc, _) -> tc = typedefof<Rec<_>>
+     | App' (Def tc, _) -> tc = typedefof<Rec<_>>
      | _ -> false
 
   let rec tryGen limit reached rules objEnv tyEnv stack ty =
@@ -220,6 +243,7 @@ module Engine =
     else
       let search () =
          let limit = limit - 1
+         let rules = RuleSet.maybeAddRulesTy ty rules
          RuleSet.rulesFor rules ty
          |> Seq.collect (fun rule ->
             let rule = Rule.freshVars rule
