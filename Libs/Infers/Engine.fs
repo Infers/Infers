@@ -27,7 +27,7 @@ type Rule<'v> =
   abstract ReturnType: Ty<'v>
   abstract ParTypes: array<Ty<'v>>
   abstract GenericArgTypes: array<Ty<'v>>
-  abstract Invoke: array<Type> * array<obj> -> option<obj>
+  abstract Invoke: array<Type> * array<Type> * array<obj> -> option<obj>
 
 module Rule =
   let mapVars v2w (rule: Rule<_>) =
@@ -38,7 +38,8 @@ module Rule =
       member ir.ReturnType = returnType
       member ir.ParTypes = parTypes.Force ()
       member ir.GenericArgTypes = genericArgTypes.Force ()
-      member ir.Invoke (genArgTys, argObjs) = rule.Invoke (genArgTys, argObjs)}
+      member ir.Invoke (genArgTys, argTys, argObjs) =
+       rule.Invoke (genArgTys, argTys, argObjs)}
 
   let freshVars (rule: Rule<Type>) : Rule<Int64> =
     mapVars (Fresh.newMapper ()) rule
@@ -56,7 +57,7 @@ type RuleMethod (m: MethodInfo, o: obj) =
    member ir.ReturnType = returnType
    member ir.ParTypes = parTypes.Force ()
    member ir.GenericArgTypes = genArgs.Force ()
-   member ir.Invoke (genArgTys, argObjs) =
+   member ir.Invoke (genArgTys, _, argObjs) =
     let m = if m.ContainsGenericParameters
             then m.MakeGenericMethod genArgTys
             else m
@@ -97,7 +98,7 @@ module RuleSet =
      rules = HashEqSet.empty
      tree = TyTree.build []}
 
-  let maybeAddRules (o: obj) ruleSet =
+  let maybeAddRulesObj (o: obj) ruleSet =
     match o with
      | null ->
        ruleSet
@@ -153,7 +154,9 @@ module RuleSet =
                     member this.ReturnType = returnType
                     member this.ParTypes = [||]
                     member this.GenericArgTypes = genArgs.Force ()
-                    member this.Invoke (genArgTys: array<Type>, _: array<obj>) =
+                    member this.Invoke (genArgTys: array<Type>,
+                                        argTys: array<Type>,
+                                        _: array<obj>) =
                      (if t.IsGenericType
                       then t.GetGenericTypeDefinition().MakeGenericType(genArgTys)
                       else t).GetConstructor([||]).Invoke [||] |> Some}
@@ -163,15 +166,15 @@ module RuleSet =
 
 module Engine =
   type TyEnv<'v when 'v : equality> = HashEqMap<'v, Ty<'v>>
-  type ObjEnv<'v when 'v : equality> = HashEqMap<Ty<'v>, obj>
+  type ObjEnv = HashEqMap<Type, obj>
 
   type Result<'v> =
-    | Value of obj
+    | Value of monoTy: Type * value: obj
     | Ruled of ty: Ty<'v> * args: array<Result<'v>> * rule: Rule<'v>
 
   let rec tryResolveResult objEnv tyEnv result =
     match result with
-     | Value _ -> Some (objEnv, result)
+     | Value (_, _) -> Some (objEnv, result)
      | Ruled (ty, args', rule) ->
        let args = Array.zeroCreate <| Array.length args'
        let rec lp objEnv i =
@@ -185,24 +188,25 @@ module Engine =
        lp objEnv 0
        |> Option.bind (fun (objEnv, args) ->
           let ty = Ty.resolve tyEnv ty
-          if Ty.containsVars ty then
-            Some (objEnv, Ruled (ty, args, rule))
-          else
-            match Array.chooseAll
-                   <| function Value v -> Some v
-                             | Ruled _ -> None
-                   <| args with
-             | None ->
-               Some (objEnv, Ruled (ty, args, rule))
-             | Some argVals ->
-               match rule.GenericArgTypes
-                     |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
-                | None ->
-                  failwith "Bug"
-                | Some genArgTys ->
-                  rule.Invoke (genArgTys, argVals)
-                  |> Option.map (fun o ->
-                     (HashEqMap.add ty o objEnv, Value o)))
+          match Ty.toMonoType ty with
+           | None ->
+             Some (objEnv, Ruled (ty, args, rule))
+           | Some monoTy ->
+             match Array.chooseAll
+                     <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
+                     <| args
+                   |> Option.map Array.unzip with
+              | None ->
+                Some (objEnv, Ruled (ty, args, rule))
+              | Some (argTys, argVals) ->
+                match rule.GenericArgTypes
+                      |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
+                 | None ->
+                   failwith "Bug"
+                 | Some genArgTys ->
+                   rule.Invoke (genArgTys, argTys, argVals)
+                   |> Option.map (fun o ->
+                      (HashEqMap.add monoTy o objEnv, Value (monoTy, o))))
 
   let inline isRec ty =
     match ty with
@@ -214,10 +218,7 @@ module Engine =
       reached := true
       Seq.empty
     else
-      match HashEqMap.tryFind ty objEnv with
-       | Some o ->
-         Seq.singleton (Value o, objEnv, tyEnv)
-       | None ->
+      let search () =
          let limit = limit - 1
          RuleSet.rulesFor rules ty
          |> Seq.collect (fun rule ->
@@ -230,56 +231,53 @@ module Engine =
 
                  if rule.ParTypes.Length <> 0
                     && stack |> List.exists ((=) ty) then
-                  if isRec ty || Ty.containsVars ty then
+                  if isRec ty then
                     Seq.empty
                   else
-                    match HashEqMap.tryFind ty objEnv with
-                     | Some o ->
-                       Seq.singleton (Value o, objEnv, tyEnv)
-                     | None ->
-                       let recTy = App (Def typedefof<Rec<_>>, [|ty|])
-                       tryGen limit reached rules objEnv tyEnv (ty::stack) recTy
-                       |> Seq.choose (fun (result, objEnv, tyEnv) ->
-                          match result with
-                           | Ruled _ -> None
-                           | Value recO ->
-                             match recO with
-                              | :? IRecObj as recO' ->
-                                let o = recO'.GetObj ()
-                                Some (Value o,
-                                      objEnv
-                                      |> HashEqMap.add recTy recO
-                                      |> HashEqMap.add ty o,
-                                      tyEnv)
-                              | _ ->
-                                failwith "Bug")
+                    match Ty.toMonoType ty with
+                     | None -> Seq.empty
+                     | Some monoTy ->
+                       match HashEqMap.tryFind monoTy objEnv with
+                        | Some o ->
+                          Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
+                        | None ->
+                          App (Def typedefof<Rec<_>>, [|ty|])
+                          |> tryGen limit reached rules objEnv tyEnv (ty::stack)
+                          |> Seq.choose (fun (result, objEnv, tyEnv) ->
+                             match result with
+                              | Ruled _ -> None
+                              | Value (monoRecTy, recO) ->
+                                match recO with
+                                 | :? IRecObj as recO' ->
+                                   let o = recO'.GetObj ()
+                                   Some (Value (monoTy, o),
+                                         objEnv
+                                         |> HashEqMap.add monoRecTy recO
+                                         |> HashEqMap.add monoTy o,
+                                         tyEnv)
+                                 | _ ->
+                                   failwith "Bug")
                  else
                    match parTys with
                     | [] ->
                       match Ruled (ty, List.rev args |> Array.ofList, rule)
                             |> tryResolveResult objEnv tyEnv with
-                       | None ->
-                         Seq.empty
+                       | None -> Seq.empty
                        | Some (objEnv, result) ->
-
                          let objEnv =
                            match result with
-                            | Value o ->
-                              let recTy = App (Def typedefof<Rec<_>>, [|ty|])
-                              match HashEqMap.tryFind recTy objEnv with
-                               | None ->
-                                 ()
+                            | Ruled _ -> objEnv
+                            | Value (monoTy, o) ->
+                              let monoRecTy =
+                                typedefof<Rec<_>>.MakeGenericType [|monoTy|]
+                              match HashEqMap.tryFind monoRecTy objEnv with
+                               | None -> ()
                                | Some recO ->
                                  match recO with
-                                  | :? IRecObj as recO' ->
-                                    recO'.SetObj o
-                                  | _ ->
-                                    failwith "Bug"
+                                  | :? IRecObj as recO' -> recO'.SetObj o
+                                  | _ -> failwith "Bug"
                               objEnv
-                              |> HashEqMap.add ty o
-                            | Ruled _ ->
-                              objEnv
-
+                              |> HashEqMap.add monoTy o
                          Seq.singleton (result, objEnv, tyEnv)
                     | parTy::parTys ->
                       Ty.resolve tyEnv parTy
@@ -295,26 +293,31 @@ module Engine =
                                 inner <| resolvedArg::resolvedArgs
                                       <| match resolvedArg with
                                           | Ruled _ -> rules
-                                          | Value value ->
-                                            RuleSet.maybeAddRules value rules
+                                          | Value (_, value) ->
+                                            RuleSet.maybeAddRulesObj value rules
                                       <| objEnv
                                       <| args
                          result::args |> List.rev |> inner [] rules objEnv)
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
-         |> if Ty.containsVars ty then id else Seq.truncate 1
+      match Ty.toMonoType ty with
+       | None -> search ()
+       | Some monoTy ->
+         match HashEqMap.tryFind monoTy objEnv with
+          | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
+          | None -> search () |> Seq.truncate 1
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = typeof<'a> |> Ty.ofType |> Ty.mapVars (Fresh.newMapper ())
     let rules =
       RuleSet.newEmpty ()
-      |> RuleSet.maybeAddRules rules
+      |> RuleSet.maybeAddRulesObj rules
     let rec gen limit =
       let reached = ref false
       match tryGen limit reached rules HashEqMap.empty HashEqMap.empty [] desTy
             |> Seq.tryPick (fun (result, _, _) ->
                match result with
                 | Ruled _ -> None
-                | Value value -> Some (unbox<'a> value)) with
+                | Value (_, value) -> Some (unbox<'a> value)) with
        | None ->
          if !reached
          then gen (limit + 1)
