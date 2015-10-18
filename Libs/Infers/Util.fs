@@ -101,8 +101,7 @@ type HashEqMap<'k, 'v> when 'k: equality =
      | HEM m ->
        m
        |> Map.toSeq
-       |> Seq.map snd
-       |> Seq.concat
+       |> Seq.collect snd
        |> List.ofSeq
        |> sprintf "%A"
 
