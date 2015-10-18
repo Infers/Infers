@@ -164,6 +164,18 @@ module HashEqMap =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+module Dictionary =
+  open System.Collections.Generic
+
+  let inline getOr (d: Dictionary<_, _>) k u2v =
+    let mutable v = Unchecked.defaultof<_>
+    if d.TryGetValue (k, &v) |> not then
+      v <- u2v ()
+      d.Add (k, v)
+    v
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// An untyped helper interface for dealing with recursion proxies.
 type IRecObj =
   abstract GetObj: unit -> obj

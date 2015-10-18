@@ -9,39 +9,21 @@ open System
 
 ////////////////////////////////////////////////////////////////////////////////
 
-module Dictionary =
-  let inline getOr (d: Dictionary<_, _>) k u2v =
-    let mutable v = Unchecked.defaultof<_>
-    if d.TryGetValue (k, &v) |> not then
-      v <- u2v ()
-      d.Add (k, v)
-    v
-
-module Fresh =
-  let mutable private counter = 0L
-
-  let newMapper () =
-    let v2w = Dictionary<_, _> ()
-    fun v ->
-      Dictionary.getOr v2w v <| fun () ->
-        Interlocked.Increment &counter
-
-////////////////////////////////////////////////////////////////////////////////
-
-type Rule<'v> =
-  {ReturnType: Ty<'v>
-   ParTypes: array<Ty<'v>>
-   GenericArgTypes: array<Ty<'v>>
+type Rule =
+  {ReturnType: Ty
+   ParTypes: array<Ty>
+   GenericArgTypes: array<Ty>
    Invoke: array<Type> -> array<Type> -> array<obj> -> option<obj>}
 
+[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Rule =
-  let mapVars v2w (rule: Rule<_>) =
+  let mapVars v2w (rule: Rule) =
     {ReturnType = Ty.mapVars v2w rule.ReturnType
      ParTypes = Array.map (Ty.mapVars v2w) rule.ParTypes
      GenericArgTypes = Array.map (Ty.mapVars v2w) rule.GenericArgTypes
      Invoke = rule.Invoke}
 
-  let freshVars (rule: Rule<Type>) : Rule<Int64> =
+  let freshVars (rule: Rule) : Rule =
     mapVars (Fresh.newMapper ()) rule
 
 module RuleSet =
@@ -54,12 +36,12 @@ module RuleSet =
     else t.GetGenericArguments().[0]
 
   type Cache =
-    {rules: Dictionary<Type, array<Rule<Type>>>
-     trees: Dictionary<HashEqSet<Type>, TyTree<Rule<Type>>>}
+    {rules: Dictionary<Type, array<Rule>>
+     trees: Dictionary<HashEqSet<Type>, TyTree<Rule>>}
   type RuleSet =
     {cache: Cache
      rules: HashEqSet<Type>
-     tree: TyTree<Rule<Type>>}
+     tree: TyTree<Rule>}
 
   let hasRules (t: Type) =
     t.GetCustomAttributes<InferenceRules> true
@@ -78,12 +60,15 @@ module RuleSet =
     t.GetMethods (B.DeclaredOnly ||| B.Instance ||| B.Public ||| B.NonPublic)
     |> Array.filter (fun m -> not m.IsAbstract)
     |> Array.map (fun m ->
-       {ReturnType = Ty.ofType m.ReturnType
+       let env = Fresh.newMapper ()
+       {ReturnType = Ty.ofTypeIn env m.ReturnType
         ParTypes =
-          m.GetParameters () |> Array.map (fun p -> Ty.ofType p.ParameterType)
+          m.GetParameters ()
+          |> Array.map (fun p -> Ty.ofTypeIn env p.ParameterType)
         GenericArgTypes =
           if m.ContainsGenericParameters
-          then m.GetGenericArguments () |> Array.map Ty.ofType
+          then m.GetGenericArguments ()
+               |> Array.map (Ty.ofTypeIn env)
           else [||]
         Invoke = fun genArgTys _ argObjs ->
           let m = if m.ContainsGenericParameters
@@ -124,13 +109,14 @@ module RuleSet =
          let rules =
            tc.GetConstructors ()
            |> Array.map (fun c ->
-              {ReturnType = Ty.ofType tc
+              let env = Fresh.newMapper ()
+              {ReturnType = Ty.ofTypeIn env tc
                ParTypes =
                  c.GetParameters ()
-                 |> Array.map (fun p -> Ty.ofType p.ParameterType)
+                 |> Array.map (fun p -> Ty.ofTypeIn env p.ParameterType)
                GenericArgTypes =
                  if tc.ContainsGenericParameters
-                 then tc.GetGenericArguments () |> Array.map Ty.ofType
+                 then tc.GetGenericArguments () |> Array.map (Ty.ofTypeIn env)
                  else [||]
                Invoke = fun genArgTys argTys argObjs ->
                  let tc = if tc.ContainsGenericParameters
@@ -167,23 +153,23 @@ module RuleSet =
                   ruleSet.cache.rules.Add (t, rulesOf o t))
              addRules tys ruleSet
 
-  let rulesFor (ruleSet: RuleSet) (desiredTy: Ty<_>) =
+  let rulesFor (ruleSet: RuleSet) (desiredTy: Ty) =
     TyTree.filter ruleSet.tree desiredTy
 
 ////////////////////////////////////////////////////////////////////////////////
 
 module Engine =
-  type TyEnv<'v when 'v : equality> = HashEqMap<'v, Ty<'v>>
-  type ObjEnv = HashEqMap<Type, obj>
-
-  type Result<'v> =
+  type Result =
     | Value of monoTy: Type * value: obj
-    | Ruled of ty: Ty<'v> * args: array<Result<'v>> * rule: Rule<'v>
+    | Ruled of ty: Ty
+             * args: array<Result>
+             * genArgTys: array<Ty>
+             * invoke: (array<Type> -> array<Type> -> array<obj> -> option<obj>)
 
   let rec tryResolveResult objEnv tyEnv result =
     match result with
      | Value (_, _) -> Some (objEnv, result)
-     | Ruled (ty, args', rule) ->
+     | Ruled (ty, args', genArgTys, invoke) ->
        let args = Array.zeroCreate <| Array.length args'
        let rec lp objEnv i =
          if args.Length <= i then
@@ -198,21 +184,21 @@ module Engine =
           let ty = Ty.resolve tyEnv ty
           match Ty.toMonoType ty with
            | None ->
-             Some (objEnv, Ruled (ty, args, rule))
+             Some (objEnv, Ruled (ty, args, genArgTys, invoke))
            | Some monoTy ->
              match Array.chooseAll
                      <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
                      <| args
                    |> Option.map Array.unzip with
               | None ->
-                Some (objEnv, Ruled (ty, args, rule))
+                Some (objEnv, Ruled (ty, args, genArgTys, invoke))
               | Some (argTys, argVals) ->
-                match rule.GenericArgTypes
+                match genArgTys
                       |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
                  | None ->
                    failwith "Bug"
                  | Some genArgTys ->
-                   rule.Invoke genArgTys argTys argVals
+                   invoke genArgTys argTys argVals
                    |> Option.map (fun o ->
                       (HashEqMap.add monoTy o objEnv, Value (monoTy, o))))
 
@@ -269,7 +255,10 @@ module Engine =
                  else
                    match parTys with
                     | [] ->
-                      match Ruled (ty, List.rev args |> Array.ofList, rule)
+                      match Ruled (ty,
+                                   List.rev args |> Array.ofList,
+                                   rule.GenericArgTypes,
+                                   rule.Invoke)
                             |> tryResolveResult objEnv tyEnv with
                        | None -> Seq.empty
                        | Some (objEnv, result) ->
@@ -316,13 +305,13 @@ module Engine =
           | None -> search () |> Seq.truncate 1
 
   let tryGenerate (rules: obj) : option<'a> =
-    let desTy = typeof<'a> |> Ty.ofType |> Ty.mapVars (Fresh.newMapper ())
+    let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
     let rules =
       RuleSet.newEmpty ()
       |> RuleSet.maybeAddRulesObj rules
     let rec gen limit =
       let reached = ref false
-      match tryGen limit reached rules HashEqMap.empty HashEqMap.empty [] desTy
+      match tryGen limit reached rules HashEqMap.empty Map.empty [] desTy
             |> Seq.tryPick (fun (result, _, _) ->
                match result with
                 | Ruled _ -> None

@@ -3,8 +3,22 @@
 [<AutoOpen>]
 module internal Infers.TypeManip
 
-open System
+open System.Collections.Generic
 open System.Reflection
+open System.Threading
+open System
+
+////////////////////////////////////////////////////////////////////////////////
+
+module Fresh =
+  type t = int
+  let mutable private counter: t = 0
+
+  let newMapper () =
+    let v2w = Dictionary<_, _> ()
+    fun v ->
+      Dictionary.getOr v2w v <| fun () ->
+        Interlocked.Increment &counter
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -12,9 +26,9 @@ type TyCon =
   | Arr of rank: int
   | Def of def: Type
 
-type Ty<'v> =
-  | Var of 'v
-  | App of TyCon * array<Ty<'v>>
+type Ty =
+  | Var of Fresh.t
+  | App of TyCon * array<Ty>
   | Mono of Type
   override t.ToString () =
     match t with
@@ -61,30 +75,33 @@ module TyCon =
      | _ ->
        failwith "Bug: apply %A %A" tc ts
 
+[<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Ty =
   let inline containsVars ty =
     match ty with
      | Mono _ -> false
      | Var _ | App _ -> true
 
-  let rec ofType (t: Type) =
-    if t.IsArray then
-      match t.GetElementType () |> ofType with
-       | Mono _ ->
-         Mono t
-       | ty ->
-         App (Arr (t.GetArrayRank ()), [|ty|])
-    elif t.IsGenericParameter then
-      Var t
-    elif t.IsGenericType then
-      let tys = t.GetGenericArguments () |> Array.map ofType
-      if Array.exists containsVars tys
-      then App (Def (t.GetGenericTypeDefinition ()), tys)
-      else Mono t
-    else
-      Mono t
+  let ofTypeIn env (t: Type) =
+    let rec ofType (t: Type) =
+      if t.IsArray then
+        match t.GetElementType () |> ofType with
+         | Mono _ ->
+           Mono t
+         | ty ->
+           App (Arr (t.GetArrayRank ()), [|ty|])
+      elif t.IsGenericParameter then
+        Var (env t)
+      elif t.IsGenericType then
+        let tys = t.GetGenericArguments () |> Array.map ofType
+        if Array.exists containsVars tys
+        then App (Def (t.GetGenericTypeDefinition ()), tys)
+        else Mono t
+      else
+        Mono t
+    ofType t
 
-  let inline toMonoType (ty: Ty<'any>) =
+  let inline toMonoType (ty: Ty) =
     match ty with
      | Mono t -> Some t
      | Var _ | App _ -> None
@@ -94,7 +111,7 @@ module Ty =
   let rec resolveTop v2ty ty =
     match ty with
      | Var v ->
-       match HashEqMap.tryFind v v2ty with
+       match Map.tryFind v v2ty with
         | None -> ty
         | Some ty -> resolveTop v2ty ty
      | Mono _ | App _ ->
@@ -134,7 +151,7 @@ module Ty =
      | (Var fv, Var av) when fv = av ->
        Some v2ty
      | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
-       Some (HashEqMap.add v ty v2ty)
+       Some (Map.add v ty v2ty)
      | (Mono f, Mono a) ->
        if f = a then Some v2ty else None
      | (App' (formal, pars), App' (actual, args)) when formal = actual ->
@@ -150,17 +167,17 @@ module Ty =
        None
 
   let tryMatch formal actual =
-    tryMatchIn formal actual HashEqMap.empty
+    tryMatchIn formal actual Map.empty
 
   let areEqual aTy bTy =
     let rec types aTy bTy v2ty =
       match (aTy, bTy) with
        | (Var a, Var b) ->
-         match HashEqMap.tryFind a v2ty with
+         match Map.tryFind a v2ty with
           | Some b' ->
             if b' = b then Some v2ty else None
           | None ->
-            Some (HashEqMap.add a b v2ty)
+            Some (Map.add a b v2ty)
        | (App' (aTc, aArgs), App' (bTc, bArgs)) when aTc = bTc ->
          assert (aArgs.Length = bArgs.Length)
          let rec args i v2ty =
@@ -174,7 +191,7 @@ module Ty =
          args 0 v2ty
        | _ ->
          None
-    types aTy bTy HashEqMap.empty |> Option.isSome
+    types aTy bTy Map.empty |> Option.isSome
 
   type MoreSpecific =
    | Lhs
@@ -195,7 +212,7 @@ module Ty =
         | (false,  true) -> Rhs
         | (false, false) -> Incomparable
 
-  let inPlaceSelectSpecificFirst (tyrs: array<Ty<'v> * 'r>) =
+  let inPlaceSelectSpecificFirst (tyrs: array<Ty * 'r>) =
     let swap i j =
       let iEl = tyrs.[i]
       tyrs.[i] <- tyrs.[j]
@@ -237,7 +254,7 @@ module TyTree =
           None
 
   let rec private build' (ats: list<TyCursor>)
-                         (tyrs: list<Ty<_> * 'r>) : TyTree<'r> =
+                         (tyrs: list<Ty * 'r>) : TyTree<'r> =
     lazy match tyrs with
           | [] -> Empty
           | [(_, r)] -> One r
@@ -280,7 +297,7 @@ module TyTree =
 
   let build tyrs = build' [[]] (List.ofSeq tyrs)
 
-  let rec filter (formal: TyTree<'r>) (actual: Ty<_>) : seq<'r> = seq {
+  let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> = seq {
     match force formal with
      | Empty -> ()
      | One r -> yield r
