@@ -20,5 +20,3 @@ type [<AbstractClass>] Rec<'x> () =
   interface IRecObj with
    override this.GetObj () = box (this.Get ())
    override this.SetObj x = this.Set (unbox<'x> x)
-
-exception Backtrack

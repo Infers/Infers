@@ -13,19 +13,19 @@ type [<InferenceRules>] Rep =
   member rep: unit -> Rep<'t>
 
   /// Attempts to constructs a union type representation for the type `'t`.
-  member union: Rep<'t> -> Union<'t>
+  member union: Rep<'t> * Union<'t> -> Union<'t>
 
   /// Attempts to construct a product type representation for the type `'t`.
-  member product: Rep<'t> -> Product<'t>
+  member product: Rep<'t> * Product<'t> -> Product<'t>
 
   /// Attempts to construct a record type representation for the type `'t`.
-  member record: Rep<'t> -> Record<'t>
+  member record: Rep<'t> * Record<'t> -> Record<'t>
 
   /// Attempts to constructs a tuple type representation for the type `'t`.
-  member tuple: Rep<'t> -> Tuple<'t>
+  member tuple: Rep<'t> * Tuple<'t> -> Tuple<'t>
 
   /// Attempts to construct a primitive type representation for the type `'t`.
-  member prim: Rep<'t> -> Prim<'t>
+  member prim: Rep<'t> * Prim<'t> -> Prim<'t>
 
   /// Construct a representation as nested choices for the type `'t`'.
   member asChoices: Union<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>

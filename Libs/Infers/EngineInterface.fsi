@@ -36,7 +36,3 @@ type [<AbstractClass>] Rec<'x> =
 
   /// Sets the value of the proxy.
   abstract Set: 'x -> unit
-
-/// Exception that can be raised by an otherwise matched rule to make the
-/// inference engine to treat the rule as a non-match and backtrack.
-exception Backtrack

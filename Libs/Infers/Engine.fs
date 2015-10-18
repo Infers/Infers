@@ -13,7 +13,7 @@ type Rule =
   {ReturnType: Ty
    ParTypes: array<Ty>
    GenericArgTypes: array<Ty>
-   Invoke: array<Type> -> array<Type> -> array<obj> -> option<obj>}
+   Invoke: array<Type> -> array<Type> -> array<obj> -> obj}
 
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Rule =
@@ -74,11 +74,7 @@ module RuleSet =
           let m = if m.ContainsGenericParameters
                   then m.MakeGenericMethod genArgTys
                   else m
-          try m.Invoke (o, argObjs) |> Some
-          with :? TargetInvocationException as e ->
-            match e.InnerException with
-             | Backtrack -> None
-             | e -> raise <| Exception ("Rule raised an exception.", e)})
+          m.Invoke (o, argObjs)})
 
   let newEmpty () =
     {cache = {rules = Dictionary<_, _> ()
@@ -125,9 +121,7 @@ module RuleSet =
                  match tc.GetConstructor argTys with
                   | null -> failwith "Bug"
                   | c ->
-                    match c.Invoke argObjs with
-                     | null -> None
-                     | o -> Some o})
+                    c.Invoke argObjs})
          ruleSet.cache.rules.Add (tc, rules)
        addRules [tc] ruleSet
      | _ ->
@@ -164,43 +158,53 @@ module Engine =
     | Ruled of ty: Ty
              * args: array<Result>
              * genArgTys: array<Ty>
-             * invoke: (array<Type> -> array<Type> -> array<obj> -> option<obj>)
+             * invoke: (array<Type> -> array<Type> -> array<obj> -> obj)
 
-  let rec tryResolveResult objEnv tyEnv result =
+  let addObj monoTy o objEnv =
+    match o with
+     | null -> HashEqMap.add monoTy o objEnv
+     | o ->
+       let rec lp t objEnv =
+         if t = typeof<Object>
+            || t = typeof<ValueType>
+            || HashEqMap.tryFind t objEnv |> Option.isSome then
+           objEnv
+         else
+           lp t.BaseType (HashEqMap.add t o objEnv)
+       lp (o.GetType ()) objEnv
+
+  let rec resolveResult objEnv tyEnv result =
     match result with
-     | Value (_, _) -> Some (objEnv, result)
+     | Value (_, _) -> (objEnv, result)
      | Ruled (ty, args', genArgTys, invoke) ->
        let args = Array.zeroCreate <| Array.length args'
        let rec lp objEnv i =
          if args.Length <= i then
-           Some (objEnv, args)
+           (objEnv, args)
          else
-           tryResolveResult objEnv tyEnv args'.[i]
-           |> Option.bind (fun (objEnv, arg) ->
-              args.[i] <- arg
-              lp objEnv (i+1))
-       lp objEnv 0
-       |> Option.bind (fun (objEnv, args) ->
-          let ty = Ty.resolve tyEnv ty
-          match Ty.toMonoType ty with
+           let (objEnv, arg) = resolveResult objEnv tyEnv args'.[i]
+           args.[i] <- arg
+           lp objEnv (i+1)
+       let (objEnv, args) = lp objEnv 0
+       let ty = Ty.resolve tyEnv ty
+       match Ty.toMonoType ty with
+        | None ->
+          (objEnv, Ruled (ty, args, genArgTys, invoke))
+        | Some monoTy ->
+          match Array.chooseAll
+                  <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
+                  <| args
+                |> Option.map Array.unzip with
            | None ->
-             Some (objEnv, Ruled (ty, args, genArgTys, invoke))
-           | Some monoTy ->
-             match Array.chooseAll
-                     <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
-                     <| args
-                   |> Option.map Array.unzip with
+             (objEnv, Ruled (ty, args, genArgTys, invoke))
+           | Some (argTys, argVals) ->
+             match genArgTys
+                   |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
               | None ->
-                Some (objEnv, Ruled (ty, args, genArgTys, invoke))
-              | Some (argTys, argVals) ->
-                match genArgTys
-                      |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
-                 | None ->
-                   failwith "Bug"
-                 | Some genArgTys ->
-                   invoke genArgTys argTys argVals
-                   |> Option.map (fun o ->
-                      (HashEqMap.add monoTy o objEnv, Value (monoTy, o))))
+                failwith "Bug"
+              | Some genArgTys ->
+                let o = invoke genArgTys argTys argVals
+                (addObj monoTy o objEnv, Value (monoTy, o))
 
   let inline isRec ty =
     match ty with
@@ -248,35 +252,34 @@ module Engine =
                                    Some (Value (monoTy, o),
                                          objEnv
                                          |> HashEqMap.add monoRecTy recO
-                                         |> HashEqMap.add monoTy o,
+                                         |> addObj monoTy o,
                                          tyEnv)
                                  | _ ->
                                    failwith "Bug")
                  else
                    match parTys with
                     | [] ->
-                      match Ruled (ty,
-                                   List.rev args |> Array.ofList,
-                                   rule.GenericArgTypes,
-                                   rule.Invoke)
-                            |> tryResolveResult objEnv tyEnv with
-                       | None -> Seq.empty
-                       | Some (objEnv, result) ->
-                         let objEnv =
-                           match result with
-                            | Ruled _ -> objEnv
-                            | Value (monoTy, o) ->
-                              let monoRecTy =
-                                typedefof<Rec<_>>.MakeGenericType [|monoTy|]
-                              match HashEqMap.tryFind monoRecTy objEnv with
-                               | None -> ()
-                               | Some recO ->
-                                 match recO with
-                                  | :? IRecObj as recO' -> recO'.SetObj o
-                                  | _ -> failwith "Bug"
-                              objEnv
-                              |> HashEqMap.add monoTy o
-                         Seq.singleton (result, objEnv, tyEnv)
+                      let (objEnv, result) =
+                        Ruled (ty,
+                               List.rev args |> Array.ofList,
+                               rule.GenericArgTypes,
+                               rule.Invoke)
+                        |> resolveResult objEnv tyEnv
+                      let objEnv =
+                        match result with
+                         | Ruled _ -> objEnv
+                         | Value (monoTy, o) ->
+                           let monoRecTy =
+                             typedefof<Rec<_>>.MakeGenericType [|monoTy|]
+                           match HashEqMap.tryFind monoRecTy objEnv with
+                            | None -> ()
+                            | Some recO ->
+                              match recO with
+                               | :? IRecObj as recO' -> recO'.SetObj o
+                               | _ -> failwith "Bug"
+                           objEnv
+                           |> HashEqMap.add monoTy o
+                      Seq.singleton (result, objEnv, tyEnv)
                     | parTy::parTys ->
                       Ty.resolve tyEnv parTy
                       |> tryGen limit reached rules objEnv tyEnv (ty::stack)
@@ -285,16 +288,15 @@ module Engine =
                            | [] ->
                              outer resolvedArgs rules objEnv tyEnv ty parTys
                            | arg::args ->
-                             match tryResolveResult objEnv tyEnv arg with
-                              | None -> Seq.empty
-                              | Some (objEnv, resolvedArg) ->
-                                inner <| resolvedArg::resolvedArgs
-                                      <| match resolvedArg with
-                                          | Ruled _ -> rules
-                                          | Value (_, value) ->
-                                            RuleSet.maybeAddRulesObj value rules
-                                      <| objEnv
-                                      <| args
+                             let (objEnv, resolvedArg) =
+                               resolveResult objEnv tyEnv arg
+                             inner <| resolvedArg::resolvedArgs
+                                   <| match resolvedArg with
+                                       | Ruled _ -> rules
+                                       | Value (_, value) ->
+                                         RuleSet.maybeAddRulesObj value rules
+                                   <| objEnv
+                                   <| args
                          result::args |> List.rev |> inner [] rules objEnv)
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
       match Ty.toMonoType ty with

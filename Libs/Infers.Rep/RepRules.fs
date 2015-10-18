@@ -23,11 +23,6 @@ type T = TypeAttributes
 
 [<AutoOpen>]
 module Util =
-  let inline cast (b: 'b) : 'd =
-    match box b with
-     | :? 'd as d -> d
-     | _ -> raise Backtrack
-
   let repModule =
     let appDomain = AppDomain.CurrentDomain;
     let assemblyName = AssemblyName "RepAssembly"
@@ -404,11 +399,11 @@ type [<InferenceRules>] Rep () =
     | _ ->
       failwith "Bug"
 
-  member this.union (rep: Rep<'t>) : Union<'t> = cast rep
-  member this.product (rep: Rep<'t>) : Product<'t> = cast rep
-  member this.record (rep: Rep<'t>) : Record<'t> = cast rep
-  member this.tuple (rep: Rep<'t>) : Rep.Tuple<'t> = cast rep
-  member this.prim (rep: Rep<'t>) : Prim<'t> = cast rep
+  member this.union (_: Rep<'t>, r: Union<'t>) = r
+  member this.product (_: Rep<'t>, r: Product<'t>) = r
+  member this.record (_: Rep<'t>, r: Record<'t>) = r
+  member this.tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
+  member this.prim (_: Rep<'t>, r: Prim<'t>) = r
 
   member this.asChoices (_: Union<'t>, c: AsChoices<'s, 't>) = c
   member this.asPairs (_: Product<'t>, p: AsPairs<'p, 'o, 't>) = p
