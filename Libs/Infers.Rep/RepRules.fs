@@ -405,8 +405,8 @@ type [<InferenceRules>] Rep () =
   member this.tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
   member this.prim (_: Rep<'t>, r: Prim<'t>) = r
 
-  member this.asChoices (_: Union<'t>, c: AsChoices<'s, 't>) = c
-  member this.asPairs (_: Product<'t>, p: AsPairs<'p, 'o, 't>) = p
+  member this.asChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
+  member this.asPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p
   member this.viewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
     m :> AsPairs<'p, 'p, 't>
 

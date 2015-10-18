@@ -28,10 +28,10 @@ type [<InferenceRules>] Rep =
   member prim: Rep<'t> * Prim<'t> -> Prim<'t>
 
   /// Construct a representation as nested choices for the type `'t`'.
-  member asChoices: Union<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
+  member asChoices: Rep<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
 
   /// Construct a representation as nested pairs for the type `'t`'.
-  member asPairs: Product<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
+  member asPairs: Rep<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
 
   /// View a single case union type as nested pairs.
   member viewAsPairs: AsChoices<'p, 't> * Case<'p, 'p, 't> -> AsPairs<'p, 'p, 't>
