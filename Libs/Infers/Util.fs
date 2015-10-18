@@ -76,9 +76,9 @@ module HashEqSet =
   let add k (HES s)  =
     let hk = hash k
     Map.add hk
-     (match Map.tryFind hk s with
-       | None -> [k]
-       | Some ks -> k :: drop k ks)
+     (k :: match Map.tryFind hk s with
+            | None -> []
+            | Some ks -> drop k ks)
      s |> HES
 
   /// Tests whether the key is in the set.
