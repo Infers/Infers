@@ -137,7 +137,7 @@ module RuleSet =
         | [] -> ruleSet
         | tys ->
           match tys
-                |> List.takeWhile (fun ty ->
+                |> List.filter (fun ty ->
                    HashEqSet.contains ty ruleSet.rules |> not) with
            | [] -> ruleSet
            | tys ->
