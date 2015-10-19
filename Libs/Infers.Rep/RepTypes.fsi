@@ -62,41 +62,6 @@ module Pair =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation of the type `'t` as nested pairs of type `'p`.
-#if DOC
-///
-/// A product object also contains members for accessing the elements of the
-/// product.  Depending on the type `'t` those members are of one of the
-/// following forms:
-///
-///> member _:  Item<'e, 'sp,      't>
-///> member _: Label<'l, 'sp, 'sc, 'u>
-///> member _: Field<'f, 'sp,      'r>
-///
-/// Those members are visible to inference rules, but they cannot be given a
-/// signature in F#.
-#endif
-type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
-  /// The number of elements the product type has.
-  val Arity: int
-
-  /// Whether the product type is mutable.
-  val IsMutable: bool
-
-  /// Copies the fields of the type `'t` to the generic product of type `'p`.
-  abstract Extract: 't * byref<'p> -> unit
-
-  /// Creates a new instance of type `'t` from the nested pairs of type `'p`.
-  abstract Create: byref<'p> -> 't
-
-  /// Convenience function to convert from product type to nested pairs.
-  abstract ToPairs: 't -> 'p
-
-  /// Convenience function to convert from nested pairs to product type.
-  abstract OfPairs: 'p -> 't
-
-////////////////////////////////////////////////////////////////////////////////
-
 /// Representation of the type `'t` as nested choices of type `'s`.
 #if DOC
 ///
@@ -174,6 +139,65 @@ type [<AbstractClass>] Item<'e, 'r, 't> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Type representation for the F# record type `'t`.
+type [<AbstractClass>] Record<'t> =
+  inherit Product<'t>
+
+/// Representation of a field of type `'e` of the record type `'t`.
+type [<AbstractClass>] Field<'e, 'r, 't> =
+  inherit Labelled<'e, 'r, 't, 't>
+
+  /// Whether the field is mutable.
+  val IsMutable: bool
+
+  /// Sets the value of the field assuming this is a mutable field.
+  abstract Set: 't * 'e -> unit
+
+////////////////////////////////////////////////////////////////////////////////
+
+/// Representation of the type `'t` as nested pairs of type `'p`.
+#if DOC
+///
+/// A product object also contains members for accessing the elements of the
+/// product.  Depending on the type `'t` those members are of one of the
+/// following forms:
+///
+///> member _:  Item<'e, 'sp,      't>
+///> member _: Label<'l, 'sp, 'sc, 'u>
+///> member _: Field<'f, 'sp,      'r>
+///
+/// Those members are visible to inference rules, but they cannot be given a
+/// signature in F#.
+#endif
+type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
+  /// The number of elements the product type has.
+  val Arity: int
+
+  /// Whether the product type is mutable.
+  val IsMutable: bool
+
+  /// Copies the fields of the type `'t` to the generic product of type `'p`.
+  abstract Extract: 't * byref<'p> -> unit
+
+  /// Creates a new instance of type `'t` from the nested pairs of type `'p`.
+  abstract Create: byref<'p> -> 't
+
+  /// Overwrites the fields of the record type `'t` with values from the nested
+  /// pairs of type `'p`.
+  abstract Overwrite: Record<'t> * into: 't * from: byref<'p> -> unit
+
+  /// Convenience function to convert from product type to nested pairs.
+  abstract ToPairs: 't -> 'p
+
+  /// Convenience function to convert from nested pairs to product type.
+  abstract OfPairs: 'p -> 't
+
+  /// Convenience function to create a new default valued (all default values)
+  /// object of the record type `'t`.
+  abstract Default: Record<'t> -> 't
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// Type representation for the F# discriminated union type `'t`.
 #if DOC
 ///
@@ -219,19 +243,3 @@ type [<AbstractClass>] Case<'p, 'o, 't> =
 /// F# discriminated union type `'t`.
 type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
   inherit Labelled<'e, 'r, 'o, 't>
-
-////////////////////////////////////////////////////////////////////////////////
-
-/// Type representation for the F# record type `'t`.
-type [<AbstractClass>] Record<'t> =
-  inherit Product<'t>
-
-/// Representation of a field of type `'e` of the record type `'t`.
-type [<AbstractClass>] Field<'e, 'r, 't> =
-  inherit Labelled<'e, 'r, 't, 't>
-
-  /// Whether the field is mutable.
-  val IsMutable: bool
-
-  /// Sets the value of the field assuming this is a mutable field.
-  abstract Set: 't * 'e -> unit
