@@ -128,6 +128,19 @@ module Elems =
     incRanges term
     |> printfn "%A"
 
+module PU =
+  open Toys.PU
+
+  type Easy = {too: list<string>; easy: float * int}
+  type Tricky = {Val: int; Tricky: Tricky}
+
+  let test () =
+    printfn "%A" (pickle {too=["1";"2"]; easy=(3.0, 4)} |> unpickle : Easy)
+    let rec tricky = {Val = 1; Tricky = {Val = 2; Tricky = tricky}}
+    let p = pickle tricky
+    let t : Tricky = unpickle p
+    printfn "%A %A %A" t.Val t.Tricky.Val t.Tricky.Tricky.Val
+
 [<EntryPoint>]
 let main _ =
   try
@@ -139,6 +152,7 @@ let main _ =
     time GUncurry.Naive.test
     time Zipper.test
     time Goat.test
+    time PU.test
     time Zebra.test
   with
    | e ->

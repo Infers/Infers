@@ -71,6 +71,7 @@
     <Compile Include="Zipper.fs" />
     <Compile Include="Elems.fsi" />
     <Compile Include="Elems.fs" />
+    <Compile Include="PU.fs" />
     <Compile Include="Toys.fs" />
     <None Include="packages.config" />
   </ItemGroup>
