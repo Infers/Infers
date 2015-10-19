@@ -60,5 +60,5 @@ type [<InferenceRules>] List =
 
   member Member: Sublist<List<'x>, 'xs> -> Member<'x, 'xs>
 
-  member Adjacent: Or<Sublist<List<'a, 'b>, 'xs>,
-                      Sublist<List<'b, 'a>, 'xs>> -> Adjacent<'a, 'b, 'xs>
+  member Adjacent: Choice<Sublist<List<'a, 'b>, 'xs>,
+                          Sublist<List<'b, 'a>, 'xs>> -> Adjacent<'a, 'b, 'xs>

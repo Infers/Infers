@@ -42,8 +42,8 @@ type [<InferenceRules>] Goat () =
   member g.Opp1: Opp<S, D> = Opp'2
   member g.Opp2: Opp<D, S> = Opp'2
 
-  member g.Valid (_: Or<Opp<'g, 'c>, Eq<'g, 'c, 'f>>,
-                  _: Or<Opp<'g, 'w>, Eq<'g, 'w, 'f>>)
+  member g.Valid (_: Choice<Opp<'g, 'c>, Eq<'g, 'c, 'f>>,
+                  _: Choice<Opp<'g, 'w>, Eq<'g, 'w, 'f>>)
    : Valid<Farmer<'f> * Goat<'g> * Cabbage<'c> * Wolf<'w>> = Valid'1
 
   member g.Goat (_: Opp<'f1, 'f2>)

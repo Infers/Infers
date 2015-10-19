@@ -41,6 +41,6 @@ type [<InferenceRules>] List () =
   member g.Member (_: Sublist<List<'x>, 'xs>)
                     : Member<'x, 'xs> = Member'2
 
-  member g.Adjacent (_: Or<Sublist<List<'a, 'b>, 'xs>,
-                           Sublist<List<'b, 'a>, 'xs>>)
+  member g.Adjacent (_: Choice<Sublist<List<'a, 'b>, 'xs>,
+                               Sublist<List<'b, 'a>, 'xs>>)
                       : Adjacent<'a, 'b, 'xs> = Adjacent'3
