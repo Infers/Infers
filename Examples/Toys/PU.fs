@@ -36,9 +36,9 @@ type [<InferenceRules>] PU () =
                      : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
     P {Pickle = fun d w (Pair (e, r)) -> eP.Pickle d w e; rP.Pickle d w r
        Unpickle = fun d r -> Pair (eP.Unpickle d r, rP.Unpickle d r)}
-  member t.Product (_: Choice<Union<'t>, Tuple<'t>>,
-                    asPairs: AsPairs<'p, 'o, 't>,
-                    P pP: PUP<'p, 'p, 'o, 't>) : PU<'t> =
+  member t.Tuple (_: Tuple<'t>,
+                  asPairs: AsPairs<'p, 'o, 't>,
+                  P pP: PUP<'p, 'p, 'o, 't>) : PU<'t> =
     {Pickle = fun d w -> asPairs.ToPairs >> pP.Pickle d w
      Unpickle = fun d -> pP.Unpickle d >> asPairs.OfPairs}
   member t.Record (record: Record<'t>,
