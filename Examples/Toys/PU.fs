@@ -9,6 +9,28 @@ open Infers.Rep
 open Toys.Basic
 open Toys.Rec
 
+// This is a toy example of binary pickler / unpickler.  This can handle ints,
+// floats, strings, tuples, records, and union types.  Recursive types, such as
+// lists, and recursive values, via records, are supported.  Other types,
+// including arbitrary classes or structs, are not supported.
+//
+// This could improved in various ways.  Examples:
+//
+// - Inefficient, but concise, pattern matching forms are used to manipulate
+// nested pairs.  Using byref arguments copying could be minimized.
+//
+// - Support for various special types such as arrays and refs is not
+// implemented.  Such support could be added in a straightforward manner.
+//
+// - 32-bit tags are used for union types even when a byte would suffice.  It
+// would be easy to optimize the representation.
+//
+// - Lists are pickled via naive recursive encoding.  Lists could be implemented
+// via (not yet implemented) array support.
+//
+// Perhaps the main point here is that it doesn't really take all that much code
+// to implement a fairly powerful pickler.
+
 type State = Writing | Cyclic | Acyclic
 type Info = {Pos: int64; mutable State: State}
 type PU<'x> = {P: Dictionary<obj, Info> -> BinaryWriter -> 'x -> unit
