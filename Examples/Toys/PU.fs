@@ -9,12 +9,17 @@ open Infers.Rep
 open Toys.Basic
 open Toys.Rec
 
-// This is a toy example of binary pickler / unpickler.  This can handle ints,
+// This is a toy example of a binary pickler / unpickler.  This can handle ints,
 // floats, strings, tuples, records, and union types.  Recursive types, such as
 // lists, and recursive values, via records, are supported.  Other types,
 // including arbitrary classes or structs, are not supported.
 //
-// This could improved in various ways.  Examples:
+// This could be improved in various ways.  Examples:
+//
+// - Pickles do not contain any error checking information.  It would be
+// straighforward to add, for example, a hash of the type structure to the
+// beginning of the pickle and verify it when unpickling to help to detect type
+// errors.
 //
 // - Inefficient, but concise, pattern matching forms are used to manipulate
 // nested pairs.  Using byref arguments copying could be minimized.
@@ -121,12 +126,15 @@ let physicalComparer = {new IEqualityComparer<obj> with
   member t.GetHashCode (x) = LanguagePrimitives.PhysicalHash x
   member t.Equals (l, r) = LanguagePrimitives.PhysicalEquality l r}
 
+/// Converts the given value to an array of bytes.
 let pickle x =
   use s = new MemoryStream ()
   use w = new BinaryWriter (s)
   StaticRules<PU>.Generate().PU.P (Dictionary (physicalComparer)) w x
   s.ToArray ()
 
+/// Converts an array of bytes produced by `pickle` into a value.  The type of
+/// the result must match the type that was given to `pickle`.
 let unpickle bytes =
   use r = new BinaryReader (new MemoryStream (bytes, false))
   StaticRules<PU>.Generate().PU.U (Dictionary ()) r
