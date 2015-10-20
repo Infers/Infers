@@ -1,13 +1,11 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
-module Toys.PU
+module Infers.Toys.PU
 
 open System.Collections.Generic
 open System.IO
 open Infers
 open Infers.Rep
-open Toys.Basic
-open Toys.Rec
 
 // This is a toy example of a binary pickler / unpickler.  This can handle ints,
 // floats, strings, tuples, records, and union types.  Recursive types, such as
@@ -40,12 +38,19 @@ type State = Writing | Cyclic | Acyclic
 type Info = {Pos: int64; mutable State: State}
 type PU<'x> = {P: Dictionary<obj, Info> -> BinaryWriter -> 'x -> unit
                U: Dictionary<int64, obj> -> BinaryReader -> 'x}
-type PUE<'x> = {PU: PU<'x>}
 type PUP<'e, 'r, 'o, 't> = P of PU<'e>
 type PUS<'p, 'o, 't> = S of list<PU<'t>>
 
 type [<InferenceRules>] PU () =
-  member t.Entry (_: Rep, _: Basic, _: Rec, xP) = {PU = xP}
+  inherit Rep ()
+
+  member t.Rec () =
+    let p = ref (fun _ -> failwith "Rec")
+    let u = ref (fun _ -> failwith "Rec")
+    {new Rec<PU<'t>> () with
+      override t.Get () = {P = fun d -> !p d
+                           U = fun d -> !u d}
+      override t.Set tPU = p := tPU.P ; u := tPU.U}
 
   member t.Int = {U = fun _ r -> r.ReadInt32 ()
                   P = fun _ w -> w.Write}
@@ -126,15 +131,12 @@ let physicalComparer = {new IEqualityComparer<obj> with
   member t.GetHashCode (x) = LanguagePrimitives.PhysicalHash x
   member t.Equals (l, r) = LanguagePrimitives.PhysicalEquality l r}
 
-/// Converts the given value to an array of bytes.
 let pickle x =
   use s = new MemoryStream ()
   use w = new BinaryWriter (s)
-  StaticRules<PU>.Generate().PU.P (Dictionary (physicalComparer)) w x
+  StaticRules<PU>.Generate().P (Dictionary (physicalComparer)) w x
   s.ToArray ()
 
-/// Converts an array of bytes produced by `pickle` into a value.  The type of
-/// the result must match the type that was given to `pickle`.
 let unpickle bytes =
   use r = new BinaryReader (new MemoryStream (bytes, false))
-  StaticRules<PU>.Generate().PU.U (Dictionary ()) r
+  StaticRules<PU>.Generate().U (Dictionary ()) r

@@ -1,6 +1,6 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
-module Toys.Rec
+module Infers.Toys.Rec
 
 open Infers
 open Infers.Rep

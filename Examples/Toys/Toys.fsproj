@@ -51,10 +51,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Basic.fsi" />
-    <Compile Include="Basic.fs" />
-    <Compile Include="Rec.fsi" />
-    <Compile Include="Rec.fs" />
     <Compile Include="List.fsi" />
     <Compile Include="List.fs" />
     <Compile Include="Solver.fsi" />
@@ -71,7 +67,6 @@
     <Compile Include="Zipper.fs" />
     <Compile Include="Elems.fsi" />
     <Compile Include="Elems.fs" />
-    <Compile Include="PU.fs" />
     <Compile Include="Toys.fs" />
     <None Include="packages.config" />
   </ItemGroup>

@@ -129,7 +129,7 @@ module Elems =
     |> printfn "%A"
 
 module PU =
-  open Toys.PU
+  open Infers.Toys.PU
 
   type Easy = {too: list<string>; easy: float * int}
   type Tricky = {Val: int; Tricky: Tricky}

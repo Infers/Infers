@@ -1,6 +1,6 @@
 // Copyright (C) by Vesa Karvonen
 
-module Toys.Basic
+module Infers.Toys.Basic
 
 open Infers
 
