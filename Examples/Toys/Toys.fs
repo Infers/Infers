@@ -143,8 +143,9 @@ module PU =
     printfn "%A %A %A" t.Val t.Tricky.Val t.Tricky.Tricky.Val
 
 module Pretty =
+  type Foo = {bar: string}
   let test () =
-    show (Some 10) |> printfn "%s"
+    show (Some 10, [2], [|{bar = "3"}|]) |> printfn "%s"
 
 [<EntryPoint>]
 let main _ =
