@@ -12,6 +12,8 @@
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>Infers.Rep</Name>
     <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -36,32 +38,6 @@
     <GenerateTailCalls>true</GenerateTailCalls>
     <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
-      <Name>Infers.Core</Name>
-      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Infers\Infers.fsproj">
-      <Name>Infers</Name>
-      <Project>{B06B1B50-16C3-42C0-A820-59BBA70EA601}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Assembly.fs" />
-    <Compile Include="RepTypes.fsi" />
-    <Compile Include="RepTypes.fs" />
-    <Compile Include="RepRules.fsi" />
-    <Compile Include="RepRules.fs" />
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -78,6 +54,38 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <ItemGroup>
+    <Compile Include="Assembly.fs" />
+    <Compile Include="RepTypes.fsi" />
+    <Compile Include="RepTypes.fs" />
+    <Compile Include="RepRules.fsi" />
+    <Compile Include="RepRules.fs" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+    </Reference>
+    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
+      <Name>Infers.Core</Name>
+      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Infers\Infers.fsproj">
+      <Name>Infers</Name>
+      <Project>{B06B1B50-16C3-42C0-A820-59BBA70EA601}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -85,7 +93,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

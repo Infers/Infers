@@ -3,6 +3,7 @@
 module Toys.Toys
 
 open System.Diagnostics
+open Infers.Toys
 
 let time ef =
   let start = Stopwatch.StartNew ()
@@ -141,6 +142,10 @@ module PU =
     let t : Tricky = unpickle p
     printfn "%A %A %A" t.Val t.Tricky.Val t.Tricky.Tricky.Val
 
+module Pretty =
+  let test () =
+    show (Some 10) |> printfn "%s"
+
 [<EntryPoint>]
 let main _ =
   try
@@ -153,6 +158,7 @@ let main _ =
     time Zipper.test
     time Goat.test
     time PU.test
+    time Pretty.test
     time Zebra.test
   with
    | e ->

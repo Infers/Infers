@@ -12,6 +12,8 @@
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>Infers</Name>
     <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -38,34 +40,6 @@
     <OtherFlags>--warnon:1182</OtherFlags>
     <GenerateTailCalls>true</GenerateTailCalls>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Assembly.fs" />
-    <Compile Include="Util.fs" />
-    <Compile Include="StaticMap.fsi" />
-    <Compile Include="StaticMap.fs" />
-    <Compile Include="TypeManip.fs" />
-    <Compile Include="EngineInterface.fsi" />
-    <Compile Include="EngineInterface.fs" />
-    <Compile Include="RecFn.fsi" />
-    <Compile Include="RecFn.fs" />
-    <Compile Include="Engine.fsi" />
-    <Compile Include="Engine.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
-      <Name>Infers.Core</Name>
-      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -82,6 +56,42 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <ItemGroup>
+    <Compile Include="Assembly.fs" />
+    <Compile Include="Util.fs" />
+    <Compile Include="StaticMap.fsi" />
+    <Compile Include="StaticMap.fs" />
+    <Compile Include="TypeManip.fs" />
+    <Compile Include="EngineInterface.fsi" />
+    <Compile Include="EngineInterface.fs" />
+    <Compile Include="RecFn.fsi" />
+    <Compile Include="RecFn.fs" />
+    <Compile Include="Engine.fsi" />
+    <Compile Include="Engine.fs" />
+    <Compile Include="StaticRules.fsi" />
+    <Compile Include="StaticRules.fs" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
+    </Reference>
+    <ProjectReference Include="..\Infers.Core\Infers.Core.csproj">
+      <Name>Infers.Core</Name>
+      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -89,9 +99,4 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <Compile Include="StaticRules.fsi" />
-    <Compile Include="StaticRules.fs" />
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>
