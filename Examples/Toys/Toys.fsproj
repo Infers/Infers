@@ -80,6 +80,14 @@
       <Project>{B06B1B50-16C3-42C0-A820-59BBA70EA601}</Project>
       <Name>Infers</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Libs\Infers.Toys\Infers.Toys.fsproj">
+      <Project>{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}</Project>
+      <Name>Infers.Toys</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Libs\Infers.Core\Infers.Core.csproj">
+      <Project>{DD618307-19AC-4667-BD22-6CC10BBC7BF5}</Project>
+      <Name>Infers.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Libs\Infers.Rep\Infers.Rep.fsproj">
       <Project>{2399EAEA-7668-48BA-91B4-162060CB050F}</Project>
       <Name>Infers.Rep</Name>

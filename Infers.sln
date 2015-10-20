@@ -14,7 +14,7 @@ Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers", "Libs\Infers\Infer
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers.Rep", "Libs\Infers.Rep\Infers.Rep.fsproj", "{2399EAEA-7668-48BA-91B4-162060CB050F}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers.Basic", "Libs\Infers.Basic\Infers.Basic.fsproj", "{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers.Toys", "Libs\Infers.Toys\Infers.Toys.fsproj", "{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infers.Core", "Libs\Infers.Core\Infers.Core.csproj", "{DD618307-19AC-4667-BD22-6CC10BBC7BF5}"
 EndProject

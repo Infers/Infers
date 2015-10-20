@@ -1,12 +1,12 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
-namespace Infers.Basic
+namespace Infers.Toys
 
 open System.Reflection
 open System.Runtime.InteropServices
 
-[<assembly: AssemblyTitle("Infers.Basic")>]
-[<assembly: AssemblyDescription("Infers.Basic implements a number of basic datatype generic functions.")>]
+[<assembly: AssemblyTitle("Infers.Toys")>]
+[<assembly: AssemblyDescription("Infers.Toys implements a number of basic datatype generic functions.")>]
 [<assembly: AssemblyConfiguration(Infers.Core.CommonAssemblyInfo.Configuration)>]
 [<assembly: AssemblyCompany(Infers.Core.CommonAssemblyInfo.Company)>]
 [<assembly: AssemblyProduct(Infers.Core.CommonAssemblyInfo.Product)>]
