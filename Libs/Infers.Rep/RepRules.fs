@@ -69,7 +69,7 @@ type Builder =
     let typeBuilder = repModule.DefineType (uniqueName (), T.Public, baseType)
     let (values, ()) = builder (typeBuilder, [])
     let baseArgTypes =
-      match baseType.GetConstructors (B.Instance|||B.Public|||B.NonPublic) with
+      match baseType.GetConstructors (B.Instance|||B.Public) with
        | [|baseCtor|] when baseCtor.GetParameters().Length = basePars.Length ->
          let baseArgTypes =
            baseCtor.GetParameters () |> Array.map (fun p -> p.ParameterType)

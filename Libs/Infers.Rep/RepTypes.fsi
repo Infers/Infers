@@ -74,6 +74,8 @@ module Pair =
 /// choice that identifies the particular case.
 #endif
 type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
+  new: int -> AsChoices<'s, 't>
+
   /// The number of cases the discriminated union type `'t` has.
   val Arity: int
 
@@ -86,13 +88,15 @@ type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Base class for type representations.
-type [<InferenceRules>] Rep<'t> = class end
+type [<InferenceRules>] Rep<'t> =
+  new: unit -> Rep<'t>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Representation for primitive types.
 type [<AbstractClass>] Prim<'t> =
   inherit Rep<'t>
+  new: unit -> Prim<'t>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -111,9 +115,12 @@ type [<AbstractClass>] Prim<'t> =
 #endif
 type [<AbstractClass>] Product<'t> =
   inherit Rep<'t>
+  new: unit -> Product<'t>
 
 /// Representation of an element of type `'e` of the product type `'t`.
 type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
+  new: int -> Elem<'e, 'r, 'o, 't>
+
   /// The index of the element.
   val Index: int
 
@@ -123,6 +130,7 @@ type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
 /// Representation of a possibly labelled element of type `'e`.
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
   inherit Elem<'e, 'r, 'o, 't>
+  new: int * string -> Labelled<'e, 'r, 'o, 't>
   
   /// The name of the label.
   val Name: string
@@ -132,20 +140,24 @@ type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
 /// Type representation for the F# tuple type `'t`.
 type [<AbstractClass>] Tuple<'t> =
   inherit Product<'t>
+  new: unit -> Tuple<'t>
 
 /// Representation of an element of type `'e` of a tuple of type `'t`.
 type [<AbstractClass>] Item<'e, 'r, 't> =
   inherit Elem<'e, 'r, 't, 't>
+  new: int -> Item<'e, 'r, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Type representation for the F# record type `'t`.
 type [<AbstractClass>] Record<'t> =
   inherit Product<'t>
+  new: unit -> Record<'t>
 
 /// Representation of a field of type `'e` of the record type `'t`.
 type [<AbstractClass>] Field<'e, 'r, 't> =
   inherit Labelled<'e, 'r, 't, 't>
+  new: int * string * bool -> Field<'e, 'r, 't>
 
   /// Whether the field is mutable.
   val IsMutable: bool
@@ -170,6 +182,8 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 /// signature in F#.
 #endif
 type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
+  new: int * bool -> AsPairs<'p, 'o, 't>
+
   /// The number of elements the product type has.
   val Arity: int
 
@@ -228,10 +242,12 @@ type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
 #endif
 type [<AbstractClass>] Union<'t> =
   inherit Rep<'t>
+  new: unit -> Union<'t>
 
 /// Representation of a case of the F# discriminated union type `'t`.
 type [<AbstractClass>] Case<'p, 'o, 't> =
   inherit AsPairs<'p, 'o, 't>
+  new: string * int * int -> Case<'p, 'o, 't>
 
   /// The name of the case.
   val Name: string
@@ -243,3 +259,4 @@ type [<AbstractClass>] Case<'p, 'o, 't> =
 /// F# discriminated union type `'t`.
 type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
   inherit Labelled<'e, 'r, 'o, 't>
+  new: int * string -> Label<'e, 'r, 'o, 't>
