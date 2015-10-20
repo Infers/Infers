@@ -44,7 +44,7 @@ module Util =
   let inline atomize (f, x) =
     match f with
      | Atomic -> x
-     | Part -> parens x
+     | Part -> gnest 1 <| parens x
   let inline just (_, x) = x
 
   let inline hexc c =
