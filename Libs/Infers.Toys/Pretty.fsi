@@ -1,5 +1,6 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
+[<AutoOpen>]
 module Infers.Toys.Pretty
 
 open System
