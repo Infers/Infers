@@ -5,6 +5,17 @@ module Infers.Toys.PU
 open Infers
 open Infers.Rep
 
+////////////////////////////////////////////////////////////////////////////////
+
+/// Converts the given value to an array of bytes.
+val pickle: 'x -> array<byte>
+
+/// Converts an array of bytes produced by `pickle` into a value.  The type of
+/// the result must match the type that was given to `pickle`.
+val unpickle: array<byte> -> 'x
+
+////////////////////////////////////////////////////////////////////////////////
+
 type PU<'x>
 type PUP<'e, 'r, 'o, 't>
 type PUS<'p, 'o, 't>
@@ -38,10 +49,3 @@ type [<InferenceRules>] PU =
               -> PUS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
 
   member Sum: AsChoices<'s, 't> * PUS<'s, 's, 't> -> PU<'t>
-
-/// Converts the given value to an array of bytes.
-val pickle: 'x -> array<byte>
-
-/// Converts an array of bytes produced by `pickle` into a value.  The type of
-/// the result must match the type that was given to `pickle`.
-val unpickle: array<byte> -> 'x
