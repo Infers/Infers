@@ -1,7 +1,8 @@
 // Copyright (C) by Vesa Karvonen
 
-[<AutoOpen>]
-module Infers.Toys.MayBeMutable
+namespace Infers.Toys
 
-/// Determines whether a value of the given type may contain mutable objects.
-val mayBeMutable<'t> : bool
+[<AutoOpen>]
+module MayBeMutable =
+  /// Determines whether a value of the given type may contain mutable objects.
+  val mayBeMutable<'t> : bool
