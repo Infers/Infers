@@ -44,4 +44,4 @@ type [<InferenceRules>] GMap () =
     let sG = Array.ofList sG
     {gm = fun h2h w -> sG.[m.Tag w] h2h w}
 
-let gmap (h2h: 'h -> 'h) (w: 'w) : 'w = StaticRules<GMap>.Generate() h2h w
+let gmap h2h w = Engine.generate<GMap, GMap<_, _>> h2h w

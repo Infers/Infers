@@ -324,3 +324,9 @@ module Engine =
          else None
        | some -> some
     gen 1
+
+  let generate<'rules, 'result when 'rules : (new : unit -> 'rules)> : 'result =
+    StaticMap<'rules>.Memoize <| fun () ->
+    match tryGenerate (new 'rules () :> obj) with
+     | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
+     | Some result -> result

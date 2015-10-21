@@ -280,8 +280,8 @@ let rec fromZipper (xZ: Zipper<'x>) : 'x =
    | Some xZ ->
      fromZipper xZ
 
-let toZipperAny (x: 'x) : Zipper<'x> =
-  (StaticRules<Zipper>.Generate() : Up<'x, 'x>).Up x
+let toZipperAny (x: 'x) =
+  Engine.generate<Zipper, Up<'x, 'x>>.Up x
 let toZipperThe (x: 'x) : Zipper<'x, 'x> =
   match toZipperAny x with
    | :? Zipper<'x, 'x> as z -> z

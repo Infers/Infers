@@ -68,8 +68,6 @@
     <Compile Include="RecFn.fs" />
     <Compile Include="Engine.fsi" />
     <Compile Include="Engine.fs" />
-    <Compile Include="StaticRules.fsi" />
-    <Compile Include="StaticRules.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

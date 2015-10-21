@@ -43,8 +43,7 @@ type [<InferenceRules>] Fetch () =
     let sF = Array.ofList sF
     fun w -> sF.[m.Tag w] w
 
-let fetch (w: 'w) : array<'h> =
-  (StaticRules<Fetch>.Generate () : Fetch<'h, 'w>) w
+let fetch w = Engine.generate<Fetch, Fetch<_, _>> w
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -104,8 +103,7 @@ type [<InferenceRules>] Subst () =
     let s = Array.ofList s
     fun hs w -> s.[m.Tag w] hs w
 
-let subst (hs: array<'h>) (w: 'w) : 'w =
-  (StaticRules<Subst>.Generate () : Subst<'h, 'w>) hs w
+let subst hs w = Engine.generate<Subst, Subst<'h, 'w>> hs w
 
 ////////////////////////////////////////////////////////////////////////////////
 

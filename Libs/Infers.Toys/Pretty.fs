@@ -249,5 +249,5 @@ type [<InferenceRules>] Pretty () =
     asP.Extract (t, &es)
     atom (enclose lr (gnest 1 (just (pP.Pretty (&es)))))
 
-let pretty x : Doc = StaticRules<Pretty>.Generate () x
+let pretty x = Engine.generate<Pretty, _ -> Doc> x
 let show x = render None (pretty x)

@@ -130,9 +130,9 @@ type [<InferenceRules>] PU () =
 let pickle x =
   use s = new MemoryStream ()
   use w = new BinaryWriter (s)
-  StaticRules<PU>.Generate().P (Dictionary (physicalComparer)) w x
+  Engine.generate<PU, PU<_>>.P (Dictionary (physicalComparer)) w x
   s.ToArray ()
 
 let unpickle bytes =
   use r = new BinaryReader (new MemoryStream (bytes, false))
-  StaticRules<PU>.Generate().U (Dictionary ()) r
+  Engine.generate<PU, PU<_>>.U (Dictionary ()) r

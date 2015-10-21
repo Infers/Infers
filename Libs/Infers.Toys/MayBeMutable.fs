@@ -55,4 +55,4 @@ type [<InferenceRules>] MayBeMutable () =
 ////////////////////////////////////////////////////////////////////////////////
 
 let mayBeMutable<'t> =
-  (StaticRules<MayBeMutable>.Generate() : MBM<'t>).MBM
+  Engine.generate<MayBeMutable, MBM<'t>>.MBM

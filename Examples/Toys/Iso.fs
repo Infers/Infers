@@ -23,7 +23,7 @@ type [<InferenceRules>] Iso () =
     I ((fun (Pair (a, b)) -> (a, b)),
        (fun (a, b) -> Pair (a, b)))
 
-let iso<'x, 'y> : Iso<'x, 'y> = StaticRules<Iso>.Generate ()
+let iso<'x, 'y> = Engine.generate<Iso, Iso<'x, 'y>>
 let fwd (I (x2y, _)) = x2y
 let bwd (I (_, y2x)) = y2x
 let convert (x: 'x) : 'y = fwd iso x

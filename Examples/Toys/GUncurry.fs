@@ -18,7 +18,7 @@ module Naive =
     member g.Finish () = id
 
   /// Derives a function that uncurries a given n-ary curried function.
-  let guncurry f = StaticRules<GUncurry>.Generate() f
+  let guncurry f = Engine.generate<GUncurry, _> f
 
   let test () : unit =
     guncurry (printfn "%d %s") (1, "2")
@@ -53,7 +53,7 @@ module Optimized =
         override g.Do (x2y, x) = x2y x}
 
   /// Derives a function that uncurries a given n-ary curried function.
-  let guncurry f = StaticRules<GUncurry>.Generate() f
+  let guncurry f = Engine.generate<GUncurry, _> f
 
   let test () : unit =
     guncurry (printfn "%d %s") (1, "2")
