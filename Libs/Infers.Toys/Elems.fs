@@ -55,6 +55,8 @@ module Elems =
 
   let universe w = Seq.append (Seq.singleton w) (elemsDn w)
 
+  let rec para op w = children w |> Array.map (para op) |> op w
+
   //////////////////////////////////////////////////////////////////////////////
 
   type Subst<'h, 'w> = ('h -> 'h) -> 'w -> 'w
@@ -63,6 +65,8 @@ module Elems =
     abstract Subst: ('h -> 'h) * byref<'e> -> unit
 
   type SubstS<'p, 'o, 'h, 'w> = SS of list<Subst<'h, 'w>>
+
+  let missS _ w = w
 
   type [<InferenceRules>] Subst () =
     inherit Rep ()
@@ -89,13 +93,13 @@ module Elems =
              rS.Subst (h2h, &er.Rest)}
     member g.Product (m: AsPairs<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
       match pS with
-       | null -> fun _ w -> w
+       | null -> missS
        | pS -> fun h2h w ->
          let mutable p = m.ToPairs w
          pS.Subst (h2h, &p)
          m.Create (&p)
     member g.Case (_: Case<Empty, 'o, 'w>) : SubstS<Empty, 'o, 'h, 'w> =
-      SS [fun _ w -> w]
+      SS [missS]
     member g.Case (m: Case<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
       SS [g.Product (m, pS)] : SubstS<'p, 'o, 'h, 'w>
     member g.Choice (SS pS: SubstS<       'p     , Choice<'p, 'o>, 'h, 'w>,
@@ -121,8 +125,3 @@ module Elems =
                            | None -> w
                            | Some w -> rewrite w2wO w
               <| w
-
-  let rec para op w =
-    children w
-    |> Array.map (para op)
-    |> op w

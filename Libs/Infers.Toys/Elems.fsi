@@ -41,6 +41,11 @@ module Elems =
   /// `universe w` is equivalent to `Seq.append (Seq.singleton w) (elemsDn w)`.
   val universe: 'w -> seq<'w>
 
+  /// Paramorphism.
+  val para: ('w -> array<'r> -> 'r) -> 'w -> 'r
+
+  //////////////////////////////////////////////////////////////////////////////
+
   /// `subst h2h w` returns a new value of type `'w` which is like `w` except
   /// that every immediate element `h_i` of type `'h` in `w` is replaced with
   /// `h2h h_i`.  `elems >> Array.map h2h` is equivalent to `subst h2h >>
@@ -90,6 +95,3 @@ module Elems =
 
   /// Transforms with given partial function until a fixed point is reached.
   val rewrite: ('w -> option<'w>) -> 'w -> 'w
-
-  /// Paramorphism.
-  val para: ('w -> array<'r> -> 'r) -> 'w -> 'r
