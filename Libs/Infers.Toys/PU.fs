@@ -127,10 +127,6 @@ type [<InferenceRules>] PU () =
     {P = fun d w t -> let i = asC.Tag t in w.Write i ; sPU.[i].P d w t
      U = fun d r -> sPU.[r.ReadInt32 ()].U d r}
 
-let physicalComparer = {new IEqualityComparer<obj> with
-  member t.GetHashCode (x) = LanguagePrimitives.PhysicalHash x
-  member t.Equals (l, r) = LanguagePrimitives.PhysicalEquality l r}
-
 let pickle x =
   use s = new MemoryStream ()
   use w = new BinaryWriter (s)

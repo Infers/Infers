@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assembly.fs" />
+    <Compile Include="Util.fs" />
     <Compile Include="Basic.fsi" />
     <Compile Include="Basic.fs" />
     <Compile Include="Rec.fsi" />
