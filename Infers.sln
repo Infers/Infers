@@ -1,8 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
+# Visual Studio 2012
 VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{C611495D-33BC-4320-8D1B-A33AE888ED97}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D026932E-2FD5-41CE-826A-087BEEBB676E}"
 	ProjectSection(SolutionItems) = preProject
 		Docs\Tutorial.md = Docs\Tutorial.md
@@ -10,22 +15,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{D026932E-2
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{974D8B7C-2F55-44CE-A579-B7728ECBAD2D}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers", "Libs\Infers\Infers.fsproj", "{B06B1B50-16C3-42C0-A820-59BBA70EA601}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers", "Libs\Infers\Infers.fsproj", "{B06B1B50-16C3-42C0-A820-59BBA70EA601}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers.Rep", "Libs\Infers.Rep\Infers.Rep.fsproj", "{2399EAEA-7668-48BA-91B4-162060CB050F}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers.Rep", "Libs\Infers.Rep\Infers.Rep.fsproj", "{2399EAEA-7668-48BA-91B4-162060CB050F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infers.Toys", "Libs\Infers.Toys\Infers.Toys.fsproj", "{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Infers.Toys", "Libs\Infers.Toys\Infers.Toys.fsproj", "{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infers.Core", "Libs\Infers.Core\Infers.Core.csproj", "{DD618307-19AC-4667-BD22-6CC10BBC7BF5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{F6892AB8-6A0C-4AB9-9554-E42C561C5125}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Toys", "Examples\Toys\Toys.fsproj", "{240F2FF2-188A-48E7-8157-092C77E4263D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{3430A088-2AB2-4019-B48A-5A355BD5D8C0}"
-	ProjectSection(SolutionItems) = preProject
-		NuGet\Infers.nuspec = NuGet\Infers.nuspec
-	EndProjectSection
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Toys", "Examples\Toys\Toys.fsproj", "{240F2FF2-188A-48E7-8157-092C77E4263D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root", "Root", "{57274DE6-EE01-4F72-B4D0-9CD5448668EA}"
 	ProjectSection(SolutionItems) = preProject
@@ -34,42 +34,32 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root", "Root", "{57274DE6-E
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{5367BC1A-951F-487F-AA9F-8AA2C963B695}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2399EAEA-7668-48BA-91B4-162060CB050F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2399EAEA-7668-48BA-91B4-162060CB050F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2399EAEA-7668-48BA-91B4-162060CB050F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2399EAEA-7668-48BA-91B4-162060CB050F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{240F2FF2-188A-48E7-8157-092C77E4263D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{240F2FF2-188A-48E7-8157-092C77E4263D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{240F2FF2-188A-48E7-8157-092C77E4263D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{240F2FF2-188A-48E7-8157-092C77E4263D}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
+		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B06B1B50-16C3-42C0-A820-59BBA70EA601}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD618307-19AC-4667-BD22-6CC10BBC7BF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B06B1B50-16C3-42C0-A820-59BBA70EA601} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
@@ -77,5 +67,8 @@ Global
 		{A3D6D823-6F26-45CB-8BF2-CB61D6246A68} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
 		{DD618307-19AC-4667-BD22-6CC10BBC7BF5} = {974D8B7C-2F55-44CE-A579-B7728ECBAD2D}
 		{240F2FF2-188A-48E7-8157-092C77E4263D} = {F6892AB8-6A0C-4AB9-9554-E42C561C5125}
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
