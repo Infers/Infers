@@ -95,7 +95,7 @@ module Iso =
     printfn "%A" t
 
 module Elems =
-  module Elems = Infers.Toys.Elems
+  open Infers.Toys.Elems
 
   type Range = R of int
   type Term =
@@ -104,14 +104,8 @@ module Elems =
     | App of Term * Term * Range
     | If of Term * Term * Term * Range
 
-  let rec allRanges term : seq<Range> =
-    Seq.append (Elems.fetch term)
-               (Elems.fetch term |> Seq.collect allRanges)
-
-  let rec incRanges term =
-    term
-    |> Elems.map incRanges
-    |> Elems.map (fun (R i) -> R (i+1))
+  let allRanges = elemsDn<Range, Term>
+  let incRanges = substUp (fun (R i) -> R (i+1))
 
   let term = App (Lambda ("x",
                           If (Var ("x", R 7),
