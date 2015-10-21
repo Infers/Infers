@@ -15,6 +15,15 @@ type [<AbstractClass>] Zipper<'w> () =
   abstract PrevAny: unit -> option<Zipper<'w>>
   abstract PrevThe: unit -> option<Zipper<'w, 'w>>
   abstract Up: unit -> option<Zipper<'w>>
+  default z.DownHeadAny () = None
+  default z.DownHeadThe () = None
+  default z.DownLastAny () = None
+  default z.DownLastThe () = None
+  default z.NextAny () = None
+  default z.NextThe () = None
+  default z.PrevAny () = None
+  default z.PrevThe () = None
+  default z.Up () = None
 
 and [<AbstractClass>] Zipper<'w, 'h> () =
   inherit Zipper<'w> ()
@@ -41,6 +50,12 @@ type [<AbstractClass>] Down<'w, 't> () =
   abstract DownHeadThe: Up<'w, 't> * 't -> option<Zipper<'w, 'w>>
   abstract DownLastAny: Up<'w, 't> * 't -> option<Zipper<'w>>
   abstract DownLastThe: Up<'w, 't> * 't -> option<Zipper<'w, 'w>>
+  default d.DownHeadThe (_, _) = None
+  default d.DownLastThe (_, _) = None
+
+let downNone<'w, 't> = {new Down<'w, 't> () with
+  member d.DownHeadAny (_, _) = None
+  member d.DownLastAny (_, _) = None}
 
 type [<AbstractClass;AllowNullLiteral>] DownPAny<'w, 'o, 'p, 't> () =
   [<DefaultValue>] val mutable internal PrevAny: DownPAny<'w,     'o, 'p, 't>
@@ -73,10 +88,6 @@ type [<InferenceRules>] Zipper () =
           member z.DownHeadThe () = wD.DownHeadThe (u, w)
           member z.DownLastAny () = wD.DownLastAny (u, w)
           member z.DownLastThe () = wD.DownLastThe (u, w)
-          member z.NextAny () = None
-          member z.NextThe () = None
-          member z.PrevAny () = None
-          member z.PrevThe () = None
           member z.Get () = w
           member z.Set w = match u.Up w with
                             | :? Zipper<'w, 'w> as z -> z
@@ -94,12 +105,31 @@ type [<InferenceRules>] Zipper () =
           member d.DownLastThe (up, h) = (!r).DownLastThe (up, h)}
       member t.Set d = r := d}
 
-  member z.Prim (_: Prim<'t>) =
-    {new Down<'w, 't> () with
-      member d.DownHeadAny (_, _) = None
-      member d.DownHeadThe (_, _) = None
-      member d.DownLastAny (_, _) = None
-      member d.DownLastThe (_, _) = None}
+  member z.Prim (_: Prim<'t>) = downNone<'w, 't>
+
+  member z.String () : Down<'w, string> =
+    let rec at (up: Up<'w, string>) (s: string) i =
+      {new Zipper<'w, char> () with
+        member z.NextAny () =
+          if i+1 < s.Length then at up s (i+1) :> Zipper<_> |> Some else None
+        member z.PrevAny () =
+          if 0 < i then at up s (i-1) :> Zipper<_> |> Some else None
+        member z.Up () = up.Up s |> Some
+        member z.Get () = s.[i]
+        member z.Set (c) =
+          // There must be a faster way.  Pull requests are welcome!
+          let cs = s.ToCharArray ()
+          cs.[i] <- c
+          at up (new string (cs)) i}
+    {new Down<_, _> () with
+      member d.DownHeadAny (up, s) =
+        match s with
+         | null -> None
+         | s -> if 0 = s.Length then None else at up s 0 :> Zipper<_> |> Some
+      member d.DownLastAny (up, s) =
+        match s with
+         | null -> None
+         | s -> if 0 = s.Length then None else at up s 0 :> Zipper<_> |> Some}
 
   member z.Elem (_: Elem<'h, 'r, 'o, 't>,
                  rotate: Rotate<'v, 'h, 'n, 'r, 'p>,
@@ -158,9 +188,8 @@ type [<InferenceRules>] Zipper () =
            z :> Zipper<_>}]
 
   member z.Pair (P e: DownP<'w,      'e     , Pair<'e, 'r>, 'o, 'p, 't>,
-                 P r: DownP<'w,          'r ,          'r , 'o, 'p, 't>)
-                    : DownP<'w, Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 't> =
-    P (e @ r)
+                 P r: DownP<'w,          'r ,          'r , 'o, 'p, 't>) =
+    P (e @ r)       : DownP<'w, Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 't>
 
   member z.Product (m: AsPairs<'p, 'o, 't>,
                     P downs: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
@@ -206,21 +235,14 @@ type [<InferenceRules>] Zipper () =
       member d.DownLastThe (up, t) = downThe downLastThe up t}
 
   member z.Case (_: Case<Empty, 'o, 't>) : DownS<'w, Empty, 'o, 't> =
-    U [{new Down<'w, 't> () with
-         member d.DownHeadAny (_, _) = None
-         member d.DownHeadThe (_, _) = None
-         member d.DownLastAny (_, _) = None
-         member d.DownLastThe (_, _) = None}]
+    U [downNone<'w, 't>]
 
-  member z.Case (m: Case<'p, 'o, 't>,
-                 pD: DownP<'w, 'p, 'p, 'o, 'p, 't>)
-                   : DownS<'w, 'p, 'o, 't> =
-    U [z.Product (m, pD)]
+  member z.Case (m: Case<'p, 'o, 't>, pD: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
+    U [z.Product (m, pD)] : DownS<'w, 'p, 'o, 't>
 
   member z.Choice (U pD: DownS<'w,        'p     , Choice<'p, 'o>, 't>,
-                   U oD: DownS<'w,            'o ,            'o , 't>)
-                       : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't> =
-    U (pD @ oD)
+                   U oD: DownS<'w,            'o ,            'o , 't>) =
+    U (pD @ oD)        : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't>
 
   member z.Sum (m: AsChoices<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
     let cs = Array.ofList u

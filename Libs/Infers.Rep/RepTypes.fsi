@@ -100,6 +100,14 @@ type [<AbstractClass>] Prim<'t> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Representation for types that are not yet supported.  Pull requests are
+/// welcome!
+type [<AbstractClass>] Unsupported<'t> =
+  inherit Rep<'t>
+  new: unit -> Unsupported<'t>
+
+////////////////////////////////////////////////////////////////////////////////
+
 /// Type representation for the F# product type (tuple or record) `'t`.
 #if DOC
 ///

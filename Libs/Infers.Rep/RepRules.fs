@@ -360,8 +360,11 @@ type [<InferenceRules>] Rep () =
                 [|elems.[i]; products.[i]; t|]
              Builder.metaField elemType [|box i|]
               (Builder.overrideGetMethod "Get" t props.[i])))
-      else
+      elif t.IsPrimitive then
         Builder.metaType typeof<Prim<'t>> [||]
+         (Builder.result ())
+      else
+        Builder.metaType typeof<Unsupported<'t>> [||]
          (Builder.result ()) with
     | :? Rep<'t> as rep ->
       rep

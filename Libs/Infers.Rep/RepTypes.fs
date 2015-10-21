@@ -21,6 +21,9 @@ type [<InferenceRules>] Rep<'t> () = class end
 type [<AbstractClass>] Prim<'t> () =
   inherit Rep<'t> ()
 
+type [<AbstractClass>] Unsupported<'t> () =
+  inherit Rep<'t> ()
+
 type [<AbstractClass>] Product<'r> () =
   inherit Rep<'r> ()
 

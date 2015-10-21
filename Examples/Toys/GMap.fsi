@@ -18,6 +18,8 @@ type [<InferenceRules>] GMap =
 
   member Prim: Prim<'w> -> GM<'w, 'h>
 
+  member String: unit -> GM<string, 'h>
+
   member Elem: Elem<'e, 'r, 'o, 'w> * GMap<'e, 'h> -> GMP<'e, 'r, 'o, 'w, 'h>
 
   member Pair: GMP<     'e     , Pair<'e, 'r>, 'o, 'w, 'h>
