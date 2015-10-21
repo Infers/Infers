@@ -1,6 +1,6 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
-module Toys.Elems
+module Infers.Toys.Elems
 
 open Infers
 open Infers.Rep
@@ -43,7 +43,7 @@ type [<InferenceRules>] Fetch () =
     let sF = Array.ofList sF
     fun w -> sF.[m.Tag w] w
 
-let fetch w = Engine.generate<Fetch, Fetch<_, _>> w
+let fetch<'h, 'w> w = Engine.generate<Fetch, Fetch<'h, 'w>> w
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -103,9 +103,9 @@ type [<InferenceRules>] Subst () =
     let s = Array.ofList s
     fun hs w -> s.[m.Tag w] hs w
 
-let subst hs w = Engine.generate<Subst, Subst<'h, 'w>> hs w
+let subst<'h, 'w> hs w = Engine.generate<Subst, Subst<'h, 'w>> hs w
 
 ////////////////////////////////////////////////////////////////////////////////
 
-let map (h2h: 'h -> 'h) (w: 'w) : 'w =
+let inline map<'h, 'w> (h2h: 'h -> 'h) (w: 'w) : 'w =
   subst (fetch w |> Array.map h2h) w

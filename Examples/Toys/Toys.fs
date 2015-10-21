@@ -95,7 +95,7 @@ module Iso =
     printfn "%A" t
 
 module Elems =
-  module Elems = Toys.Elems
+  module Elems = Infers.Toys.Elems
 
   type Range = R of int
   type Term =

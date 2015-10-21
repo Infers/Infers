@@ -83,6 +83,8 @@
     <Compile Include="PU.fs" />
     <Compile Include="Pretty.fsi" />
     <Compile Include="Pretty.fs" />
+    <Compile Include="Elems.fsi" />
+    <Compile Include="Elems.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>
