@@ -5,6 +5,11 @@ namespace Infers.Rep
 open System.Reflection
 open System.Runtime.InteropServices
 
+[<AutoOpen>]
+module AssemblyInfo =
+  [<Literal>]
+  let Version = "0.1.0"
+
 [<assembly: AssemblyTitle("Infers.Rep")>]
 [<assembly: AssemblyDescription("Infers.Rep implements rules for datatype generic programming with Infers.")>]
 [<assembly: AssemblyConfiguration(Infers.Core.CommonAssemblyInfo.Configuration)>]
@@ -18,7 +23,7 @@ open System.Runtime.InteropServices
 
 [<assembly: Guid("c5343de6-96bf-4432-9d81-53c579c1c06b")>]
 
-[<assembly: AssemblyVersion(Infers.Core.CommonAssemblyInfo.Version)>]
-[<assembly: AssemblyFileVersion(Infers.Core.CommonAssemblyInfo.FileVersion)>]
+[<assembly: AssemblyVersion(Version)>]
+[<assembly: AssemblyFileVersion(Version)>]
 
 ()
