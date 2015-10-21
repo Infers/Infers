@@ -34,7 +34,7 @@ val universe: 'w -> seq<'w>
 val subst<'h, 'w> : ('h -> 'h) -> 'w -> 'w
 
 /// Given a suitably defined inductive type `'w`, with immediate elements of
-/// type `'h`, `bottomUp<'h, 'w> h2h w` performs a bottom-up transformation of
+/// type `'h`, `substUp<'h, 'w> h2h w` performs a bottom-up transformation of
 /// the given value `w`, applying `h2h` recursively on all immediate elements of
 /// type `'w`.
 ///
