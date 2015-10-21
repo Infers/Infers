@@ -75,9 +75,8 @@ module Util =
          |> atom}
 
 type [<InferenceRules>] Pretty () =
-  inherit Rep ()
-
-  member t.ToPretty (O p: PrettyO<'t>) : Pretty<'t> = fun x ->
+  member t.Enter (_: Rep, _: Integral,
+                  O p: PrettyO<'t>) : Pretty<'t> = fun x ->
     let mutable x = x
     just <| p.Pretty (&x)
 
@@ -95,15 +94,8 @@ type [<InferenceRules>] Pretty () =
     let f = atxt "false"
     O (doc (fun b -> if b then t else f))
 
-  member t.Int8:  PrettyO<int8>  = fmt "%dy"
-  member t.Int16: PrettyO<int16> = fmt "%ds"
-  member t.Int32: PrettyO<int32> = fmt "%d"
-  member t.Int64: PrettyO<int64> = fmt "%dL"
-
-  member t.UInt8:  PrettyO<uint8>  = fmt "%duy"
-  member t.UInt16: PrettyO<uint16> = fmt "%dus"
-  member t.UInt32: PrettyO<uint32> = fmt "%du"
-  member t.UInt64: PrettyO<uint64> = fmt "%dUL"
+  member t.Integral (i: Integral<'t>) : PrettyO<'t> =
+    O (str <| fun x -> x.ToString () + i.Suffix)
 
   member t.Float32: PrettyO<float32> = fmt "%.9gf" 
   member t.Float64: PrettyO<float>   = fmt "%.17g"

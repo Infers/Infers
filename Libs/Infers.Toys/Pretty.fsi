@@ -23,13 +23,12 @@ type PrettyP<'e, 'r, 'o, 't>
 type PrettyS<'p, 'o, 't>
 
 type [<InferenceRules>] Pretty =
-  inherit Rep
-
   new: unit -> Pretty
 
   // ---------------------------------------------------------------------------
 
-  member ToPretty: PrettyO<'t> -> Pretty<'t>
+  member Enter: Rep * Integral
+              * PrettyO<'t> -> Pretty<'t>
 
   // Rec -----------------------------------------------------------------------
 
@@ -41,15 +40,7 @@ type [<InferenceRules>] Pretty =
 
   member Bool: PrettyO<bool>
 
-  member Int8: PrettyO<int8>
-  member Int16: PrettyO<int16>
-  member Int32: PrettyO<int32>
-  member Int64: PrettyO<int64>
-
-  member UInt8: PrettyO<uint8>
-  member UInt16: PrettyO<uint16>
-  member UInt32: PrettyO<uint32>
-  member UInt64: PrettyO<uint64>
+  member Integral: Integral<'t> -> PrettyO<'t>
 
   member Float32: PrettyO<float32>
   member Float64: PrettyO<float>
