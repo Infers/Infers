@@ -12,3 +12,7 @@ function build () {
 
 build $SOLUTION Debug
 build $SOLUTION Release
+
+paket pack output . templatefile Infers.paket.template
+paket pack output . templatefile Infers.Rep.paket.template
+paket pack output . templatefile Infers.Toys.paket.template

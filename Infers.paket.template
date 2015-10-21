@@ -1,0 +1,40 @@
+type
+        file
+id
+        Infers
+version
+        0.1.0
+summary
+        Infers is a library for deriving F# values from their types.
+authors
+        Vesa Karvonen and Anton Tayanovskyy
+owners
+        Vesa Karvonen
+licenseUrl
+        https://github.com/VesaKarvonen/Infers/blob/master/LICENSE.md
+projectUrl
+        https://github.com/VesaKarvonen/Infers
+requireLicenseAcceptance
+        false
+description
+        Infers is a library for deriving F# values from their types and, in a
+        way, a direct application of the Curry-Howard correspondence.  The idea
+        is to view the types of F# member functions as Horn clauses.  Using a
+        Prolog-style resolution engine it is then possible to attempt to prove
+        goals given as simple F# types.  During the resolution process the
+        engine invokes the member functions to build a value of the type given
+        as the goal.
+releaseNotes
+        This is an experimental version of Infers and is not recommended for
+        production use.
+copyright
+        © Vesa Karvonen and Anton Tayanovskyy
+tags
+        F# fsharp generic polytypic logic
+dependencies
+        FSharp.Core >= 4.0.0.1
+files
+        Libs/Infers/bin/Release/Infers.dll              ==> lib/net45
+        Libs/Infers/bin/Release/Infers.XML              ==> lib/net45
+        Libs/Infers.Core/bin/Release/Infers.Core.dll    ==> lib/net45
+        Libs/Infers.Core/bin/Release/Infers.Core.XML    ==> lib/net45
