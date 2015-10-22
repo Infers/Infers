@@ -19,8 +19,8 @@ requireLicenseAcceptance
         false
 description
         Infers.Rep provides rules for Infers to generate representations and
-        efficient accessors for F# types based on a sums of products
-        representation.  The representation are designed to allow the
+        efficient accessors for F# types based on a sum of products
+        representation.  The representations are designed to allow the
         implementation of efficient polytypic and datatype generic functions.
 releaseNotes
         This is an experimental version of Infers.Rep and is not recommended for
