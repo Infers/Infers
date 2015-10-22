@@ -294,7 +294,7 @@ module Zipper =
        fromZipper xZ
 
   let toZipperAny (x: 'x) =
-    Engine.generate<Zipper, Up<'x, 'x>>.Up x
+    Engine.generateDFS<Zipper, Up<'x, 'x>>.Up x
   let toZipperThe (x: 'x) : Zipper<'x, 'x> =
     match toZipperAny x with
      | :? Zipper<'x, 'x> as z -> z
