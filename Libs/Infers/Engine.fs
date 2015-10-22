@@ -305,7 +305,7 @@ module Engine =
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
           | None -> search limit |> Seq.truncate 1
 
-  let tryGenerate (rules: obj) : option<'a> =
+  let tryGenerateWithLimits minDepth maxDepth (rules: obj) : option<'a> =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
     let rules =
       RuleSet.newEmpty ()
@@ -318,14 +318,27 @@ module Engine =
                 | Ruled _ -> None
                 | Value (_, value) -> Some (unbox<'a> value)) with
        | None ->
-         if !reached
+         if !reached && limit < maxDepth
          then gen (limit + 1)
          else None
        | some -> some
-    gen 1
+    gen minDepth
+
+  let tryGenerate (rules: obj) : option<'a> =
+    tryGenerateWithLimits 1 Int32.MaxValue rules
+
+  let inline out<'rules, 'result> (x: option<'result>) =
+    match x with
+     | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
+     | Some result -> result
 
   let generate<'rules, 'result when 'rules : (new : unit -> 'rules)> : 'result =
     StaticMap<'rules>.Memoize <| fun () ->
-    match tryGenerate (new 'rules () :> obj) with
-     | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
-     | Some result -> result
+    tryGenerate (new 'rules () :> obj) |> out
+
+  let tryGenerateDFS (rules: obj) : option<'a> =
+    tryGenerateWithLimits Int32.MaxValue Int32.MaxValue rules
+
+  let generateDFS<'rules,'result when 'rules: (new: unit -> 'rules)> : 'result =
+    StaticMap<'rules>.Memoize <| fun () ->
+    tryGenerateDFS (new 'rules () :> obj) |> out
