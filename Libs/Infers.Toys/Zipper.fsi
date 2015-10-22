@@ -18,6 +18,7 @@ module Zipper =
     abstract PrevAny: unit -> option<Zipper<'w>>
     abstract PrevThe: unit -> option<Zipper<'w, 'w>>
     abstract Up: unit -> option<Zipper<'w>>
+    abstract GetObj: unit -> obj
 
   /// Zipper over type `'w' pointing at a hole of type `'h`.
   and [<AbstractClass>] Zipper<'w, 'h> =

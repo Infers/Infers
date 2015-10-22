@@ -18,6 +18,7 @@ module Zipper =
     abstract PrevAny: unit -> option<Zipper<'w>>
     abstract PrevThe: unit -> option<Zipper<'w, 'w>>
     abstract Up: unit -> option<Zipper<'w>>
+    abstract GetObj: unit -> obj
     default z.DownHeadAny () = None
     default z.DownHeadThe () = None
     default z.DownLastAny () = None
@@ -32,6 +33,7 @@ module Zipper =
     inherit Zipper<'w> ()
     abstract Get: unit -> 'h
     abstract Set: 'h -> Zipper<'w, 'h>
+    override z.GetObj () = z.Get () |> box
 
   type [<AbstractClass>] ZipperP<'w, 'v, 'h, 'n> () =
     inherit Zipper<'w, 'h> ()
