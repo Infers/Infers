@@ -216,8 +216,7 @@ module Engine =
       reached := true
       Seq.empty
     else
-      let search () =
-         let limit = limit - 1
+      let search limit =
          let rules = RuleSet.maybeAddRulesTy ty rules
          RuleSet.rulesFor rules ty
          |> Seq.collect (fun rule ->
@@ -300,11 +299,11 @@ module Engine =
                          result::args |> List.rev |> inner [] rules objEnv)
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
       match Ty.toMonoType ty with
-       | None -> search ()
+       | None -> search (limit - 1)
        | Some monoTy ->
          match HashEqMap.tryFind monoTy objEnv with
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
-          | None -> search () |> Seq.truncate 1
+          | None -> search limit |> Seq.truncate 1
 
   let tryGenerate (rules: obj) : option<'a> =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
