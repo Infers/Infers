@@ -74,6 +74,8 @@
     <Compile Include="Pretty.fs" />
     <Compile Include="Elems.fsi" />
     <Compile Include="Elems.fs" />
+    <Compile Include="Zipper.fsi" />
+    <Compile Include="Zipper.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <PropertyGroup>

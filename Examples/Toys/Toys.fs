@@ -3,6 +3,7 @@
 module Toys.Toys
 
 open System.Diagnostics
+open Infers.Rep
 open Infers.Toys
 
 let time ef =
@@ -86,17 +87,12 @@ module Zipper =
        printfn "%A" (fromZipper z)
 
 module Iso =
-  module Iso = Toys.Iso
-  open Infers.Rep
-
   let test () =
     let t : Pair<int, Pair<float, string>> =
       Iso.convert (Pair (Pair (1.0, "2"), 3))
     printfn "%A" t
 
 module Elems =
-  open Infers.Toys.Elems
-
   type Range = R of int
   type Term =
     | Var of string * Range
@@ -124,8 +120,6 @@ module Elems =
     |> printfn "%A"
 
 module PU =
-  open Infers.Toys.PU
-
   type Easy = {too: list<string>; easy: float * int}
   type Tricky = {Val: int; Tricky: Tricky}
 
