@@ -86,7 +86,7 @@ module Elems =
   ///
   /// Now
   ///
-  ///> mirror <| Br (Br (Lf, 1, Lf), 2, Br (Br (Lf, 3, Lf), 4, Lf))
+  ///> Br (Br (Lf, 1, Lf), 2, Br (Br (Lf, 3, Lf), 4, Lf)) |> mirror
   ///
   /// evaluates to
   ///
