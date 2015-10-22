@@ -1,10 +1,12 @@
-#I __SOURCE_DIRECTORY__
+#I "Libs/Infers.Core/bin/Debug"
+#I "Libs/Infers/bin/Debug"
+#I "Libs/Infers.Rep/bin/Debug"
+#I "Libs/Infers.Toys/bin/Debug"
 
-#r "Libs/Infers.Core/bin/Debug/Infers.Core.dll"
-#r "Libs/Infers/bin/Debug/Infers.dll"
-#r "Libs/Infers.Rep/bin/Debug/Infers.Rep.dll"
-#r "Libs/Infers.Toys/bin/Debug/PPrint.dll"
-#r "Libs/Infers.Toys/bin/Debug/Infers.Toys.dll"
+#r "Infers.dll"
+#r "Infers.Rep.dll"
+#r "PPrint.dll"
+#r "Infers.Toys.dll"
 
 open PPrint
 open Infers.Toys

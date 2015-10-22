@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rlwrap -t dumb fsharpi --use:Infers.fsx
