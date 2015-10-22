@@ -376,6 +376,7 @@ type [<InferenceRules>] Rep () =
   member this.record (_: Rep<'t>, r: Record<'t>) = r
   member this.tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
   member this.prim (_: Rep<'t>, r: Prim<'t>) = r
+  member this.unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
 
   member this.asChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
   member this.asPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p

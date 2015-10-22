@@ -27,6 +27,9 @@ type [<InferenceRules>] Rep =
   /// Attempts to construct a primitive type representation for the type `'t`.
   member prim: Rep<'t> * Prim<'t> -> Prim<'t>
 
+  /// Attempts to construct a type representation for the unsupported type `'t`.
+  member unsupported: Rep<'t> * Unsupported<'t> -> Unsupported<'t>
+
   /// Construct a representation as nested choices for the type `'t`'.
   member asChoices: Rep<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
 
