@@ -3,7 +3,8 @@
 namespace Infers.Toys
 
 module Zipper =
-
+  open System.Collections.Generic
+  open System
   open Infers
   open Infers.Rep
 
@@ -82,6 +83,8 @@ module Zipper =
     abstract Un: byref<'v> * byref<'h> * byref<'n> * byref<'p> -> unit
 
   type [<InferenceRules>] Zipper () =
+    static let warned = Dictionary<Type, unit> ()
+
     member z.ToZipper (_: Rep, wD: Down<'w, 'w>) =
       {new Up<'w, 'w> () with
         member u.Up w =
@@ -108,8 +111,11 @@ module Zipper =
         member t.Set d = r := d}
 
     member z.Prim (_: Prim<'t>) = downNone<'w, 't>
+
     member z.Unsupported (_: Unsupported<'t>) =
-      printfn "WARNING: Type %A may not be properly supported by Zipper." typeof<'t>
+      if warned.ContainsKey typeof<'t> |> not then
+        warned.[typeof<'t>] <- ()
+        printfn "WARNING: Type %A is seen as primitive by Zipper." typeof<'t>
       downNone<'w, 't>
 
     member z.String () : Down<'w, string> =
