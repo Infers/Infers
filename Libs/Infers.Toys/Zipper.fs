@@ -108,6 +108,9 @@ module Zipper =
         member t.Set d = r := d}
 
     member z.Prim (_: Prim<'t>) = downNone<'w, 't>
+    member z.Unsupported (_: Unsupported<'t>) =
+      printfn "WARNING: Type %A may not be properly supported by Zipper." typeof<'t>
+      downNone<'w, 't>
 
     member z.String () : Down<'w, string> =
       let rec at (up: Up<'w, string>) (s: string) i =
