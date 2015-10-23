@@ -334,11 +334,11 @@ module Engine =
 
   let generate<'rules, 'result when 'rules : (new : unit -> 'rules)> : 'result =
     StaticMap<'rules>.Memoize <| fun () ->
-    tryGenerate (new 'rules () :> obj) |> out
+    tryGenerate (new 'rules ()) |> out<'rules, 'result>
 
   let tryGenerateDFS (rules: obj) : option<'a> =
     tryGenerateWithLimits Int32.MaxValue Int32.MaxValue rules
 
   let generateDFS<'rules,'result when 'rules: (new: unit -> 'rules)> : 'result =
     StaticMap<'rules>.Memoize <| fun () ->
-    tryGenerateDFS (new 'rules () :> obj) |> out
+    tryGenerateDFS (new 'rules ()) |> out<'rules, 'result>
