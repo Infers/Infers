@@ -16,7 +16,7 @@ type [<Struct>] Pair<'x, 'xs> =
 module Pair =
   let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
-type [<InferenceRules>] Rep<'t> () = class end
+type [<InferenceRules;AbstractClass>] Rep<'t> () = class end
 
 type [<AbstractClass>] Prim<'t> () =
   inherit Rep<'t> ()
