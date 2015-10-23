@@ -53,6 +53,9 @@ module PU =
                              U = fun d -> !u d}
         override t.Set tPU = p := tPU.P ; u := tPU.U}
 
+    member t.Unit = {U = fun _ _ -> ()
+                     P = fun _ _ () -> ()}
+
     member t.Int = {U = fun _ r -> r.ReadInt32 ()
                     P = fun _ w -> w.Write}
     member t.Float = {U = fun _ r -> r.ReadDouble ()

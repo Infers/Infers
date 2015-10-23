@@ -29,6 +29,8 @@ module PU =
 
     member Rec: unit -> Rec<PU<'t>>
 
+    member Unit: PU<unit>
+
     member Int: PU<int>
     member Float: PU<float>
     member String: PU<string>
