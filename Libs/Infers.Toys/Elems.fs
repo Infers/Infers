@@ -44,7 +44,7 @@ module Elems =
       let sF = Array.ofList sF
       fun w -> sF.[m.Tag w] w
 
-  let elems<'h, 'w> w = Engine.generate<Elems, Elems<'h, 'w>> w
+  let elems<'h, 'w> w = Engine.generateDFS<Elems, Elems<'h, 'w>> w
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -109,7 +109,7 @@ module Elems =
       let s = Array.ofList s
       fun hs w -> s.[m.Tag w] hs w
 
-  let subst<'h, 'w> h2h w = Engine.generate<Subst, Subst<'h, 'w>> h2h w
+  let subst<'h, 'w> h2h w = Engine.generateDFS<Subst, Subst<'h, 'w>> h2h w
 
   //////////////////////////////////////////////////////////////////////////////
 

@@ -131,9 +131,9 @@ module PU =
   let pickle x =
     use s = new MemoryStream ()
     use w = new BinaryWriter (s)
-    Engine.generate<PU, PU<_>>.P (Dictionary (physicalComparer)) w x
+    Engine.generateDFS<PU, PU<_>>.P (Dictionary (physicalComparer)) w x
     s.ToArray ()
 
   let unpickle bytes =
     use r = new BinaryReader (new MemoryStream (bytes, false))
-    Engine.generate<PU, PU<_>>.U (Dictionary ()) r
+    Engine.generateDFS<PU, PU<_>>.U (Dictionary ()) r
