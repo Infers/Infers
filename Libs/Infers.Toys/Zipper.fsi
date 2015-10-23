@@ -20,7 +20,7 @@ module Zipper =
     abstract Up: unit -> option<Zipper<'w>>
     abstract GetObj: unit -> obj
 
-  /// Zipper over type `'w' pointing at a hole of type `'h`.
+  /// Zipper over type `'w` pointing at a hole of type `'h`.
   and [<AbstractClass>] Zipper<'w, 'h> =
     inherit Zipper<'w>
     abstract Get: unit -> 'h
