@@ -5,7 +5,7 @@ module Toys.Solver
 open System.Text.RegularExpressions
 open Infers
 
-type Solution = Solution'0
+type Solution<'Puzzle> = Solution'1
 
 type Result<'x> = Result'1
 
@@ -16,9 +16,9 @@ let replace (p: Regex) (r: string) (s: string) =
   p.Replace (s, r)
 
 type [<InferenceRules>] Solver<'Puzzle> () =
-  member g.Solve (_: 'Puzzle, _: Result<'x>) =
+  member g.Solve (_: 'Puzzle, _: Result<'x>) : Solution<'Puzzle> =
     sprintf "%A" typeof<'x>
     |> replace prefix ""
     |> replace suffix ""
     |> printfn "%s"
-    Solution'0
+    Solution'1

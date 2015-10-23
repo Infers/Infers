@@ -31,7 +31,7 @@ type Search<'p, 'r> = Search'2
 /// program, but has been modified in a couple of ways.  Most importantly,
 /// negation is not supported by Infers, so the rules have been changed to
 /// eliminate negation.
-type [<InferenceRules>] Goat () =
+type [<InferenceRules>] Puzzle () =
   member g.Puzzle
     (_: Basic, _: List,
      _: Eq<'initial, Farmer<S> * Goat<S> * Cabbage<S> * Wolf<S>>,
@@ -66,6 +66,6 @@ type [<InferenceRules>] Goat () =
                     : Search<Cons<'s1, Cons<'s2, 'p>>, 'd> = Search'2
         
 let test () : unit =
-  if Engine.tryGenerate (Solver<Goat> ()) = Some Solution'0
+  if Engine.tryGenerate (Solver<Puzzle> ()) = Some (Solution'1: Solution<Puzzle>)
   then printfn "Got solution!"
   else printfn "No solution?"

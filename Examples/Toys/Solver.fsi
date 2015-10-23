@@ -5,7 +5,7 @@ module Toys.Solver
 open Infers
 
 /// Represents a solution to a logic puzzle.
-type Solution = Solution'0
+type Solution<'Puzzle> = Solution'1
 
 /// Represents the result `'x` of a logic puzzle.
 type Result<'x> = Result'1
@@ -15,4 +15,4 @@ type Result<'x> = Result'1
 /// defines a rule for a `Solution`, which prints out the result `'x`.
 type [<InferenceRules>] Solver<'Puzzle> =
   new: unit -> Solver<'Puzzle>
-  member Solve: 'Puzzle * Result<'x> -> Solution
+  member Solve: 'Puzzle * Result<'x> -> Solution<'Puzzle>

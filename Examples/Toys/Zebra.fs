@@ -97,6 +97,6 @@ type [<InferenceRules>] Puzzle () =
       : Result<'house1 * 'house2 * 'house3 * 'house4 * 'house5> = Result'1
 
 let test () : unit =
-  if Engine.tryGenerate (Solver<Puzzle> ()) = Some Solution'0
+  if Engine.tryGenerate (Solver<Puzzle> ()) = Some (Solution'1: Solution<Puzzle>)
   then printfn "Got solution!"
   else printfn "No solution?"
