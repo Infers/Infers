@@ -310,7 +310,7 @@ module Engine =
        | Some monoTy ->
          match HashEqMap.tryFind monoTy objEnv with
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
-          | None -> search limit |> Seq.truncate 1
+          | None -> search limit
 
   let tryGenerateWithLimits minDepth maxDepth (rules: obj) : option<'a> =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
