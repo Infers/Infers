@@ -8,7 +8,7 @@ open System.Runtime.InteropServices
 [<AutoOpen>]
 module AssemblyInfo =
   [<Literal>]
-  let Version = "0.1.0"
+  let Version = "0.1.1"
 
 [<assembly: AssemblyTitle("Infers.Rep")>]
 [<assembly: AssemblyDescription("Infers.Rep implements rules for datatype generic programming with Infers.")>]
