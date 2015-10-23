@@ -99,29 +99,36 @@ module RuleSet =
 
   let maybeAddRulesTy ty ruleSet =
     match ty with
-     | App' (Def tc, _) when not tc.IsAbstract
+     | App' (Def tc, _) when tc.IsClass && not tc.IsAbstract
                           && not <| HashEqSet.contains tc ruleSet.rules ->
        if ruleSet.cache.rules.ContainsKey tc |> not then
          let rules =
            tc.GetConstructors ()
-           |> Array.map (fun c ->
-              let env = Fresh.newMapper ()
-              {ReturnType = Ty.ofTypeIn env tc
-               ParTypes =
-                 c.GetParameters ()
-                 |> Array.map (fun p -> Ty.ofTypeIn env p.ParameterType)
-               GenericArgTypes =
-                 if tc.ContainsGenericParameters
-                 then tc.GetGenericArguments () |> Array.map (Ty.ofTypeIn env)
-                 else [||]
-               Invoke = fun genArgTys argTys argObjs ->
-                 let tc = if tc.ContainsGenericParameters
-                          then tc.MakeGenericType genArgTys
-                          else tc
-                 match tc.GetConstructor argTys with
-                  | null -> failwith "Bug"
-                  | c ->
-                    c.Invoke argObjs})
+           |> Array.choose (fun c ->
+              let ps =
+                c.GetParameters () |> Array.map (fun p -> p.ParameterType)
+              if ps
+                 |> Array.forall (fun t ->
+                    t.IsClass
+                    && not t.IsArray
+                    && not t.IsPointer) then
+                let env = Fresh.newMapper ()
+                {ReturnType = Ty.ofTypeIn env tc
+                 ParTypes = ps |> Array.map (Ty.ofTypeIn env)
+                 GenericArgTypes =
+                   if tc.ContainsGenericParameters
+                   then tc.GetGenericArguments () |> Array.map (Ty.ofTypeIn env)
+                   else [||]
+                 Invoke = fun genArgTys argTys argObjs ->
+                   let tc = if tc.ContainsGenericParameters
+                            then tc.MakeGenericType genArgTys
+                            else tc
+                   match tc.GetConstructor argTys with
+                    | null -> failwith "Bug"
+                    | c ->
+                      c.Invoke argObjs} |> Some
+              else
+                None)
          ruleSet.cache.rules.Add (tc, rules)
        addRules [tc] ruleSet
      | _ ->
