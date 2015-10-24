@@ -5,6 +5,7 @@ namespace Infers
 open System.Threading.Tasks
 open System.Threading
 open System.Collections.Concurrent
+open System.Collections.Generic
 open System.Reflection
 open System
 
@@ -52,7 +53,9 @@ module Rule =
 module RuleSet =
   type Cache =
     {rules: ConcurrentDictionary<Type, array<Rule>>
-     trees: ConcurrentDictionary<HashEqSet<Type>, TyTree<Rule>>}
+     trees: ConcurrentDictionary<HashEqSet<Type>, TyTree<Rule>>
+     lastFailures: Queue<string * list<Ty>>
+     mutable limitReached: bool}
   type RuleSet =
     {cache: Cache
      rules: HashEqSet<Type>
@@ -60,7 +63,9 @@ module RuleSet =
 
   let newEmpty () =
     {cache = {rules = ConcurrentDictionary<_, _> ()
-              trees = ConcurrentDictionary<_, _> ()}
+              trees = ConcurrentDictionary<_, _> ()
+              lastFailures = Queue ()
+              limitReached = false}
      rules = HashEqSet.empty
      tree = TyTree.build []}
 
@@ -217,18 +222,27 @@ module Infers =
      | App' (Def tc, _) -> tc = typedefof<Rec<_>>
      | _ -> false
 
-  let rec tryGen limit reached rules objEnv tyEnv stack ty =
+  let addFailurePath (rules: RuleSet.RuleSet) stack ty msg =
+    lock rules.cache.lastFailures <| fun () ->
+    rules.cache.lastFailures.Enqueue (msg, ty::stack)
+    if rules.cache.lastFailures.Count > 10 then
+      rules.cache.lastFailures.Dequeue () |> ignore
+
+  let rec tryGen limit (rules: RuleSet.RuleSet) objEnv tyEnv stack ty =
     if limit <= 0 then
-      reached := true
+      rules.cache.limitReached <- true
       Seq.empty
     else
       let search limit =
-         let rules = RuleSet.maybeAddConRules ty rules
-         RuleSet.rulesFor rules ty
-         |> Seq.collect (fun rule ->
-            let rule = Rule.freshVars rule
-            Ty.tryMatchIn rule.ReturnType ty tyEnv
-            |> Option.collect (fun tyEnv ->
+        let rules = RuleSet.maybeAddConRules ty rules
+        RuleSet.rulesFor rules ty
+        |> Seq.collect (fun rule ->
+           let rule = Rule.freshVars rule
+           match Ty.tryMatchIn rule.ReturnType ty tyEnv with
+            | None ->
+              addFailurePath rules stack ty "No rule for Tycon"
+              Seq.empty
+            | Some tyEnv ->
                let rec outer args rules objEnv tyEnv ty parTys =
                  let ty = Ty.resolve tyEnv ty
                  let stack = stack |> List.map (Ty.resolve tyEnv)
@@ -240,28 +254,36 @@ module Infers =
                   else
                     match Ty.toMonoType ty with
                      | None ->
+                       addFailurePath rules stack ty "Infinite derivation"
                        Seq.empty
                      | Some monoTy ->
                        match HashEqMap.tryFind monoTy objEnv with
                         | Some o ->
                           Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
                         | None ->
-                          App (Def typedefof<Rec<_>>, [|ty|])
-                          |> tryGen limit reached rules objEnv tyEnv (ty::stack)
-                          |> Seq.choose (fun (result, objEnv, tyEnv) ->
-                             match result with
-                              | Ruled _ -> None
-                              | Value (monoRecTy, recO) ->
-                                match recO with
-                                 | :? IRecObj as recO' ->
-                                   let o = recO'.GetObj ()
-                                   Some (Value (monoTy, o),
-                                         objEnv
-                                         |> HashEqMap.add monoRecTy recO
-                                         |> addObj monoTy o,
-                                         tyEnv)
-                                 | _ ->
-                                   failwith "Bug")
+                          let recTy = App (Def typedefof<Rec<_>>, [|ty|])
+                          match
+                            recTy
+                            |> tryGen limit rules objEnv tyEnv (ty::stack)
+                            |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
+                               match result with
+                                | Ruled _ -> None
+                                | Value (monoRecTy, recO) ->
+                                  match recO with
+                                   | :? IRecObj as recO' ->
+                                     let o = recO'.GetObj ()
+                                     Some (Value (monoTy, o),
+                                           objEnv
+                                           |> HashEqMap.add monoRecTy recO
+                                           |> addObj monoTy o,
+                                           tyEnv)
+                                   | _ ->
+                                     failwith "Bug") with
+                           | None ->
+                             addFailurePath rules stack recTy "No Rec rule"
+                             Seq.empty
+                           | Some x ->
+                             Seq.singleton x
                  else
                    match parTys with
                     | [] ->
@@ -289,7 +311,7 @@ module Infers =
                       Seq.singleton (result, objEnv, tyEnv)
                     | parTy::parTys ->
                       Ty.resolve tyEnv parTy
-                      |> tryGen limit reached rules objEnv tyEnv (ty::stack)
+                      |> tryGen limit rules objEnv tyEnv (ty::stack)
                       |> Seq.collect (fun (result, objEnv, tyEnv) ->
                          let rec inner resolvedArgs rules objEnv = function
                            | [] ->
@@ -305,7 +327,7 @@ module Infers =
                                    <| objEnv
                                    <| args
                          result::args |> List.rev |> inner [] rules objEnv)
-               rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty))
+               rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty)
       match Ty.toMonoType ty with
        | None -> search (limit - 1)
        | Some monoTy ->
@@ -313,40 +335,51 @@ module Infers =
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
           | None -> search limit |> Seq.truncate 1
 
-  let tryGenerateWithLimits minDepth maxDepth (rules: obj) : option<'a> =
-    let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
+  let generateWithLimits minDepth maxDepth (rulesObj: obj) : 't =
+    let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'t>
     let rules =
       RuleSet.newEmpty ()
-      |> RuleSet.maybeAddRulesObj rules
+      |> RuleSet.maybeAddRulesObj rulesObj
     let rec gen limit =
-      let reached = ref false
-      match tryGen limit reached rules HashEqMap.empty Map.empty [] desTy
+      rules.cache.limitReached <- false
+      rules.cache.lastFailures.Clear ()
+      match tryGen limit rules HashEqMap.empty Map.empty [] desTy
             |> Seq.tryPick (fun (result, _, _) ->
                match result with
                 | Ruled _ -> None
-                | Value (_, value) -> Some (unbox<'a> value)) with
+                | Value (_, value) -> Some (unbox<'t> value)) with
        | None ->
-         if !reached && limit < maxDepth
+         if rules.cache.limitReached && limit < maxDepth
          then gen (limit + 1)
-         else None
-       | some -> some
+         else match rules.cache.lastFailures.ToArray () with
+               | [||] ->
+                 failwithf "%A cannot derive %A."
+                  <| rulesObj.GetType ()
+                  <| typeof<'t>
+               | paths ->
+                 failwithf "%A cannot derive %A.  Last failure paths:\n\n%s\n"
+                  <| rulesObj.GetType ()
+                  <| typeof<'t>
+                  <| (paths
+                      |> Array.map (fun (msg, path) ->
+                         sprintf "%s:\n%s" msg
+                          (path
+                          |> List.map (sprintf "  %A")
+                          |> String.concat "\n"))
+                      |> String.concat "\n\n")
+       | Some t -> t
     gen minDepth
 
-  let tryGenerate (rules: 'r when 'r :> Rules) : option<'a> =
-    tryGenerateWithLimits 1 Int32.MaxValue rules
+  let generate' (rules: 'r when 'r :> Rules) : 't =
+    generateWithLimits 1 Int32.MaxValue rules
 
-  let inline out<'rules, 'result> (x: option<'result>) =
-    match x with
-     | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
-     | Some result -> result
+  let generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't =
+    StaticSet.getOrInvoke<'t> <| fun () ->
+    generate' (new 'r ())
 
-  let generate<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v =
-    StaticSet.getOrInvoke<'v> <| fun () ->
-    tryGenerate (new 'r ()) |> out<'r, 'v>
+  let generateDFS' (rules: 'r when 'r :> Rules) : 't =
+    generateWithLimits Int32.MaxValue Int32.MaxValue rules
 
-  let tryGenerateDFS (rules: 'r when 'r :> Rules) : option<'a> =
-    tryGenerateWithLimits Int32.MaxValue Int32.MaxValue rules
-
-  let generateDFS<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v =
-    StaticSet.getOrInvoke<'v> <| fun () ->
-    tryGenerateDFS (new 'r ()) |> out<'r, 'v>
+  let generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't =
+    StaticSet.getOrInvoke<'t> <| fun () ->
+    generateDFS' (new 'r ())
