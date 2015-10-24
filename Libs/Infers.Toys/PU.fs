@@ -20,9 +20,6 @@ namespace Infers.Toys
 // - Support for various special types such as arrays and refs is not
 // implemented.  Such support could be added in a straightforward manner.
 //
-// - 32-bit tags are used for union types even when a byte would suffice.  It
-// would be easy to optimize the representation.
-//
 // - Lists are pickled via naive recursive encoding.  Lists could be implemented
 // via (not yet implemented) array support.
 //
@@ -137,8 +134,12 @@ module PU =
 
     static member Sum (asC: AsChoices<'s,'t>, S sPU: PUS<'s,'s,'t>) : PU<'t> =
       let sPU = Array.ofList sPU
-      {P = fun d w t -> let i = asC.Tag t in w.Write i ; sPU.[i].P d w t
-       U = fun d r -> sPU.[r.ReadInt32 ()].U d r}
+      let inline mkPU tW tR =
+        {P = fun d w t -> let i = asC.Tag t in tW w i ; sPU.[i].P d w t
+         U = fun d r -> sPU.[tR r].U d r}
+      if sPU.Length <= 256
+      then mkPU (fun w -> uint8 >> w.Write) (fun r -> r.ReadByte () |> int)
+      else mkPU (fun w t -> w.Write t) ( fun r -> r.ReadInt32 ())
 
   let pickle x =
     use s = new MemoryStream ()
