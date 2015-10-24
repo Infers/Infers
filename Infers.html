@@ -35,14 +35,15 @@ font-weight: bold;
 <h2>Synopsis</h2>
 <pre><b>namespace</b> <a id="dec:namespace Infers" href="#def:namespace Infers">Infers</a></pre>
 <pre><b>module</b> <a id="dec:module Infers.Engine" href="#def:module Infers.Engine">Engine</a> <b>=</b>
-  <b>val</b> <a id="dec:val Infers.Engine.tryGenerate" href="#def:val Infers.Engine.tryGenerate">tryGenerate</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
-  <b>val</b> <a id="dec:val Infers.Engine.tryGenerateDFS" href="#def:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
-  <b>val</b> <a id="dec:val Infers.Engine.generate" href="#def:val Infers.Engine.generate">generate</a><b>&lt;</b><i>'rules</i>, <i>'result</i><b>&gt;</b> <b>:</b> <i>'result</i> <b>when</b> <i>'rules</i> <b>:</b> (<b>new</b> <b>:</b> unit <b>-&gt;</b> <i>'rules</i>)
-  <b>val</b> <a id="dec:val Infers.Engine.generateDFS" href="#def:val Infers.Engine.generateDFS">generateDFS</a><b>&lt;</b><i>'rules</i>, <i>'result</i><b>&gt;</b> <b>:</b> <i>'result</i> <b>when</b> <i>'rules</i> <b>:</b> (<b>new</b> <b>:</b> unit <b>-&gt;</b> <i>'rules</i>)
+  <b>val</b> <a id="dec:val Infers.Engine.tryGenerate" href="#def:val Infers.Engine.tryGenerate">tryGenerate</a><b>:</b> <i>'r</i> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
+  <b>val</b> <a id="dec:val Infers.Engine.tryGenerateDFS" href="#def:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a><b>:</b> <i>'r</i> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
+  <b>val</b> <a id="dec:val Infers.Engine.generate" href="#def:val Infers.Engine.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'v</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'v</i>
+  <b>val</b> <a id="dec:val Infers.Engine.generateDFS" href="#def:val Infers.Engine.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'v</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'v</i>
 </pre>
-<pre><b>type</b> <a id="dec:type Infers.InferenceRules" href="#def:type Infers.InferenceRules">InferenceRules</a> <b>=</b>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rules" href="#def:type Infers.Rules">Rules</a> <b>=</b>
   inherit Attribute
-  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rec" href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i><b>&gt;</b> <b>=</b>
@@ -50,40 +51,36 @@ font-weight: bold;
   <b>abstract</b> <a id="dec:abstract Infers.Rec.Get" href="#def:abstract Infers.Rec.Get">Get</a><b>:</b> unit <b>-&gt;</b> <i>'x</i>
   <b>abstract</b> <a id="dec:abstract Infers.Rec.Set" href="#def:abstract Infers.Rec.Set">Set</a><b>:</b> <i>'x</i> <b>-&gt;</b> unit
 </pre>
-<pre><b>[&lt;</b><a href="#def:type Infers.InferenceRules">InferenceRules</a><b>&gt;]</b> 
-<b>type</b> <a id="dec:type Infers.RecFn" href="#def:type Infers.RecFn">RecFn</a> <b>=</b>
+<pre><b>type</b> <a id="dec:type Infers.RecFn" href="#def:type Infers.RecFn">RecFn</a> <b>=</b>
+  inherit <a href="#def:type Infers.Rules">Rules</a>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.RecFn">RecFn</a>
-  <b>member</b> <a id="dec:member Infers.RecFn.func" href="#def:member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
-  <b>member</b> <a id="dec:member Infers.RecFn.func0" href="#def:member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
-  <b>member</b> <a id="dec:member Infers.RecFn.func1" href="#def:member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
-  <b>member</b> <a id="dec:member Infers.RecFn.func2" href="#def:member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
-</pre>
-<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
-<b>type</b> <a id="dec:type Infers.StaticMap" href="#def:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i><b>&gt;</b> <b>=</b>
-  <b>static</b> <b>member</b> <a id="dec:static member Infers.StaticMap.MemoizeLocked" href="#def:static member Infers.StaticMap.MemoizeLocked">MemoizeLocked</a><b>:</b> (unit <b>-&gt;</b> <i>'v</i>) <b>-&gt;</b> <i>'v</i>
-  <b>static</b> <b>member</b> <a id="dec:static member Infers.StaticMap.Memoize" href="#def:static member Infers.StaticMap.Memoize">Memoize</a><b>:</b> (unit <b>-&gt;</b> <i>'v</i>) <b>-&gt;</b> <i>'v</i>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.RecFn.func" href="#def:static member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.RecFn.func0" href="#def:static member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.RecFn.func1" href="#def:static member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
+  <b>static</b> <b>member</b> <a id="dec:static member Infers.RecFn.func2" href="#def:static member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
 </pre>
 <h2>Description</h2>
 <pre><b>namespace</b> <a id="def:namespace Infers" href="#dec:namespace Infers">Infers</a>
 </pre>
 <div class="nested"><p> <code><a href="#def:namespace Infers">Infers</a></code> is a library for deriving F# values from their types and, in a way, a direct application of the Curry-Howard correspondence.</p><p> The basic idea is to view the types of F# member functions as Horn clauses. Using a Prolog-style resolution engine it is then possible to attempt to prove goals given as simple F# types.  During the resolution process the engine invokes the member functions to build a value of the type given as the goal.</p><p> Infers can be useful, for example, in situations where one might wish to use something like type classes or when one might want to do datatype generic programming.  Other kinds of applications are also quite possible.<pre><b>module</b> <a id="def:module Infers.Engine" href="#dec:module Infers.Engine">Engine</a> <b>=</b>
 </pre>
-<div class="nested"><p> Interface to the resolution engine.<pre><b>val</b> <a id="def:val Infers.Engine.tryGenerate" href="#dec:val Infers.Engine.tryGenerate">tryGenerate</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+<div class="nested"><p> Interface to the resolution engine.<pre><b>val</b> <a id="def:val Infers.Engine.tryGenerate" href="#dec:val Infers.Engine.tryGenerate">tryGenerate</a><b>:</b> <i>'r</i> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
 </pre>
-<div class="nested"><p> Using IDDFS, tries to generate a value of the type <code><i>'a</i></code> by using the given set of inference rules.  See  <code><a href="#def:type Infers.InferenceRules">InferenceRules</a></code>.</div>
-<pre><b>val</b> <a id="def:val Infers.Engine.tryGenerateDFS" href="#dec:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a><b>:</b> rules<b>:</b> obj <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b>
+<div class="nested"><p> Using IDDFS, tries to generate a value of the type <code><i>'a</i></code> by using the given set of inference rules.  See  <code>InferenceRules</code>.</div>
+<pre><b>val</b> <a id="def:val Infers.Engine.tryGenerateDFS" href="#dec:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a><b>:</b> <i>'r</i> <b>-&gt;</b> option<b>&lt;</b><i>'a</i><b>&gt;</b> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
 </pre>
-<div class="nested"><p> Using DFS, tries to generate a value of the type <code><i>'a</i></code> by using the given set of inference rules.  See  <code><a href="#def:type Infers.InferenceRules">InferenceRules</a></code>.</div>
-<pre><b>val</b> <a id="def:val Infers.Engine.generate" href="#dec:val Infers.Engine.generate">generate</a><b>&lt;</b><i>'rules</i>, <i>'result</i><b>&gt;</b> <b>:</b> <i>'result</i> <b>when</b> <i>'rules</i> <b>:</b> (<b>new</b> <b>:</b> unit <b>-&gt;</b> <i>'rules</i>)
+<div class="nested"><p> Using DFS, tries to generate a value of the type <code><i>'a</i></code> by using the given set of inference rules.  See  <code>InferenceRules</code>.</div>
+<pre><b>val</b> <a id="def:val Infers.Engine.generate" href="#dec:val Infers.Engine.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'v</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'v</i>
 </pre>
-<div class="nested"><p> Combination of <code><a href="#def:module Infers.Engine">Engine</a><b>.</b><a href="#def:val Infers.Engine.tryGenerate">tryGenerate</a></code> and <code><a href="#def:type Infers.StaticMap">StaticMap</a><b>.</b><a href="#def:static member Infers.StaticMap.Memoize">Memoize</a></code> for convenient invocation of inference rules.</div>
-<pre><b>val</b> <a id="def:val Infers.Engine.generateDFS" href="#dec:val Infers.Engine.generateDFS">generateDFS</a><b>&lt;</b><i>'rules</i>, <i>'result</i><b>&gt;</b> <b>:</b> <i>'result</i> <b>when</b> <i>'rules</i> <b>:</b> (<b>new</b> <b>:</b> unit <b>-&gt;</b> <i>'rules</i>)
+<div class="nested"><p> Combination of <code><a href="#def:module Infers.Engine">Engine</a><b>.</b><a href="#def:val Infers.Engine.tryGenerate">tryGenerate</a></code> and <code>StaticMap<b>.</b>Memoize</code> for convenient invocation of inference rules.</div>
+<pre><b>val</b> <a id="def:val Infers.Engine.generateDFS" href="#dec:val Infers.Engine.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'v</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'v</i>
 </pre>
-<div class="nested"><p> Combination of <code><a href="#def:module Infers.Engine">Engine</a><b>.</b><a href="#def:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a></code> and <code><a href="#def:type Infers.StaticMap">StaticMap</a><b>.</b><a href="#def:static member Infers.StaticMap.Memoize">Memoize</a></code> for convenient invocation of inference rules.</div>
+<div class="nested"><p> Combination of <code><a href="#def:module Infers.Engine">Engine</a><b>.</b><a href="#def:val Infers.Engine.tryGenerateDFS">tryGenerateDFS</a></code> and <code>StaticMap<b>.</b>Memoize</code> for convenient invocation of inference rules.</div>
 </div>
-<pre><b>type</b> <a id="def:type Infers.InferenceRules" href="#dec:type Infers.InferenceRules">InferenceRules</a> <b>=</b>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rules" href="#dec:type Infers.Rules">Rules</a> <b>=</b>
 </pre>
-<div class="nested"><p> A type that has the <code><a href="#def:type Infers.InferenceRules">InferenceRules</a></code> attribute is assumed to contain pure rule methods that are used by the inference engine.<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.InferenceRules">InferenceRules</a>
+<div class="nested"><p> A type that inherits <code><a href="#def:type Infers.Rules">Rules</a></code> is assumed to contain pure static rule methods that are used by the inference engine.  Dependencies to other rule classes are specified as attributes.<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
 </pre>
 <div class="nested"><p> Default constructor.</div>
 </div>
@@ -100,34 +97,20 @@ font-weight: bold;
 </pre>
 <div class="nested"><p> Sets the value of the proxy.</div>
 </div>
-<pre><b>[&lt;</b><a href="#def:type Infers.InferenceRules">InferenceRules</a><b>&gt;]</b> 
-<b>type</b> <a id="def:type Infers.RecFn" href="#dec:type Infers.RecFn">RecFn</a> <b>=</b>
+<pre><b>type</b> <a id="def:type Infers.RecFn" href="#dec:type Infers.RecFn">RecFn</a> <b>=</b>
 </pre>
-<div class="nested"><p> Inference rules for creating proxies for creating recursive functions.<pre><b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.RecFn">RecFn</a>
-</pre>
-<div class="nested"><p> Default constructor.</div>
-<pre><b>member</b> <a id="def:member Infers.RecFn.func" href="#dec:member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
+<div class="nested"><p> Inference rules for creating proxies for creating recursive functions.<pre><b>static</b> <b>member</b> <a id="def:static member Infers.RecFn.func" href="#dec:static member Infers.RecFn.func">func</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
 </pre>
 <div class="nested"><p> Creates a proxy for a F# function.</div>
-<pre><b>member</b> <a id="def:member Infers.RecFn.func0" href="#dec:member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.RecFn.func0" href="#dec:static member Infers.RecFn.func0">func0</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
 </pre>
 <div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
-<pre><b>member</b> <a id="def:member Infers.RecFn.func1" href="#dec:member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.RecFn.func1" href="#dec:static member Infers.RecFn.func1">func1</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
 </pre>
 <div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
-<pre><b>member</b> <a id="def:member Infers.RecFn.func2" href="#dec:member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
+<pre><b>static</b> <b>member</b> <a id="def:static member Infers.RecFn.func2" href="#dec:static member Infers.RecFn.func2">func2</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
 </pre>
 <div class="nested"><p> Creates a proxy for a .Net function delegate.</div>
-</div>
-<pre><b>[&lt;</b>Sealed<b>&gt;]</b> 
-<b>type</b> <a id="def:type Infers.StaticMap" href="#dec:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i><b>&gt;</b> <b>=</b>
-</pre>
-<div class="nested"><p> Represents a kind of static, or code generation time, mapping of types to values.</p><p> A single value of type <code><i>'v</i></code> can be stored for a type of <code><i>'k</i></code>.  A module typically gives some private type for <code><i>'k</i></code> and then stores unique values for many types <code><i>'v</i></code>.</p><p> <code><a href="#def:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i>,&nbsp;<i>'v</i><b>&gt;</b></code> is designed for situations in which the mapping is polytypic and static.  Use in other kinds of contexts is unlikely to make sense.<pre><b>static</b> <b>member</b> <a id="def:static member Infers.StaticMap.MemoizeLocked" href="#dec:static member Infers.StaticMap.MemoizeLocked">MemoizeLocked</a><b>:</b> (unit <b>-&gt;</b> <i>'v</i>) <b>-&gt;</b> <i>'v</i>
-</pre>
-<div class="nested"><p> This is used internally by <code><a href="#def:static member Infers.StaticMap.Memoize">Memoize</a></code>.</div>
-<pre><b>static</b> <b>member</b> <a id="def:static member Infers.StaticMap.Memoize" href="#dec:static member Infers.StaticMap.Memoize">Memoize</a><b>:</b> (unit <b>-&gt;</b> <i>'v</i>) <b>-&gt;</b> <i>'v</i>
-</pre>
-<div class="nested"><p> Memoizes the thunk using <code><a href="#def:type Infers.StaticMap">StaticMap</a><b>&lt;</b><i>'k</i>,&nbsp;option<b>&lt;</b><i>'v</i><b>&gt;&gt;</b></code>.</div>
 </div>
 </div>
 </td></tr></table></body>
