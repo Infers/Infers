@@ -30,8 +30,13 @@ module PU =
 
     static member Unit: PU<unit>
 
-    static member Int: PU<int>
-    static member Float: PU<float>
+    static member UInt8: PU<uint8>
+    static member Int16: PU<int16>
+    static member Int32: PU<int32>
+    static member Int64: PU<int64>
+
+    static member Bitwise: Bitwise<'b, 't> * PU<'b> -> PU<'t>
+
     static member String: PU<string>
 
     static member Elem: Elem<'e, 'r, 'o, 't> * PU<'e> -> PUP<'e, 'r, 'o, 't>

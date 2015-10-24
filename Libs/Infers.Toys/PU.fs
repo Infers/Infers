@@ -42,7 +42,7 @@ module PU =
   type PUP<'e, 'r, 'o, 't> = P of PU<'e>
   type PUS<'p, 'o, 't> = S of list<PU<'t>>
 
-  type [<Rep>] PU () =
+  type [<Bitwise; Rep>] PU () =
     inherit Rules ()
 
     static member Rec () =
@@ -56,10 +56,19 @@ module PU =
     static member Unit = {U = fun _ _ -> ()
                           P = fun _ _ () -> ()}
 
-    static member Int = {U = fun _ r -> r.ReadInt32 ()
-                         P = fun _ w -> w.Write}
-    static member Float = {U = fun _ r -> r.ReadDouble ()
+    static member UInt8 = {U = fun _ r -> r.ReadByte ()
                            P = fun _ w -> w.Write}
+    static member Int16 = {U = fun _ r -> r.ReadInt16 ()
+                           P = fun _ w -> w.Write}
+    static member Int32 = {U = fun _ r -> r.ReadInt32 ()
+                           P = fun _ w -> w.Write}
+    static member Int64 = {U = fun _ r -> r.ReadInt64 ()
+                           P = fun _ w -> w.Write}
+
+    static member Bitwise (bIt: Bitwise<'b, 't>, bPU: PU<'b>) : PU<'t> =
+      {P = fun d w -> bIt.ToBits >> bPU.P d w
+       U = fun d -> bPU.U d >> bIt.OfBits}
+
     static member String = {U = fun _ r -> r.ReadString ()
                             P = fun _ w -> w.Write}
 
