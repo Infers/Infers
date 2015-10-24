@@ -115,11 +115,11 @@ type [<AbstractClass>] Unsupported<'t> =
 ///
 /// A product object also contains a member of the form
 ///
-///> member _: AsProduct<'p, 't, 't>
+///> member _: AsPairs<'p, 't, 't>
 ///
-/// where the type `'p` is a representation of the product as a nested record.
-/// The member is visible to inference rules, but it cannot be given a signature
-/// in F#.
+/// where the type `'p` is a representation of the product as nested pairs. The
+/// member is visible to inference rules, but it cannot be given a signature in
+/// F#.
 ///
 /// See also `Union<'t>`.
 #endif
@@ -127,15 +127,20 @@ type [<AbstractClass>] Product<'t> =
   inherit Rep<'t>
   new: unit -> Product<'t>
 
-/// Representation of an element of type `'e` of the product type `'t`.
-type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
-  new: int -> Elem<'e, 'r, 'o, 't>
+/// Abstract representation of an element of type `'e` of the product type `'t`.
+type [<AbstractClass>] Elem<'e, 't> =
+  new: int -> Elem<'e, 't>
 
   /// The index of the element.
   val Index: int
 
   /// Returns the value of the element.
   abstract Get: 't -> 'e
+
+/// Unique representation of an element of type `'e` of the product type `'t`.
+type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
+  inherit Elem<'e, 't>
+  new: int -> Elem<'e, 'r, 'o, 't>
 
 /// Representation of a possibly labelled element of type `'e`.
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
@@ -184,9 +189,9 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 /// product.  Depending on the type `'t` those members are of one of the
 /// following forms:
 ///
-///> member _:  Item<'e, 'sp,      't>
-///> member _: Label<'l, 'sp, 'sc, 'u>
-///> member _: Field<'f, 'sp,      'r>
+///> member _:  Item<e,r,  t>                      :> Elem<e,r,t,t> :> Elem<e,t>
+///> member _: Label<e,r,o,t> :> Labelled<e,r,o,t> :> Elem<e,r,o,t> :> Elem<e,t>
+///> member _: Field<e,r,  t> :> Labelled<e,r,o,t> :> Elem<e,r,t,t> :> Elem<e,t>
 ///
 /// Those members are visible to inference rules, but they cannot be given a
 /// signature in F#.

@@ -67,10 +67,13 @@ type [<AbstractClass>] AsChoices<'s, 't> =
   val Arity: int
   abstract Tag: 't -> int
 
-type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
+type [<AbstractClass>] Elem<'e, 't> =
   new (index) = {Index = index}
   val Index: int
   abstract Get: 't -> 'e
+
+type [<AbstractClass>] Elem<'e, 'r, 'o, 't> (index) =
+  inherit Elem<'e, 't> (index)
 
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
   inherit Elem<'e, 'r, 'o, 't>
