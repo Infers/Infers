@@ -59,10 +59,8 @@
     <Compile Include="Assembly.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="TypeManip.fs" />
-    <Compile Include="EngineInterface.fsi" />
-    <Compile Include="EngineInterface.fs" />
-    <Compile Include="Engine.fsi" />
-    <Compile Include="Engine.fs" />
+    <Compile Include="Infers.fsi" />
+    <Compile Include="Infers.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
