@@ -2,30 +2,6 @@
 
 namespace Infers.Toys
 
-// This is a toy example of a binary pickler / unpickler.  This can handle ints,
-// floats, strings, tuples, records, and union types.  Recursive types, such as
-// lists, and recursive values, via records, are supported.  Other types,
-// including arbitrary classes or structs, are not supported.
-//
-// This could be improved in various ways.  Examples:
-//
-// - Pickles do not contain any error checking information.  It would be
-// straighforward to add, for example, a hash of the type structure to the
-// beginning of the pickle and verify it when unpickling to help to detect type
-// errors.
-//
-// - Inefficient, but concise, pattern matching forms are used to manipulate
-// nested pairs.  Using byref arguments copying could be minimized.
-//
-// - Support for various special types such as arrays and refs is not
-// implemented.  Such support could be added in a straightforward manner.
-//
-// - Lists are pickled via naive recursive encoding.  Lists could be implemented
-// via (not yet implemented) array support.
-//
-// Perhaps the main point here is that it doesn't really take all that much code
-// to implement a fairly powerful pickler.
-
 module PU =
   open System.Collections.Generic
   open System.IO
@@ -34,99 +10,127 @@ module PU =
 
   type State = Writing | Cyclic | Acyclic
   type Info = {Pos: int64; mutable State: State}
-  type PU<'x> = {P: Dictionary<obj, Info> -> BinaryWriter -> 'x -> unit
-                 U: Dictionary<int64, obj> -> BinaryReader -> 'x}
-  type PUP<'e, 'r, 'o, 't> = P of PU<'e>
-  type PUS<'p, 'o, 't> = S of list<PU<'t>>
+  type [<AbstractClass>] PUI<'t> () =
+    abstract P: Dictionary<obj, Info> * BinaryWriter * byref<'t> -> unit
+    abstract U: Dictionary<int64, obj> * BinaryReader * byref<'t> -> unit
+  type PUR<'t> () =
+    inherit PUI<'t> ()
+    [<DefaultValue>] val mutable Rec: PUI<'t>
+    override t.P (d, w, x) = t.Rec.P (d, w, &x)
+    override t.U (d, r, x) = t.Rec.U (d, r, &x)
+  type PU<'t> = O of PUI<'t>
+  let inline outO (O x) = x
+  type PUP<'e, 'r, 'o, 't> = P of PUI<'e>
+  type PUS<'p, 'o, 't> = S of list<PUI<'t>>
+
+  let [<Literal>] InDict = 0uy
+  let [<Literal>] InHere = 1uy
+  let [<Literal>] Cycle = 2uy
+
+  let inline prim pR pW =
+    {new PUI<_> () with
+      member pu.P (_, w, t) = pW w t
+      member pu.U (_, r, t) = t <- pR r}
+
+  let inline asPairs (asP: AsPairs<'p, 'o, 't>) (P pPU: PUP<'p, 'p, 'o, 't>) =
+    {new PUI<'t> () with
+      member pu.P (d, w, t) =
+        let mutable p = asP.ToPairs t
+        pPU.P (d, w, &p)
+      member pu.U (d, r, t) =
+        let mutable p = Unchecked.defaultof<_>
+        pPU.U (d, r, &p)
+        t <- asP.Create (&p)}
 
   type [<Bitwise; Rep>] PU () =
     inherit Rules ()
 
     static member Rec () =
-      let p = ref (fun _ -> failwith "Rec")
-      let u = ref (fun _ -> failwith "Rec")
+      let r = PUR<'t> ()
       {new Rec<PU<'t>> () with
-        override t.Get () = {P = fun d -> !p d
-                             U = fun d -> !u d}
-        override t.Set tPU = p := tPU.P ; u := tPU.U}
+        override pu.Get () = O r
+        override pu.Set (O tPU) = r.Rec <- tPU}
 
-    static member Unit = {U = fun _ _ -> ()
-                          P = fun _ _ () -> ()}
+    static member Unit = O <| prim (fun _ -> ()) (fun _ _ -> ())
 
-    static member UInt8 = {U = fun _ r -> r.ReadByte ()
-                           P = fun _ w -> w.Write}
-    static member Int16 = {U = fun _ r -> r.ReadInt16 ()
-                           P = fun _ w -> w.Write}
-    static member Int32 = {U = fun _ r -> r.ReadInt32 ()
-                           P = fun _ w -> w.Write}
-    static member Int64 = {U = fun _ r -> r.ReadInt64 ()
-                           P = fun _ w -> w.Write}
+    static member UInt8 = O <| prim (fun r -> r.ReadByte ()) (fun w -> w.Write)
+    static member Int16 = O <| prim (fun r -> r.ReadInt16 ()) (fun w -> w.Write)
+    static member Int32 = O <| prim (fun r -> r.ReadInt32 ()) (fun w -> w.Write)
+    static member Int64 = O <| prim (fun r -> r.ReadInt64 ()) (fun w -> w.Write)
 
-    static member Bitwise (bIt: Bitwise<'b, 't>, bPU: PU<'b>) : PU<'t> =
-      {P = fun d w -> bIt.ToBits >> bPU.P d w
-       U = fun d -> bPU.U d >> bIt.OfBits}
+    static member Bitwise (bIt: Bitwise<'b, 't>, O bPU: PU<'b>) : PU<'t> =
+      O {new PUI<'t> () with
+          member pu.P (d, w, t) =
+            let mutable b = bIt.ToBits t
+            bPU.P (d, w, &b)
+          member pu.U (d, r, t) =
+            let mutable b = Unchecked.defaultof<_>
+            bPU.U (d, r, &b)
+            t <- bIt.OfBits b}
 
-    static member String = {U = fun _ r -> r.ReadString ()
-                            P = fun _ w -> w.Write}
+    static member String =
+      O {new PUI<string> () with
+          member pu.P (d, w, t) = w.Write t
+          member pu.U (d, r, t) = t <- r.ReadString ()}
 
-    static member Elem (_: Elem<'e, 'r, 'o, 't>, ePU: PU<'e>) =
+    static member Elem (_: Elem<'e, 'r, 'o, 't>, O ePU: PU<'e>) =
       P ePU : PUP<'e, 'r, 'o, 't>
 
     static member Pair (P ePU: PUP<     'e     , Pair<'e, 'r>, 'o, 't>,
                         P rPU: PUP<         'r ,          'r , 'o, 't>)
                              : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
-      P {P = fun d w (Pair (e, r)) -> ePU.P d w e; rPU.P d w r
-         U = fun d r -> Pair (ePU.U d r, rPU.U d r)}
+      P {new PUI<Pair<'e, 'r>> () with
+          member pu.P (d, w, t) = ePU.P (d, w, &t.Elem); rPU.P (d, w, &t.Rest)
+          member pu.U (d, r, t) = ePU.U (d, r, &t.Elem); rPU.U (d, r, &t.Rest)}
 
     static member Tuple (_: Tuple<'t>,
                          asP: AsPairs<'p, 'o, 't>,
-                         P pPU: PUP<'p, 'p, 'o, 't>) =
-      {P = fun d w -> asP.ToPairs >> pPU.P d w
-       U = fun d -> pPU.U d >> asP.OfPairs}
+                         pPU: PUP<'p, 'p, 'o, 't>) = O <| asPairs asP pPU
 
     static member Record (tR: Record<'t>,
                           asP: AsPairs<'p, 'o, 't>,
                           P pPU: PUP<'p, 'p, 'o, 't>) =
-      {P = fun d w t ->
-        let mutable info = Unchecked.defaultof<_>
-        if d.TryGetValue (t, &info)
-        then w.Write 0uy
-             w.Write info.Pos
-             match info.State with
-              | Writing -> info.State <- Cyclic
-              | Cyclic | Acyclic -> ()
-        else w.Write 1uy
-             info <- {Pos = w.BaseStream.Position; State = Writing}
-             d.Add (t, info)
-             asP.ToPairs t |> pPU.P d w
-             match info.State with
-              | Acyclic | Writing -> info.State <- Acyclic
-              | Cyclic ->
-                let pos = w.BaseStream.Position
-                w.BaseStream.Seek (info.Pos-1L, SeekOrigin.Begin) |> ignore
-                w.Write 2uy
-                w.BaseStream.Seek (pos, SeekOrigin.Begin) |> ignore
-       U = fun d r ->
-        match r.ReadByte () with
-         | 0uy -> unbox d.[r.ReadInt64 ()]
-         | 1uy -> let pos = r.BaseStream.Position
-                  let o = pPU.U d r |> asP.OfPairs
-                  d.Add (pos, o)
-                  o
-         | _   -> let pos = r.BaseStream.Position
-                  let o = asP.Default tR
-                  d.Add (pos, o)
-                  let mutable p = pPU.U d r
-                  asP.Overwrite (tR, o, &p)
-                  o}
+      O {new PUI<'t> () with
+          member pu.P (d, w, t) =
+            let mutable info = Unchecked.defaultof<_>
+            if d.TryGetValue (t, &info)
+            then w.Write InDict
+                 w.Write info.Pos
+                 match info.State with
+                  | Writing -> info.State <- Cyclic
+                  | Cyclic | Acyclic -> ()
+            else w.Write InHere
+                 info <- {Pos = w.BaseStream.Position; State = Writing}
+                 d.Add (t, info)
+                 let mutable p = asP.ToPairs t
+                 pPU.P (d, w, &p)
+                 match info.State with
+                  | Acyclic | Writing -> info.State <- Acyclic
+                  | Cyclic ->
+                    let pos = w.BaseStream.Position
+                    w.BaseStream.Seek (info.Pos-1L, SeekOrigin.Begin) |> ignore
+                    w.Write Cycle
+                    w.BaseStream.Seek (pos, SeekOrigin.Begin) |> ignore
+          member pu.U (d, r, t) =
+            match r.ReadByte () with
+             | InDict -> t <- unbox d.[r.ReadInt64 ()]
+             | InHere -> let pos = r.BaseStream.Position
+                         let mutable p = Unchecked.defaultof<_>
+                         pPU.U (d, r, &p)
+                         t <- asP.Create (&p)
+                         d.Add (pos, t)
+             | _ -> let pos = r.BaseStream.Position
+                    t <- asP.Default tR
+                    d.Add (pos, t)
+                    let mutable p = Unchecked.defaultof<_>
+                    pPU.U (d, r, &p)
+                    asP.Overwrite (tR, t, &p)}
 
     static member Case (c: Case<Empty, 'o, 't>) : PUS<Empty, 'o, 't> =
-      S [{P = fun _ _ _ -> ()
-          U = fun _ _ -> c.OfPairs Unchecked.defaultof<_>}]
+      S [prim (fun _ -> c.OfPairs Unchecked.defaultof<_>) (fun _ _ -> ())]
 
-    static member Case (c: Case<'p, 'o, 't>, P pPU: PUP<'p, 'p, 'o, 't>) =
-      S [{P = fun d w -> c.ToPairs >> pPU.P d w
-          U = fun d -> pPU.U d >> c.OfPairs}] : PUS<'p, 'o, 't>
+    static member Case (c: Case<'p, 'o, 't>, pPU: PUP<'p, 'p, 'o, 't>) =
+      S [asPairs c pPU] : PUS<'p, 'o, 't>
 
     static member Choice (S pPU: PUS<       'p     , Choice<'p, 'o>, 't>,
                           S oPU: PUS<           'o ,            'o , 't>) =
@@ -135,18 +139,25 @@ module PU =
     static member Sum (asC: AsChoices<'s,'t>, S sPU: PUS<'s,'s,'t>) : PU<'t> =
       let sPU = Array.ofList sPU
       let inline mkPU tW tR =
-        {P = fun d w t -> let i = asC.Tag t in tW w i ; sPU.[i].P d w t
-         U = fun d r -> sPU.[tR r].U d r}
+        O {new PUI<'t> () with
+            member pu.P (d, w, t) =
+              let i = asC.Tag t in tW w i ; sPU.[i].P (d, w, &t)
+            member pu.U (d, r, t) = sPU.[tR r].U (d, r, &t)}
       if sPU.Length <= 256
       then mkPU (fun w -> uint8 >> w.Write) (fun r -> r.ReadByte () |> int)
       else mkPU (fun w t -> w.Write t) ( fun r -> r.ReadInt32 ())
 
+  let inline pu<'t> = Engine.generateDFS<PU, PU<'t>> |> outO
+
   let pickle x =
     use s = new MemoryStream ()
     use w = new BinaryWriter (s)
-    Engine.generateDFS<PU, PU<_>>.P (Dictionary (physicalComparer)) w x
+    let mutable x = x
+    pu<'t>.P (Dictionary (physicalComparer), w, &x)
     s.ToArray ()
 
   let unpickle bytes =
     use r = new BinaryReader (new MemoryStream (bytes, false))
-    Engine.generateDFS<PU, PU<_>>.U (Dictionary ()) r
+    let mutable x = Unchecked.defaultof<_>
+    pu<'t>.U (Dictionary (), r, &x)
+    x

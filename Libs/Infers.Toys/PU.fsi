@@ -2,6 +2,27 @@
 
 namespace Infers.Toys
 
+/// This is a toy example of a binary pickler / unpickler.  This can handle
+/// integral types, floats, strings, tuples, records, and union types.
+/// Recursive types, such as lists, and recursive values, via records, are
+/// supported.  Other types, including arbitrary classes or structs, are not
+/// supported.
+///
+/// This could be improved in various ways.  Examples:
+///
+/// - Pickles do not contain any error checking information.  It would be
+/// straighforward to add, for example, a hash of the type structure to the
+/// beginning of the pickle and verify it when unpickling to help to detect type
+/// errors.
+///
+/// - Support for various special types such as arrays and refs is not
+/// implemented.  Such support could be added in a straightforward manner.
+///
+/// - Lists are pickled via naive recursive encoding.  Lists could be
+/// implemented via (not yet implemented) array support.
+///
+/// Perhaps the main point here is that it doesn't really take all that much
+/// code to implement a fairly powerful pickler.
 [<AutoOpen>]
 module PU =
   open Infers
