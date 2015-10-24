@@ -174,35 +174,33 @@ type IRecObj =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-module StaticSet =
+module StaticMap =
   open Infers.Core
   open System.Threading
-  type Key = Key'0
-  let keyType = typeof<Key>
   let wait (box: Box<'v>) =
     lock box <| fun () ->
       while not box.Ready do
         Monitor.Wait box |> ignore
     box.Value
-  let inline getOrInvoke<'v> (mk: unit -> 'v) =
-    match StaticMap<Key, 'v>.box with
+  let inline getOrInvoke<'k, 'v> (mk: unit -> 'v) =
+    match StaticMap<'k, 'v>.box with
      | null -> mk ()
      | box -> wait box
-  let tryGetDyn valueType =
+  let tryGetDyn keyType valueType =
     match typedefof<StaticMap<_, _>>
            .MakeGenericType([|keyType; valueType|])
            .GetMethod("TryGet")
            .Invoke(null, null) with
      | :? Box as box -> box.Get () |> Some
      | _ -> None
-  let getOrInvokeDyn valueType mk =
+  let getOrInvokeDyn keyType valueType mk =
     match typedefof<StaticMap<_, _>>
            .MakeGenericType([|keyType; valueType|])
            .GetMethod("TryGet")
            .Invoke(null, null) with
      | :? Box as box -> box.Get ()
      | _ -> mk ()
-  let getOrSetDyn valueType value =
+  let getOrSetDyn keyType valueType value =
     let newBox = typedefof<Box<_>>
                   .MakeGenericType([|valueType|])
                   .GetConstructor([||])
