@@ -68,7 +68,6 @@
     <Compile Include="GMap.fsi" />
     <Compile Include="GMap.fs" />
     <Compile Include="GUncurry.fs" />
-    <Compile Include="GFlip.fs" />
     <Compile Include="Zebra.fs" />
     <Compile Include="Goat.fs" />
     <Compile Include="Toys.fs" />

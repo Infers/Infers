@@ -18,6 +18,12 @@ module GMap =
     GMap.gmap ((+) 1) [{name = "vesa"; number = 1}] |> printfn "%A"
     GMap.gmap (fun (x: string) -> x.ToUpper ()) [("vesa", 1)] |> printfn "%A"
 
+module GFlip =
+  let test () : unit =
+    gflip (printfn "%s %d %b!") true 2 "Hello"
+    gflip (List.map: (int -> int) -> list<int> -> list<int>)
+      [1;2] ((+) 1) = [2; 3] |> printfn "%A"
+
 module Zipper =
   open Zipper
 

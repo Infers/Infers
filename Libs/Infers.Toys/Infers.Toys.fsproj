@@ -64,6 +64,8 @@
     <Compile Include="Basic.fs" />
     <Compile Include="Rec.fsi" />
     <Compile Include="Rec.fs" />
+    <Compile Include="GFlip.fsi" />
+    <Compile Include="GFlip.fs" />
     <Compile Include="MayBeMutable.fsi" />
     <Compile Include="MayBeMutable.fs" />
     <Compile Include="Integral.fsi" />
