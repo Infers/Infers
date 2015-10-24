@@ -29,6 +29,8 @@ module MayBeMutable =
 
     static member Prim (_: Prim<'t>) : MBM<'t> = imm
 
+    static member Unit : MBM<unit> = imm
+
     static member String : MBM<string> = imm
 
     static member Ref () : MBM<ref<_>> = mut
