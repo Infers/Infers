@@ -12,36 +12,95 @@ namespace Infers.Toys
 ///>  | ...
 ///>  | CaseN of Elem<In,J1> * ... * Elem<Im,Jmn>
 ///
-/// where the `Elem<_,_>` are not compound types such as `list<SoP<...>>` or
-/// `SoP<...> * SoP<...>`.  This is because the primitive `elems` and `subst`
+/// where the `Elem<_,_>` types are not compound types such as `list<SoP<...>>`
+/// or `SoP<...> * SoP<...>`.  This is because the primitive `elems` and `subst`
 /// operations do not look inside the `Elem<_,_>` types.
+///
+/// In the documentation we will make use of the following type:
+///
+///> type BinTr<'x> =
+///>   | Lf
+///>   | Br of BinTr<'x> * 'x * BinTr<'x>
+///
+/// Note that `Elems` is not limited to manipulating binary trees.  Elems will
+/// work with any recursive or non-recursive union or product type.  Binary tree
+/// is merely used as an example of a simple recursive datatype.
 [<AutoOpen>]
 module Elems =
   /// `elems<'h, 'w> w` returns an array of the immediate elements of type `'h`
-  /// in `w`.  `'w` must be a product type or a sum of products type.
+  /// in `w`.
+#if DOC
   ///
   /// By design, `elems` does not look inside the elements of `'w`.  The
   /// following examples should help to clarify what this means:
   ///
-  ///> elems<int, _> (Some 2) = [|2|]
-  ///> elems<int, _> (Some (1, 2)) = [||]
-  ///> elems<int, _> (1, 2.0, 3, 4) = [|1;3;4|]
-  ///> elems<int, _> ((1, 2.0), 3, 4) = [|3;4|]
-  ///> elems<int, _> ((1, 2.0), [3; 4]) = [||]
+  ///> elems<int, _> Lf = [||]
+  ///> elems<int, _> (Br (Lf, 1, Lf)) = [|1|]
+  ///> elems<int, _> (Br (Lf, (1, 2), Lf)) = [||]
+  ///> elems<int * int, _> (Br (Lf, (1, 2), Lf)) = [|(1, 2)|]
+  ///
+  /// Note that any type of elements `'h` can be queried, including the input
+  /// type `'w`.  For example, `elems<BinTr<int>, _> (Br (Lf, 1, Lf))` gives
+  /// `[|Lf; Lf|]`.
+#endif
   val elems<'h, 'w> : 'w -> array<'h>
 
   /// `children` is equivalent to `elems<'w, 'w>`.  `children` only makes sense
-  /// when applied to a recursive sum type.
+  /// when applied to a recursive union or record type.  For example, `children
+  /// (Br (Lf, 1, Br (Lf, 2, Lf)))` gives `[|Lf; Br (Lf, 2, Lf)|]`.
   val inline children: 'w -> array<'w>
 
   /// `elemsDn<'h, 'w> w` returns a sequence of all the `elems` of type `'h` in
   /// `w` and recursively in the `children` of `w`.
+#if DOC
+  ///
+  /// For example,
+  ///
+  ///> elemsDn<int, _> (Br (Br (Lf, 1, Br (Lf, 2, Lf)), 3, Br (Lf, 4, Lf)))
+  ///
+  /// gives the sequence
+  ///
+  ///> seq [3; 1; 2; 4]
+#endif
   val elemsDn<'h, 'w> : 'w -> seq<'h>
 
   /// `universe w` is equivalent to `Seq.append (Seq.singleton w) (elemsDn w)`.
+#if DOC
+  ///
+  /// For example,
+  ///
+  ///> universe (Br (Br (Lf, 1, Br (Lf, 2, Lf)), 3, Br (Lf, 4, Lf)))
+  ///
+  /// gives the sequence
+  ///
+  ///> seq [Br (Br (Lf, 1, Br (Lf, 2, Lf)), 3, Br (Lf, 4, Lf))
+  ///>      Br (Lf, 1, Br (Lf, 2, Lf))
+  ///>      Br (Lf, 4, Lf)
+  ///>      Lf
+  ///>      Br (Lf, 2, Lf)
+  ///>      Lf
+  ///>      Lf
+  ///>      Lf
+  ///>      Lf]
+#endif
   val universe: 'w -> seq<'w>
 
-  /// Paramorphism.
+  /// `para w2rs2r w` performs a fold-like computation called a paramorphism.
+#if DOC
+  ///
+  /// For example,
+  ///
+  ///> let height t = para (fun _ hs -> Array.fold max 0 hs + 1) t
+  ///
+  /// computes the "height" of any recursive sum of products type.  For
+  /// example, `height` gives
+  ///
+  ///> height Lf = 1
+  ///> height [] = 1
+  ///> height ("Non", ("recursive", "type")) = 1
+  ///> height (Br (Lf, 1, Br (Lf, 2, Lf))) = 3
+  ///> height [1;1;1] = 4
+#endif
   val para: ('w -> array<'r> -> 'r) -> 'w -> 'r
 
   //////////////////////////////////////////////////////////////////////////////
