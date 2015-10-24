@@ -12,3 +12,9 @@ open PPrint
 open Infers.Toys
 open Infers.Rep
 open Infers
+
+let inline time (x: Lazy<'x>) =
+  let timer = System.Diagnostics.Stopwatch.StartNew ()
+  let r = x.Force ()
+  printfn "Took %A" timer.Elapsed
+  r
