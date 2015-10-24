@@ -42,10 +42,10 @@ module PU =
   type PUP<'e, 'r, 'o, 't> = P of PU<'e>
   type PUS<'p, 'o, 't> = S of list<PU<'t>>
 
-  type [<InferenceRules>] PU () =
-    inherit Rep ()
+  type [<Rep>] PU () =
+    inherit Rules ()
 
-    member t.Rec () =
+    static member Rec () =
       let p = ref (fun _ -> failwith "Rec")
       let u = ref (fun _ -> failwith "Rec")
       {new Rec<PU<'t>> () with
@@ -53,34 +53,34 @@ module PU =
                              U = fun d -> !u d}
         override t.Set tPU = p := tPU.P ; u := tPU.U}
 
-    member t.Unit = {U = fun _ _ -> ()
-                     P = fun _ _ () -> ()}
+    static member Unit = {U = fun _ _ -> ()
+                          P = fun _ _ () -> ()}
 
-    member t.Int = {U = fun _ r -> r.ReadInt32 ()
-                    P = fun _ w -> w.Write}
-    member t.Float = {U = fun _ r -> r.ReadDouble ()
-                      P = fun _ w -> w.Write}
-    member t.String = {U = fun _ r -> r.ReadString ()
-                       P = fun _ w -> w.Write}
+    static member Int = {U = fun _ r -> r.ReadInt32 ()
+                         P = fun _ w -> w.Write}
+    static member Float = {U = fun _ r -> r.ReadDouble ()
+                           P = fun _ w -> w.Write}
+    static member String = {U = fun _ r -> r.ReadString ()
+                            P = fun _ w -> w.Write}
 
-    member t.Elem (_: Elem<'e, 'r, 'o, 't>, ePU: PU<'e>) : PUP<'e, 'r, 'o, 't> =
-      P ePU
+    static member Elem (_: Elem<'e, 'r, 'o, 't>, ePU: PU<'e>) =
+      P ePU : PUP<'e, 'r, 'o, 't>
 
-    member t.Pair (P ePU: PUP<     'e     , Pair<'e, 'r>, 'o, 't>,
-                   P rPU: PUP<         'r ,          'r , 'o, 't>)
-                        : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
+    static member Pair (P ePU: PUP<     'e     , Pair<'e, 'r>, 'o, 't>,
+                        P rPU: PUP<         'r ,          'r , 'o, 't>)
+                             : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
       P {P = fun d w (Pair (e, r)) -> ePU.P d w e; rPU.P d w r
          U = fun d r -> Pair (ePU.U d r, rPU.U d r)}
 
-    member t.Tuple (_: Tuple<'t>,
-                    asP: AsPairs<'p, 'o, 't>,
-                    P pPU: PUP<'p, 'p, 'o, 't>) =
+    static member Tuple (_: Tuple<'t>,
+                         asP: AsPairs<'p, 'o, 't>,
+                         P pPU: PUP<'p, 'p, 'o, 't>) =
       {P = fun d w -> asP.ToPairs >> pPU.P d w
        U = fun d -> pPU.U d >> asP.OfPairs}
 
-    member t.Record (tR: Record<'t>,
-                     asP: AsPairs<'p, 'o, 't>,
-                     P pPU: PUP<'p, 'p, 'o, 't>) =
+    static member Record (tR: Record<'t>,
+                          asP: AsPairs<'p, 'o, 't>,
+                          P pPU: PUP<'p, 'p, 'o, 't>) =
       {P = fun d w t ->
         let mutable info = Unchecked.defaultof<_>
         if d.TryGetValue (t, &info)
@@ -103,7 +103,7 @@ module PU =
        U = fun d r ->
         match r.ReadByte () with
          | 0uy -> unbox d.[r.ReadInt64 ()]
-         | 1uy -> let pos = r.BaseStream.Position 
+         | 1uy -> let pos = r.BaseStream.Position
                   let o = pPU.U d r |> asP.OfPairs
                   d.Add (pos, o)
                   o
@@ -114,19 +114,19 @@ module PU =
                   asP.Overwrite (tR, o, &p)
                   o}
 
-    member t.Case (c: Case<Empty, 'o, 't>) : PUS<Empty, 'o, 't> =
+    static member Case (c: Case<Empty, 'o, 't>) : PUS<Empty, 'o, 't> =
       S [{P = fun _ _ _ -> ()
           U = fun _ _ -> c.OfPairs Unchecked.defaultof<_>}]
 
-    member t.Case (c: Case<'p, 'o, 't>, P pPU: PUP<'p, 'p, 'o, 't>) =
+    static member Case (c: Case<'p, 'o, 't>, P pPU: PUP<'p, 'p, 'o, 't>) =
       S [{P = fun d w -> c.ToPairs >> pPU.P d w
           U = fun d -> pPU.U d >> c.OfPairs}] : PUS<'p, 'o, 't>
 
-    member t.Choice (S pPU: PUS<       'p     , Choice<'p, 'o>, 't>,
-                     S oPU: PUS<           'o ,            'o , 't>) =
-      S <| pPU @ oPU      : PUS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
+    static member Choice (S pPU: PUS<       'p     , Choice<'p, 'o>, 't>,
+                          S oPU: PUS<           'o ,            'o , 't>) =
+      S <| pPU @ oPU           : PUS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
 
-    member t.Sum (asC: AsChoices<'s, 't>, S sPU: PUS<'s, 's, 't>) : PU<'t> =
+    static member Sum (asC: AsChoices<'s,'t>, S sPU: PUS<'s,'s,'t>) : PU<'t> =
       let sPU = Array.ofList sPU
       {P = fun d w t -> let i = asC.Tag t in w.Write i ; sPU.[i].P d w t
        U = fun d r -> sPU.[r.ReadInt32 ()].U d r}

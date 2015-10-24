@@ -75,33 +75,34 @@ module Pretty =
            |> enclose (o, c)
            |> atom}
 
-  type [<InferenceRules>] Pretty () =
-    member t.Enter (_: Rep, _: Integral,
-                    O p: PrettyO<'t>) : Pretty<'t> = fun x ->
+  type [<Rep; Integral>] Pretty () =
+    inherit Rules ()
+
+    static member Enter (O p: PrettyO<'t>) : Pretty<'t> = fun x ->
       let mutable x = x
       just <| p.Pretty (&x)
 
-    member t.Rec () : Rec<PrettyO<'t>> =
+    static member Rec () : Rec<PrettyO<'t>> =
       let r = RecPretty<'t> ()
       let o = O r
       {new Rec<PrettyO<'t>> () with
         override t.Get () = o
         override t.Set (O x) = r.impl <- x}
 
-    member t.Unit: PrettyO<unit> = O (doc (con (atxt "()")))
+    static member Unit: PrettyO<unit> = O (doc (con (atxt "()")))
 
-    member t.Bool: PrettyO<bool> =
+    static member Bool: PrettyO<bool> =
       let t = atxt "true"
       let f = atxt "false"
       O (doc (fun b -> if b then t else f))
 
-    member t.Integral (i: Integral<'t>) : PrettyO<'t> =
+    static member Integral (i: Integral<'t>) : PrettyO<'t> =
       O (str <| fun x -> x.ToString () + i.Suffix)
 
-    member t.Float32: PrettyO<float32> = fmt "%.9gf" 
-    member t.Float64: PrettyO<float>   = fmt "%.17g"
+    static member Float32: PrettyO<float32> = fmt "%.9gf"
+    static member Float64: PrettyO<float>   = fmt "%.17g"
 
-    member t.Char =
+    static member Char =
       let a = atxt "'\\''"
       let b = atxt "'\\b'"
       let n = atxt "'\\n'"
@@ -115,7 +116,7 @@ module Pretty =
        | c when Char.IsControl c -> hexc c |> txt |> squotes |> atom
        | c -> sprintf "'%c'" c |> atxt
 
-    member t.String: PrettyO<string> =
+    static member String: PrettyO<string> =
       O << doc <| fun s ->
         let mutable sawLF = false
         let mutable sawCR = false
@@ -138,7 +139,7 @@ module Pretty =
           C '\"'
           txt (sb.ToString ())
         let cutOnLF = sawLF
-        let inline narrow () = 
+        let inline narrow () =
           let parts = ResizeArray<_> ()
           let sb = StringBuilder ()
           let cut () =
@@ -171,7 +172,7 @@ module Pretty =
           nest 1 (vcat parts)
         atom (if sawLF || sawCR then choice wide (delay narrow) else wide)
 
-    member t.Option (O tP) =
+    static member Option (O tP) =
       let n = atxt "None"
       let s = txt "Some" <^> line
       O << doc <| function
@@ -180,39 +181,39 @@ module Pretty =
          let mutable x = x
          part (gnest 2 (s <^> atomize (tP.Pretty (&x))))
 
-    member t.Ref (O tP) =
+    static member Ref (O tP) =
       let con = txt "ref" <^> line
       O {new InternalPretty<ref<'t>> () with
           override t.Pretty (rx) =
            part (gnest 2 (con <^> just (tP.Pretty rx)))}
 
-    member t.List (O tP) = seq "[" "]" tP List.toSeq
-    member t.Array (O tP) = seq "[|" "|]" tP Array.toSeq
+    static member List (O tP) = seq "[" "]" tP List.toSeq
+    static member Array (O tP) = seq "[|" "|]" tP Array.toSeq
 
-    member t.Case (case: Case<Empty, 'o, 't>) : PrettyS<Empty, 'o, 't> =
+    static member Case (case: Case<Empty, 'o, 't>) : PrettyS<Empty, 'o, 't> =
       S [doc (con (atxt case.Name))]
 
-    member t.Case (case: Case<'p, 'o, 't>,
-                   P lsP: PrettyP<'p, 'p, 'o, 't>) : PrettyS<'p, 'o, 't> =
+    static member Case (case: Case<'p, 'o, 't>,
+                        P lsP: PrettyP<'p, 'p, 'o, 't>) : PrettyS<'p, 'o, 't> =
       let con = txt case.Name <^> line
       S [doc <| fun x ->
          let mutable ls = Unchecked.defaultof<_>
          case.Extract (x, &ls)
          part (gnest 2 (con <^> atomize (lsP.Pretty (&ls))))]
 
-    member t.Choice (S pP: PrettyS<       'p,      Choice<'p, 'o>, 't>,
-                     S oP: PrettyS<           'o ,            'o , 't>) =
-      S (pP @ oP)        : PrettyS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
+    static member Choice (S pP: PrettyS<       'p,      Choice<'p, 'o>, 't>,
+                          S oP: PrettyS<           'o ,            'o , 't>) =
+      S (pP @ oP)             : PrettyS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
 
-    member t.Sum (asC: AsChoices<'s, 't>, S sP: PrettyS<'s, 's, 't>) =
+    static member Sum (asC: AsChoices<'s, 't>, S sP: PrettyS<'s, 's, 't>) =
       let sP = Array.ofList sP
       O {new InternalPretty<'t> () with
           override t.Pretty x = sP.[asC.Tag x].Pretty (&x)}
 
-    member t.Item (_: Item<'e, 'r, 't>, O eP: PrettyO<'e>) =
+    static member Item (_: Item<'e, 'r, 't>, O eP: PrettyO<'e>) =
       P eP : PrettyP<'e, 'r, 't, 't>
 
-    member t.Labelled (l: Labelled<'e, 'r, 'o, 't>, O eP: PrettyO<'e>) =
+    static member Labelled (l: Labelled<'e, 'r, 'o, 't>, O eP: PrettyO<'e>) =
       let n = l.Name
       if n.StartsWith "Item" &&
          (let i = l.Index
@@ -226,16 +227,16 @@ module Pretty =
                override t.Pretty e =
                 part (gnest 2 (label <^> just (eP.Pretty (&e))))}
 
-    member t.Pair (P eP: PrettyP<     'e,      Pair<'e, 'r>, 'o, 't>,
-                   P rP: PrettyP<         'r ,          'r , 'o, 't>)
-                       : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
+    static member Pair (P eP: PrettyP<     'e,      Pair<'e, 'r>, 'o, 't>,
+                        P rP: PrettyP<         'r ,          'r , 'o, 't>)
+                            : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
       let sep = if FSharpType.IsRecord typeof<'t> then semiLine else commaLine
       P {new InternalPretty<Pair<'e, 'r>> () with
           override t.Pretty ees =
            part (just (eP.Pretty (&ees.Elem)) <^>
                  (sep <^> just (rP.Pretty (&ees.Rest))))}
 
-    member t.Product (asP: AsPairs<'p, 't, 't>, P pP: PrettyP<'p, 'p, 't, 't>) =
+    static member Product (asP: AsPairs<'p,'t,'t>, P pP: PrettyP<'p,'p,'t,'t>) =
       let lr = if FSharpType.IsRecord typeof<'t> then lrbrace else lrparen
       O << doc <| fun t ->
       let mutable es = Unchecked.defaultof<_>

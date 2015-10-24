@@ -15,8 +15,9 @@ let suffix = Regex "`[0-9]+"
 let replace (p: Regex) (r: string) (s: string) =
   p.Replace (s, r)
 
-type [<InferenceRules>] Solver<'Puzzle> () =
-  member g.Solve (_: 'Puzzle, _: Result<'x>) : Solution<'Puzzle> =
+type Solver () =
+  inherit Rules ()
+  static member Solve (_: Result<'x>) : Solution<'Puzzle> =
     sprintf "%A" typeof<'x>
     |> replace prefix ""
     |> replace suffix ""

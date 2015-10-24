@@ -74,10 +74,10 @@ type House<'nationality, 'pet, 'smokes, 'drinks, 'color> = class end
 
 /// Rules for deriving the result of the Zebra puzzle.  This is a straighforward
 /// translation of a Prolog program.
-type [<InferenceRules>] Puzzle () =
-  member g.Puzzle
-    (_: Basic, _: List,
-     _: Eq<'solution, List<'house1, 'house2, 'house3, 'house4, 'house5>>,
+type [<Basic; List; Solver>] Puzzle () =
+  inherit Rules ()
+  static member Puzzle
+    (_: Eq<'solution, List<'house1, 'house2, 'house3, 'house4, 'house5>>,
      _: Member<House<Englishman, _, _, _, Red>, 'solution>,
      _: Member<House<Spaniard, Dog, _, _, _>, 'solution>,
      _: Member<House<_, _, _, Coffee, Green>, 'solution>,
@@ -97,6 +97,6 @@ type [<InferenceRules>] Puzzle () =
       : Result<'house1 * 'house2 * 'house3 * 'house4 * 'house5> = Result'1
 
 let test () : unit =
-  if Engine.tryGenerate (Solver<Puzzle> ()) = Some (Solution'1: Solution<Puzzle>)
+  if Engine.tryGenerate (Puzzle ()) = Some (Solution'1: Solution<Puzzle>)
   then printfn "Got solution!"
   else printfn "No solution?"

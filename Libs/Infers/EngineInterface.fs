@@ -4,7 +4,7 @@ namespace Infers
 
 open System
 
-type InferenceRules () =
+type [<AbstractClass>] Rules () =
   inherit Attribute ()
 
 type [<AbstractClass>] Rec<'x> () =

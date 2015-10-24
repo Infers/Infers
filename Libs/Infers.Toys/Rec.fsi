@@ -11,11 +11,11 @@ module Rec =
 
   /// Rules for computing fixed points over products, single case union types (aka
   /// newtypes) and functions.
-  type [<InferenceRules>] Rec =
-    inherit RecFn
+  type Rec =
+    inherit Rules
     new: unit -> Rec
-    member Elem: Elem<'e, 'r, 'o, 't> * Rec<'e> -> RecP<'e, 'r, 'o, 't>
-    member Pair: RecP<     'e     , Pair<'e, 'r>, 'o, 't>
-               * RecP<         'r ,          'r , 'o, 't>
-              -> RecP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
-    member Product: Rep * AsPairs<'p, 'o, 't> * RecP<'p, 'p, 'o, 't> -> Rec<'t>
+    static member Elem: Elem<'e, 'r, 'o, 't> * Rec<'e> -> RecP<'e, 'r, 'o, 't>
+    static member Pair: RecP<     'e     , Pair<'e, 'r>, 'o, 't>
+                      * RecP<         'r ,          'r , 'o, 't>
+                     -> RecP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
+    static member Product: AsPairs<'p, 'o, 't> * RecP<'p, 'p, 'o, 't> -> Rec<'t>

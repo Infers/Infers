@@ -84,10 +84,12 @@ module Zipper =
     abstract Do: byref<'p> * byref<'v> * byref<'h> * byref<'n> -> unit
     abstract Un: byref<'v> * byref<'h> * byref<'n> * byref<'p> -> unit
 
-  type [<InferenceRules>] Zipper () =
+  type [<Rep>] Zipper () =
+    inherit Rules ()
+
     static let warned = Dictionary<Type, unit> ()
 
-    member z.ToZipper (_: Rep, wD: Down<'w, 'w>) =
+    static member ToZipper (wD: Down<'w, 'w>) =
       {new Up<'w, 'w> () with
         member u.Up w =
           {new Zipper<'w, 'w> () with
@@ -101,7 +103,7 @@ module Zipper =
                               | _ -> failwith "Bug"
             member z.Up () = None} :> Zipper<_>}
 
-    member z.Down () =
+    static member Down () =
       let r = ref <| Unchecked.defaultof<Down<_, _>>
       {new Rec<Down<'w, 'h>> () with
         member t.Get () =
@@ -112,15 +114,15 @@ module Zipper =
             member d.DownLastThe (up, h) = (!r).DownLastThe (up, h)}
         member t.Set d = r := d}
 
-    member z.Prim (_: Prim<'t>) = downNone<'w, 't>
+    static member Prim (_: Prim<'t>) = downNone<'w, 't>
 
-    member z.Unsupported (_: Unsupported<'t>) =
+    static member Unsupported (_: Unsupported<'t>) =
       if warned.ContainsKey typeof<'t> |> not then
         warned.[typeof<'t>] <- ()
         printfn "WARNING: Type %A is seen as primitive by Zipper." typeof<'t>
       downNone<'w, 't>
 
-    member z.String () : Down<'w, string> =
+    static member String () : Down<'w, string> =
       let rec at (up: Up<'w, string>) (s: string) i =
         {new Zipper<'w, char> () with
           member z.NextAny () =
@@ -144,9 +146,9 @@ module Zipper =
            | null -> None
            | s -> if 0 = s.Length then None else at up s 0 :> Zipper<_> |> Some}
 
-    member z.Elem (_: Elem<'h, 'r, 'o, 't>,
-                   rotate: Rotate<'v, 'h, 'n, 'r, 'p>,
-                   hD: Down<'w, 'h>) : DownP<'w, 'h, 'r, 'o, 'p, 't> =
+    static member Elem (_: Elem<'h, 'r, 'o, 't>,
+                        rotate: Rotate<'v, 'h, 'n, 'r, 'p>,
+                        hD: Down<'w, 'h>) : DownP<'w, 'h, 'r, 'o, 'p, 't> =
       P [{new DownPElem<'w, 'v, 'h, 'n, 'r, 'o, 'p, 't> () with
            member d.Down (up, m, p) =
              let inline back (z: ZipperP<_, _, _, _>) =
@@ -200,12 +202,12 @@ module Zipper =
              rotate.Do (&p, &z.Prev, &z.Hole, &z.Next)
              z :> Zipper<_>}]
 
-    member z.Pair (P e: DownP<'w,      'e     , Pair<'e, 'r>, 'o, 'p, 't>,
-                   P r: DownP<'w,          'r ,          'r , 'o, 'p, 't>) =
-      P (e @ r)       : DownP<'w, Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 't>
+    static member Pair (P e: DownP<'w,      'e    , Pair<'e,'r>,'o,'p,'t>,
+                        P r: DownP<'w,         'r ,         'r ,'o,'p,'t>) =
+      P (e @ r)            : DownP<'w, Pair<'e,'r>, Pair<'e,'r>,'o,'p,'t>
 
-    member z.Product (m: AsPairs<'p, 'o, 't>,
-                      P downs: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
+    static member Product (m: AsPairs<'p, 'o, 't>,
+                           P downs: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
       let downs = Array.ofList downs
       let n = downs.Length
       for i=0 to n-1 do
@@ -247,17 +249,17 @@ module Zipper =
         member d.DownLastAny (up, t) = downAny downLastAny up t
         member d.DownLastThe (up, t) = downThe downLastThe up t}
 
-    member z.Case (_: Case<Empty, 'o, 't>) : DownS<'w, Empty, 'o, 't> =
+    static member Case (_: Case<Empty, 'o, 't>) : DownS<'w, Empty, 'o, 't> =
       U [downNone<'w, 't>]
 
-    member z.Case (m: Case<'p, 'o, 't>, pD: DownP<'w, 'p, 'p, 'o, 'p, 't>) =
-      U [z.Product (m, pD)] : DownS<'w, 'p, 'o, 't>
+    static member Case (m: Case<'p, 'o, 't>, pD: DownP<'w,'p,'p,'o,'p,'t>) =
+      U [Zipper.Product (m, pD)] : DownS<'w, 'p, 'o, 't>
 
-    member z.Choice (U pD: DownS<'w,        'p     , Choice<'p, 'o>, 't>,
-                     U oD: DownS<'w,            'o ,            'o , 't>) =
-      U (pD @ oD)        : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't>
+    static member Choice (U pD: DownS<'w,        'p     , Choice<'p, 'o>, 't>,
+                          U oD: DownS<'w,            'o ,            'o , 't>) =
+      U (pD @ oD)             : DownS<'w, Choice<'p, 'o>, Choice<'p, 'o>, 't>
 
-    member z.Sum (m: AsChoices<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
+    static member Sum (m: AsChoices<'s, 't>, U u: DownS<'w, 's, 's, 't>) =
       let cs = Array.ofList u
       {new Down<'w, 't> () with
         override d.DownHeadAny (up, u) = cs.[m.Tag u].DownHeadAny (up, u)
@@ -265,19 +267,19 @@ module Zipper =
         override d.DownLastAny (up, u) = cs.[m.Tag u].DownLastAny (up, u)
         override d.DownLastThe (up, u) = cs.[m.Tag u].DownLastThe (up, u)}
 
-    member r.Nest (r0: Rotate<'v, 'h, 'n, 'r, 'p>) =
+    static member Nest (r0: Rotate<'v, 'h, 'n, 'r, 'p>) =
       {new Rotate<Pair<'v0, 'v>, 'h, 'n, 'r, Pair<'v0, 'p>> () with
         member r1.Do (p, l, h, r) =
           l.Elem <- p.Elem; r0.Do (&p.Rest, &l.Rest, &h, &r)
         member r1.Un (l, h, r, p) =
           p.Elem <- l.Elem; r0.Un (&l.Rest, &h, &r, &p.Rest)}
 
-    member r.The () =
+    static member The () =
       {new Rotate<Empty, 'h, 'n, Pair<'h, 'n>, Pair<'h, 'n>> () with
         member r1.Do (p, _, h, r) = h <- p.Elem; r <- p.Rest
         member r1.Un (_, h, r, p) = p.Elem <- h; p.Rest <- r}
 
-    member r.Last () =
+    static member Last () =
       {new Rotate<Empty, 'h, Empty, 'h, 'h> () with
         member r1.Do (p, _, h, _) = h <- p
         member r1.Un (_, h, _, p) = p <- h}

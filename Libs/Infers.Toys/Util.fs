@@ -8,4 +8,3 @@ open System.Collections.Generic
 let physicalComparer = {new IEqualityComparer<obj> with
   member t.GetHashCode (x) = LanguagePrimitives.PhysicalHash x
   member t.Equals (l, r) = LanguagePrimitives.PhysicalEquality l r}
-

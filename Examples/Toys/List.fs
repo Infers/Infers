@@ -3,7 +3,7 @@
 module Toys.List
 
 open Infers
-open Toys.Basic
+open Infers.Toys
 
 type Nil = Nil'0
 type Cons<'h, 't> = Cons'2
@@ -24,23 +24,25 @@ type Sublist<'xs, 'ys> = Sublist'2
 
 type Adjacent<'a, 'b, 'xs> = Adjacent'3
 
-type [<InferenceRules>] List () =
-  member g.IsList (): IsList<Nil> = IsList'1
-  member g.IsList (_: IsList<'xs>)
-                    : IsList<Cons<_, 'xs>> = IsList'1
+type [<Basic>] List () =
+  inherit Rules ()
 
-  member g.Append (_: IsList<'ys>)
-                    : Append<Nil, 'ys, 'ys> = Append'3
-  member g.Append (_: Append<'xs, 'ys, 'zs>)
-                    : Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>> = Append'3
+  static member IsList (): IsList<Nil> = IsList'1
+  static member IsList (_: IsList<'xs>)
+                         : IsList<Cons<_, 'xs>> = IsList'1
 
-  member g.Sublist (_: Append<_, 'xs, 'qs>,
-                    _: Append<'qs, _, 'ys>)
-                     : Sublist<'xs, 'ys> = Sublist'2
+  static member Append (_: IsList<'ys>)
+                         : Append<Nil, 'ys, 'ys> = Append'3
+  static member Append (_: Append<'xs, 'ys, 'zs>)
+                         : Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>> = Append'3
 
-  member g.Member (_: Sublist<List<'x>, 'xs>)
-                    : Member<'x, 'xs> = Member'2
+  static member Sublist (_: Append<_, 'xs, 'qs>,
+                         _: Append<'qs, _, 'ys>)
+                          : Sublist<'xs, 'ys> = Sublist'2
 
-  member g.Adjacent (_: Choice<Sublist<List<'a, 'b>, 'xs>,
-                               Sublist<List<'b, 'a>, 'xs>>)
-                      : Adjacent<'a, 'b, 'xs> = Adjacent'3
+  static member Member (_: Sublist<List<'x>, 'xs>)
+                         : Member<'x, 'xs> = Member'2
+
+  static member Adjacent (_: Choice<Sublist<List<'a, 'b>, 'xs>,
+                                    Sublist<List<'b, 'a>, 'xs>>)
+                           : Adjacent<'a, 'b, 'xs> = Adjacent'3

@@ -15,32 +15,32 @@ module Elems =
 
   let missE _ = [||]
 
-  type [<InferenceRules>] Elems () =
-    inherit Rep ()
-    member g.Elem0 (_: Elem<'e, 'r, 'o, 'w>) : ElemsP<'e, 'r, 'o, 'h, 'w> =
+  type [<Rep>] Elems () =
+    inherit Rules ()
+    static member Elem0 (_: Elem<'e, 'r, 'o, 'w>) : ElemsP<'e,'r,'o,'h,'w> =
       Miss
-    member g.Elem1 (hE: Elem<'h, 'r, 'o, 'w>) : ElemsP<'h, 'r, 'o, 'h, 'w> =
+    static member Elem1 (hE: Elem<'h, 'r, 'o, 'w>) : ElemsP<'h,'r,'o,'h,'w> =
       Hit (1, fun w i hs -> hs.[i] <- hE.Get w)
-    member g.Pair (eF: ElemsP<     'e     , Pair<'e, 'r>, 'o, 'p, 'w>,
-                   rF: ElemsP<         'r ,          'r , 'o, 'p, 'w>)
-                     : ElemsP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 'w> =
+    static member Pair (eF: ElemsP<     'e     , Pair<'e, 'r>, 'o, 'p, 'w>,
+                        rF: ElemsP<         'r ,          'r , 'o, 'p, 'w>)
+                          : ElemsP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 'w> =
       match (eF, rF) with
        | (Miss, Miss) -> Miss
        | (Hit (n, e), Miss) | (Miss, Hit (n, e)) -> Hit (n, e)
        | (Hit (numE, extE), Hit (numR, extR)) ->
          Hit (numE + numR, fun w i hs -> extE w i hs; extR w (i + numE) hs)
-    member g.Product (_: AsPairs<'p, 'o, 'w>, pF: ElemsP<'p, 'p, 'o, 'h, 'w>) =
+    static member Product (_: AsPairs<'p, 'o, 'w>, pF: ElemsP<'p,'p,'o,'h,'w>) =
       match pF with
        | Miss -> missE
        | Hit (n, ext) -> fun w -> let hs = Array.zeroCreate n in ext w 0 hs; hs
-    member g.Case (_: Case<Empty, 'o, 'w>) : ElemsS<Empty, 'o, 'h, 'w> =
+    static member Case (_: Case<Empty, 'o, 'w>) : ElemsS<Empty, 'o, 'h, 'w> =
       SE [missE]
-    member g.Case (m: Case<'p, 'o, 'w>, pF: ElemsP<'p, 'p, 'o, 'h, 'w>) =
-      SE [g.Product (m, pF)] : ElemsS<'p, 'o, 'h, 'w>
-    member g.Choice (SE pF: ElemsS<       'p     , Choice<'p, 'o>, 'h, 'w>,
-                     SE oF: ElemsS<           'o ,            'o , 'h, 'w>) =
-      SE (pF @ oF)        : ElemsS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-    member g.Sum (m: AsChoices<'s, 'w>, SE sF: ElemsS<'s, 's, 'h, 'w>) =
+    static member Case (m: Case<'p, 'o, 'w>, pF: ElemsP<'p, 'p, 'o, 'h, 'w>) =
+      SE [Elems.Product (m, pF)] : ElemsS<'p, 'o, 'h, 'w>
+    static member Choice (SE pF: ElemsS<       'p    , Choice<'p,'o>,'h,'w>,
+                          SE oF: ElemsS<          'o ,           'o ,'h,'w>) =
+      SE (pF @ oF)             : ElemsS<Choice<'p,'o>, Choice<'p,'o>,'h,'w>
+    static member Sum (m: AsChoices<'s, 'w>, SE sF: ElemsS<'s, 's, 'h, 'w>) =
       let sF = Array.ofList sF
       fun w -> sF.[m.Tag w] w
 
@@ -68,16 +68,16 @@ module Elems =
 
   let missS _ w = w
 
-  type [<InferenceRules>] Subst () =
-    inherit Rep ()
-    member g.Elem0 (_: Elem<'e, 'r, 'o, 'w>) : SubstP<'e, 'r, 'o, 'h, 'w> =
+  type [<Rep>] Subst () =
+    inherit Rules ()
+    static member Elem0 (_: Elem<'e, 'r, 'o, 'w>) : SubstP<'e, 'r, 'o, 'h, 'w> =
       null
-    member g.Elem1 (_: Elem<'h, 'r, 'o, 'w>) =
+    static member Elem1 (_: Elem<'h, 'r, 'o, 'w>) =
       {new SubstP<'h, 'r, 'o, 'h, 'w> () with
         member t.Subst (h2h, h) = h <- h2h h}
-    member g.Pair (eS: SubstP<     'e     , Pair<'e, 'r>, 'o, 'h, 'w>,
-                   rS: SubstP<         'r ,          'r , 'o, 'h, 'w>)
-                     : SubstP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'h, 'w> =
+    static member Pair (eS: SubstP<     'e     , Pair<'e, 'r>, 'o, 'h, 'w>,
+                        rS: SubstP<         'r ,          'r , 'o, 'h, 'w>)
+                          : SubstP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'h, 'w> =
       match (eS, rS) with
        | (null, null) -> null
        | (eS, null) ->
@@ -91,21 +91,21 @@ module Elems =
             member t.Subst (h2h, er) =
              eS.Subst (h2h, &er.Elem)
              rS.Subst (h2h, &er.Rest)}
-    member g.Product (m: AsPairs<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
+    static member Product (m: AsPairs<'p,'o,'w>, pS: SubstP<'p,'p,'o,'h,'w>) =
       match pS with
        | null -> missS
        | pS -> fun h2h w ->
          let mutable p = m.ToPairs w
          pS.Subst (h2h, &p)
          m.Create (&p)
-    member g.Case (_: Case<Empty, 'o, 'w>) : SubstS<Empty, 'o, 'h, 'w> =
+    static member Case (_: Case<Empty, 'o, 'w>) : SubstS<Empty, 'o, 'h, 'w> =
       SS [missS]
-    member g.Case (m: Case<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
-      SS [g.Product (m, pS)] : SubstS<'p, 'o, 'h, 'w>
-    member g.Choice (SS pS: SubstS<       'p     , Choice<'p, 'o>, 'h, 'w>,
-                     SS oS: SubstS<           'o ,            'o , 'h, 'w>) =
-      SS (pS @ oS)        : SubstS<Choice<'p, 'o>, Choice<'p, 'o>, 'h, 'w>
-    member g.Sum (m: AsChoices<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
+    static member Case (m: Case<'p, 'o, 'w>, pS: SubstP<'p, 'p, 'o, 'h, 'w>) =
+      SS [Subst.Product (m, pS)] : SubstS<'p, 'o, 'h, 'w>
+    static member Choice (SS pS: SubstS<       'p    , Choice<'p,'o>,'h,'w>,
+                          SS oS: SubstS<          'o ,           'o ,'h,'w>) =
+      SS (pS @ oS)             : SubstS<Choice<'p,'o>, Choice<'p,'o>,'h,'w>
+    static member Sum (m: AsChoices<'s, 'w>, SS s: SubstS<'s, 's, 'p, 'w>) =
       let s = Array.ofList s
       fun hs w -> s.[m.Tag w] hs w
 

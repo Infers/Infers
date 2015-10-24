@@ -9,18 +9,19 @@ open Infers.Rep
 type Iso<'x, 'y>
 
 /// A few rules for deriving isomorphisms.
-type [<InferenceRules>] Iso =
+type Iso =
+  inherit Rules
   new: unit -> Iso
 
-  member Identity: unit -> Iso<'x, 'x>
-  member Invert: Iso<'x, 'y> -> Iso<'y, 'x>
-  member Compose: Iso<'x, 'y> * Iso<'y, 'z> -> Iso<'x, 'z>
+  static member Identity: unit -> Iso<'x, 'x>
+  static member Invert: Iso<'x, 'y> -> Iso<'y, 'x>
+  static member Compose: Iso<'x, 'y> * Iso<'y, 'z> -> Iso<'x, 'z>
 
-  member Swap: unit -> Iso<'x * 'y, 'y * 'x>
-  member Restructure: unit -> Iso<'x * ('y * 'z), 'y * ('x * 'z)>
-  member First: Iso<'x1, 'x2> -> Iso<'x1 * 'y, 'x2 * 'y>
+  static member Swap: unit -> Iso<'x * 'y, 'y * 'x>
+  static member Restructure: unit -> Iso<'x * ('y * 'z), 'y * ('x * 'z)>
+  static member First: Iso<'x1, 'x2> -> Iso<'x1 * 'y, 'x2 * 'y>
 
-  member ``Pair<->Tuple``: unit -> Iso<Pair<'x, 'y>, 'x * 'y>
+  static member ``Pair<->Tuple``: unit -> Iso<Pair<'x, 'y>, 'x * 'y>
 
 val iso<'x, 'y> : Iso<'x, 'y>
 val fwd: Iso<'x, 'y> -> ('x -> 'y)

@@ -94,16 +94,7 @@ module HashEqSet =
 
 /// Represents a functional map of type `'k -> 'v` requiring only that `'k`
 /// provides equality and hash operations.
-type HashEqMap<'k, 'v> when 'k: equality =
-  | HEM of Map<int, list<'k * 'v>>
-  override this.ToString () =
-    match this with
-     | HEM m ->
-       m
-       |> Map.toSeq
-       |> Seq.collect snd
-       |> List.ofSeq
-       |> sprintf "%A"
+type HashEqMap<'k, 'v> when 'k: equality = HEM of Map<int, list<'k * 'v>>
 
 /// Operations on functional maps using hash and equality.
 module HashEqMap =
@@ -180,3 +171,51 @@ module Dictionary =
 type IRecObj =
   abstract GetObj: unit -> obj
   abstract SetObj: obj -> unit
+
+////////////////////////////////////////////////////////////////////////////////
+
+module StaticSet =
+  open Infers.Core
+  open System.Threading
+  type Key = Key'0
+  let keyType = typeof<Key>
+  let wait (box: Box<'v>) =
+    lock box <| fun () ->
+      while not box.Ready do
+        Monitor.Wait box |> ignore
+    box.Value
+  let inline getOrInvoke<'v> (mk: unit -> 'v) =
+    match StaticMap<Key, 'v>.box with
+     | null -> mk ()
+     | box -> wait box
+  let tryGetDyn valueType =
+    match typedefof<StaticMap<_, _>>
+           .MakeGenericType([|keyType; valueType|])
+           .GetMethod("TryGet")
+           .Invoke(null, null) with
+     | :? Box as box -> box.Get () |> Some
+     | _ -> None
+  let getOrInvokeDyn valueType mk =
+    match typedefof<StaticMap<_, _>>
+           .MakeGenericType([|keyType; valueType|])
+           .GetMethod("TryGet")
+           .Invoke(null, null) with
+     | :? Box as box -> box.Get ()
+     | _ -> mk ()
+  let getOrSetDyn valueType value =
+    let newBox = typedefof<Box<_>>
+                  .MakeGenericType([|valueType|])
+                  .GetConstructor([||])
+                  .Invoke(null)
+    let box =
+      lock newBox <| fun () ->
+        match typedefof<StaticMap<_, _>>
+               .MakeGenericType([|keyType; valueType|])
+               .GetMethod("GetOrSet")
+               .Invoke(null, [|newBox|]) with
+         | null ->
+           let newBox = unbox<Box> newBox
+           newBox.Set value
+           newBox
+         | oldBox -> unbox<Box> oldBox
+    box.Get ()

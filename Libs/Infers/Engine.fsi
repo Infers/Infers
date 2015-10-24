@@ -6,16 +6,16 @@ namespace Infers
 module Engine =
   /// Using IDDFS, tries to generate a value of the type `'a` by using the
   /// given set of inference rules.  See  `InferenceRules`.
-  val tryGenerate: rules: obj -> option<'a>
+  val tryGenerate: 'r -> option<'a> when 'r :> Rules
 
   /// Using DFS, tries to generate a value of the type `'a` by using the given
   /// set of inference rules.  See  `InferenceRules`.
-  val tryGenerateDFS: rules: obj -> option<'a>
+  val tryGenerateDFS: 'r -> option<'a> when 'r :> Rules
 
   /// Combination of `Engine.tryGenerate` and `StaticMap.Memoize` for convenient
   /// invocation of inference rules.
-  val generate<'rules, 'result> : 'result when 'rules : (new : unit -> 'rules)
+  val generate<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v
 
   /// Combination of `Engine.tryGenerateDFS` and `StaticMap.Memoize` for
   /// convenient invocation of inference rules.
-  val generateDFS<'rules, 'result> : 'result when 'rules : (new : unit -> 'rules)
+  val generateDFS<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v

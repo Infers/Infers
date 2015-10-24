@@ -31,41 +31,41 @@ type Search<'p, 'r> = Search'2
 /// program, but has been modified in a couple of ways.  Most importantly,
 /// negation is not supported by Infers, so the rules have been changed to
 /// eliminate negation.
-type [<InferenceRules>] Puzzle () =
-  member g.Puzzle
-    (_: Basic, _: List,
-     _: Eq<'initial, Farmer<S> * Goat<S> * Cabbage<S> * Wolf<S>>,
+type [<Basic; List; Solver>] Puzzle () =
+  inherit Rules ()
+  static member Puzzle
+    (_: Eq<'initial, Farmer<S> * Goat<S> * Cabbage<S> * Wolf<S>>,
      _: Eq<'final, Farmer<D> * Goat<D> * Cabbage<D> * Wolf<D>>,
      _: Search<Cons<'initial, 'p>, 'final>)
       : Result<Cons<'initial, 'p>> = Result'1
 
-  member g.Opp1: Opp<S, D> = Opp'2
-  member g.Opp2: Opp<D, S> = Opp'2
+  static member Opp1: Opp<S, D> = Opp'2
+  static member Opp2: Opp<D, S> = Opp'2
 
-  member g.Valid (_: Choice<Opp<'g, 'c>, Eq<'g, 'c, 'f>>,
-                  _: Choice<Opp<'g, 'w>, Eq<'g, 'w, 'f>>)
+  static member Valid (_: Choice<Opp<'g, 'c>, Eq<'g, 'c, 'f>>,
+                       _: Choice<Opp<'g, 'w>, Eq<'g, 'w, 'f>>)
    : Valid<Farmer<'f> * Goat<'g> * Cabbage<'c> * Wolf<'w>> = Valid'1
 
-  member g.Goat (_: Opp<'f1, 'f2>)
+  static member Goat (_: Opp<'f1, 'f2>)
    : Move<Farmer<'f1> * Goat<'f1> * Cabbage<'c> * Wolf<'w>,
           Farmer<'f2> * Goat<'f2> * Cabbage<'c> * Wolf<'w>> = Move'2
-  member g.Cabbage (_: Opp<'f1, 'f2>)
+  static member Cabbage (_: Opp<'f1, 'f2>)
    : Move<Farmer<'f1> * Goat<'g> * Cabbage<'f1> * Wolf<'w>,
           Farmer<'f2> * Goat<'g> * Cabbage<'f2> * Wolf<'w>> = Move'2
-  member g.Wolf (_: Opp<'f1, 'f2>)
+  static member Wolf (_: Opp<'f1, 'f2>)
    : Move<Farmer<'f1> * Goat<'g> * Cabbage<'c> * Wolf<'f1>,
           Farmer<'f2> * Goat<'g> * Cabbage<'c> * Wolf<'f2>> = Move'2
-  member g.Alone (_: Opp<'f1, 'f2>)
+  static member Alone (_: Opp<'f1, 'f2>)
    : Move<Farmer<'f1> * Goat<'g> * Cabbage<'c> * Wolf<'w>,
           Farmer<'f2> * Goat<'g> * Cabbage<'c> * Wolf<'w>> = Move'2
 
-  member g.Search () : Search<List<'d>, 'd> = Search'2
-  member g.Search (_: Move<'s1, 's2>,
-                   _: Valid<'s2>,
-                   _: Search<Cons<'s2, 'p>, 'd>)
-                    : Search<Cons<'s1, Cons<'s2, 'p>>, 'd> = Search'2
+  static member Search () : Search<List<'d>, 'd> = Search'2
+  static member Search (_: Move<'s1, 's2>,
+                        _: Valid<'s2>,
+                        _: Search<Cons<'s2, 'p>, 'd>)
+                         : Search<Cons<'s1, Cons<'s2, 'p>>, 'd> = Search'2
         
 let test () : unit =
-  if Engine.tryGenerate (Solver<Puzzle> ()) = Some (Solution'1: Solution<Puzzle>)
+  if Engine.tryGenerate (Puzzle ()) = Some (Solution'1: Solution<Puzzle>)
   then printfn "Got solution!"
   else printfn "No solution?"

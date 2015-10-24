@@ -58,8 +58,6 @@
   <ItemGroup>
     <Compile Include="Assembly.fs" />
     <Compile Include="Util.fs" />
-    <Compile Include="StaticMap.fsi" />
-    <Compile Include="StaticMap.fs" />
     <Compile Include="TypeManip.fs" />
     <Compile Include="EngineInterface.fsi" />
     <Compile Include="EngineInterface.fs" />

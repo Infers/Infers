@@ -2,6 +2,7 @@
 
 namespace Infers.Rep
 
+open System
 open Infers
 
 type Empty = struct end
@@ -16,7 +17,8 @@ type [<Struct>] Pair<'x, 'xs> =
 module Pair =
   let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
-type [<InferenceRules;AbstractClass>] Rep<'t> () = class end
+type [<AbstractClass>] Rep<'t> () =
+  inherit Rules ()
 
 type [<AbstractClass>] Prim<'t> () =
   inherit Rep<'t> ()
@@ -30,10 +32,12 @@ type [<AbstractClass>] Product<'r> () =
 type [<AbstractClass>] Record<'t> () =
   inherit Product<'t> ()
 
-type B = System.Reflection.BindingFlags
+type B = Reflection.BindingFlags
 
-type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
-  new (arity, isMutable) = {Arity = arity; IsMutable = isMutable}
+type [<AbstractClass>] AsPairs<'p, 'o, 't> =
+  inherit Rules
+  new (arity, isMutable) =
+    {inherit Rules (); Arity = arity; IsMutable = isMutable}
   val Arity: int
   val IsMutable: bool
   abstract Extract: 't * byref<'p> -> unit
@@ -57,8 +61,9 @@ type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
     let mutable p = Unchecked.defaultof<_>
     this.Create (&p)
 
-type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
-  new (arity) = {Arity = arity}
+type [<AbstractClass>] AsChoices<'s, 't> =
+  inherit Rules
+  new (arity) = {inherit Rules (); Arity = arity}
   val Arity: int
   abstract Tag: 't -> int
 
@@ -98,4 +103,4 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
     {inherit Labelled<'e, 'r, 't, 't> (index, name); IsMutable = isMutable}
   val IsMutable: bool
   abstract Set: 't * 'e -> unit
-  default f.Set (_: 't, _: 'e) = raise <| System.NotImplementedException ()
+  default f.Set (_: 't, _: 'e) = raise <| NotImplementedException ()

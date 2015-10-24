@@ -16,13 +16,14 @@ namespace Infers
 
 open System
 
-/// A type that has the `InferenceRules` attribute is assumed to contain pure
-/// rule methods that are used by the inference engine.
-type InferenceRules =
+/// A type that inherits `Rules` is assumed to contain pure static rule methods
+/// that are used by the inference engine.  Dependencies to other rule classes
+/// are specified as attributes.
+type [<AbstractClass>] Rules =
   inherit Attribute
 
   /// Default constructor.
-  new: unit -> InferenceRules
+  new: unit -> Rules
 
 /// Proxy for a potentially recursive value.
 type [<AbstractClass>] Rec<'x> =

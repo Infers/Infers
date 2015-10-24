@@ -31,10 +31,9 @@ module Util =
        (assemblyName, AssemblyBuilderAccess.RunAndCollect)
     assemblyBuilder.DefineDynamicModule assemblyName.Name
 
-  let mutable uniqueId = 0
+  let mutable private uniqueId = 0
   let inline uniqueName () =
-    let i = uniqueId + 1
-    uniqueId <- i
+    let i = Interlocked.Increment &uniqueId
     sprintf "Generated%d" i
 
   type Builder<'a> =
@@ -87,7 +86,7 @@ type Builder =
           baseType basePars.Length cs
     values
     |> List.iter (fun (name, field, baseType, _) ->
-       let meth = typeBuilder.DefineMethod (name, M.Public, baseType, [||])
+       let meth = typeBuilder.DefineMethod (name, M.Public ||| M.Static, baseType, [||])
        let ilGen = meth.GetILGenerator ()
        ilGen.Emit (OpCodes.Ldsfld, field)
        ilGen.Emit (OpCodes.Ret))
@@ -276,8 +275,10 @@ module Unions =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type [<InferenceRules>] Rep () =
-  member this.rep () : Rep<'t> = StaticMap<Rep>.Memoize <| fun () ->
+type Rep () =
+  inherit Rules ()
+
+  static member rep () : Rep<'t> =
     let t = typeof<'t>
 
     match
@@ -371,21 +372,21 @@ type [<InferenceRules>] Rep () =
     | _ ->
       failwith "Bug"
 
-  member this.union (_: Rep<'t>, r: Union<'t>) = r
-  member this.product (_: Rep<'t>, r: Product<'t>) = r
-  member this.record (_: Rep<'t>, r: Record<'t>) = r
-  member this.tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
-  member this.prim (_: Rep<'t>, r: Prim<'t>) = r
-  member this.unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
+  static member union (_: Rep<'t>, r: Union<'t>) = r
+  static member product (_: Rep<'t>, r: Product<'t>) = r
+  static member record (_: Rep<'t>, r: Record<'t>) = r
+  static member tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
+  static member prim (_: Rep<'t>, r: Prim<'t>) = r
+  static member unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
 
-  member this.asChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
-  member this.asPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p
-  member this.viewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
+  static member asChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
+  static member asPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p
+  static member viewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
     m :> AsPairs<'p, 'p, 't>
 
-  member this.asElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
+  static member asElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
     i :> Elem<'e, 'r, 't, 't>
-  member this.asElem (l: Labelled<'e, 'r, 'o, 't>) = l :> Elem<'e, 'r, 'o, 't>
-  member this.asLabelled (f: Field<'e, 'r, 't>) = f :> Labelled<'e, 'r, 't, 't>
-  member this.asLabelled (_: Union<'t>, l: Label<'e, 'r, 'o, 't>) =
+  static member asElem (l: Labelled<'e, 'r, 'o, 't>) = l :> Elem<'e,'r,'o,'t>
+  static member asLabelled (f: Field<'e, 'r, 't>) = f :> Labelled<'e,'r,'t,'t>
+  static member asLabelled (_: Union<'t>, l: Label<'e, 'r, 'o, 't>) =
     l :> Labelled<'e, 'r, 'o, 't>

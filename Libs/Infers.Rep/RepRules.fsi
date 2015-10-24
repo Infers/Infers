@@ -5,48 +5,51 @@ namespace Infers.Rep
 open Infers
 
 /// Inference rules for generic type representations.
-type [<InferenceRules>] Rep =
-  /// Default constructor.
+type Rep =
+  inherit Rules
+
   new: unit -> Rep
 
   /// Construct a type representation for the type `'t`.
-  member rep: unit -> Rep<'t>
+  static member rep: unit -> Rep<'t>
 
   /// Attempts to constructs a union type representation for the type `'t`.
-  member union: Rep<'t> * Union<'t> -> Union<'t>
+  static member union: Rep<'t> * Union<'t> -> Union<'t>
 
   /// Attempts to construct a product type representation for the type `'t`.
-  member product: Rep<'t> * Product<'t> -> Product<'t>
+  static member product: Rep<'t> * Product<'t> -> Product<'t>
 
   /// Attempts to construct a record type representation for the type `'t`.
-  member record: Rep<'t> * Record<'t> -> Record<'t>
+  static member record: Rep<'t> * Record<'t> -> Record<'t>
 
   /// Attempts to constructs a tuple type representation for the type `'t`.
-  member tuple: Rep<'t> * Tuple<'t> -> Tuple<'t>
+  static member tuple: Rep<'t> * Tuple<'t> -> Tuple<'t>
 
   /// Attempts to construct a primitive type representation for the type `'t`.
-  member prim: Rep<'t> * Prim<'t> -> Prim<'t>
+  static member prim: Rep<'t> * Prim<'t> -> Prim<'t>
 
   /// Attempts to construct a type representation for the unsupported type `'t`.
-  member unsupported: Rep<'t> * Unsupported<'t> -> Unsupported<'t>
+  static member unsupported: Rep<'t> * Unsupported<'t> -> Unsupported<'t>
 
   /// Construct a representation as nested choices for the type `'t`'.
-  member asChoices: Rep<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
+  static member asChoices: Rep<'t> * AsChoices<'s, 't> -> AsChoices<'s, 't>
 
   /// Construct a representation as nested pairs for the type `'t`'.
-  member asPairs: Rep<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
+  static member asPairs: Rep<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
 
   /// View a single case union type as nested pairs.
-  member viewAsPairs: AsChoices<'p, 't> * Case<'p, 'p, 't> -> AsPairs<'p, 'p, 't>
+  static member viewAsPairs: AsChoices<'p, 't> * Case<'p, 'p, 't>
+                          -> AsPairs<'p, 'p, 't>
 
   /// Trivially view a labelled elem as an elem.
-  member asElem: Labelled<'e, 'r, 'o, 't> -> Elem<'e, 'r, 'o, 't>
+  static member asElem: Labelled<'e, 'r, 'o, 't> -> Elem<'e, 'r, 'o, 't>
 
   /// Trivially view a tuple item as an elem.
-  member asElem: Tuple<'t> * Item<'e, 'r, 't> -> Elem<'e, 'r, 't, 't>
+  static member asElem: Tuple<'t> * Item<'e, 'r, 't> -> Elem<'e, 'r, 't, 't>
 
   /// Trivially view a record field as a labelled elem.
-  member asLabelled: Field<'e, 'r, 't> -> Labelled<'e, 'r, 't, 't>
+  static member asLabelled: Field<'e, 'r, 't> -> Labelled<'e, 'r, 't, 't>
 
   /// Trivially view a case label as a labelled elem.
-  member asLabelled: Union<'t> * Label<'e, 'r, 'o, 't> -> Labelled<'e, 'r, 'o, 't>
+  static member asLabelled: Union<'t> * Label<'e, 'r, 'o, 't>
+                         -> Labelled<'e, 'r, 'o, 't>

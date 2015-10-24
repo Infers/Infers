@@ -73,7 +73,8 @@ module Pair =
 /// where `'p` is a representation of the case as a product and `'o` is a nested
 /// choice that identifies the particular case.
 #endif
-type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
+type [<AbstractClass>] AsChoices<'s, 't> =
+  inherit Rules
   new: int -> AsChoices<'s, 't>
 
   /// The number of cases the discriminated union type `'t` has.
@@ -88,7 +89,8 @@ type [<AbstractClass; InferenceRules>] AsChoices<'s, 't> =
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Base class for type representations.
-type [<InferenceRules;AbstractClass>] Rep<'t> =
+type [<AbstractClass>] Rep<'t> =
+  inherit Rules
   new: unit -> Rep<'t>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +191,8 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 /// Those members are visible to inference rules, but they cannot be given a
 /// signature in F#.
 #endif
-type [<AbstractClass; InferenceRules>] AsPairs<'p, 'o, 't> =
+type [<AbstractClass>] AsPairs<'p, 'o, 't> =
+  inherit Rules
   new: int * bool -> AsPairs<'p, 'o, 't>
 
   /// The number of elements the product type has.

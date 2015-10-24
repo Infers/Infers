@@ -2,8 +2,9 @@
 
 namespace Infers
 
+open System.Threading.Tasks
 open System.Threading
-open System.Collections.Generic
+open System.Collections.Concurrent
 open System.Reflection
 open System
 
@@ -14,6 +15,9 @@ type Rule =
    ParTypes: array<Ty>
    GenericArgTypes: array<Ty>
    Invoke: array<Type> -> array<Type> -> array<obj> -> obj}
+  override t.ToString () =
+    sprintf "{ReturnType = %A; ParTypes = %A; GenericArgTypes = %A}"
+     t.ReturnType t.ParTypes t.GenericArgTypes
 
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Rule =
@@ -27,38 +31,24 @@ module Rule =
     mapVars (Fresh.newMapper ()) rule
 
 module RuleSet =
-  type Rules<'x> = Rules'1
-  let rulesTy t = typedefof<Rules<_>>.MakeGenericType [|t|]
-  let tyOfRulesTy (t: Type) =
-    if not t.IsGenericType ||
-       t.GetGenericTypeDefinition () <> typedefof<Rules<_>>
-    then failwith "Bug"
-    else t.GetGenericArguments().[0]
-
   type Cache =
-    {rules: Dictionary<Type, array<Rule>>
-     trees: Dictionary<HashEqSet<Type>, TyTree<Rule>>}
+    {rules: ConcurrentDictionary<Type, array<Rule>>
+     trees: ConcurrentDictionary<HashEqSet<Type>, TyTree<Rule>>}
   type RuleSet =
     {cache: Cache
      rules: HashEqSet<Type>
      tree: TyTree<Rule>}
 
-  let hasRules (t: Type) =
-    t.GetCustomAttributes<InferenceRules> true
-    |> Seq.isEmpty
-    |> not
-
-  let rec ruleClassesOf t =
-    if hasRules t
-    then rulesTy t :: ruleClassesOf t.BaseType
-    else []
+  let newEmpty () =
+    {cache = {rules = ConcurrentDictionary<_, _> ()
+              trees = ConcurrentDictionary<_, _> ()}
+     rules = HashEqSet.empty
+     tree = TyTree.build []}
 
   type B = BindingFlags
 
-  let rulesOf o (t: Type) =
-    let t = tyOfRulesTy t
-    t.GetMethods (B.DeclaredOnly ||| B.Instance ||| B.Public ||| B.NonPublic)
-    |> Array.filter (fun m -> not m.IsAbstract)
+  let rulesOf (t: Type) =
+    t.GetMethods (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
     |> Array.map (fun m ->
        let env = Fresh.newMapper ()
        {ReturnType = Ty.ofTypeIn env m.ReturnType
@@ -74,85 +64,74 @@ module RuleSet =
           let m = if m.ContainsGenericParameters
                   then m.MakeGenericMethod genArgTys
                   else m
-          m.Invoke (o, argObjs)})
+          m.Invoke (null, argObjs)})
 
-  let newEmpty () =
-    {cache = {rules = Dictionary<_, _> ()
-              trees = Dictionary<_, _> ()}
-     rules = HashEqSet.empty
-     tree = TyTree.build []}
-
-  let addRules tys ruleSet =
-    let rules =
-      tys
-      |> List.fold (fun r t -> HashEqSet.add t r) ruleSet.rules
+  let addRules t ruleSet =
+    let rules = HashEqSet.add t ruleSet.rules
     let tree =
-      Dictionary.getOr ruleSet.cache.trees rules <| fun () ->
+      ruleSet.cache.trees.GetOrAdd (rules, fun _ ->
         lazy (rules
               |> HashEqSet.toSeq
               |> Seq.collect (fun t ->
                  ruleSet.cache.rules.[t]
                  |> Seq.map (fun rule -> (rule.ReturnType, rule)))
               |> TyTree.build
-              |> force)
+              |> force))
     {ruleSet with rules = rules; tree = tree}
 
-  let maybeAddRulesTy ty ruleSet =
+  let requiresRules (t: Type) =
+    t.GetCustomAttributes<Rules> true
+
+  let rec maybeAddRules (t: Type) ruleSet =
+    if HashEqSet.contains t ruleSet.rules
+    then ruleSet
+    else ruleSet.cache.rules.GetOrAdd (t, rulesOf) |> ignore
+         requiresRules t
+         |> Seq.fold
+             (fun ruleSet o ->
+                maybeAddRulesObj o ruleSet)
+             (addRules t ruleSet)
+
+  and maybeAddRulesObj (o: obj) ruleSet =
+    match o with
+     | :? Rules -> maybeAddRules (o.GetType ()) ruleSet
+     | _ -> ruleSet
+
+  let maybeAddConRules ty ruleSet =
     match ty with
      | App' (Def tc, _) when tc.IsClass && not tc.IsAbstract
                           && not <| HashEqSet.contains tc ruleSet.rules ->
-       if ruleSet.cache.rules.ContainsKey tc |> not then
-         let rules =
-           tc.GetConstructors ()
-           |> Array.choose (fun c ->
-              let ps =
-                c.GetParameters () |> Array.map (fun p -> p.ParameterType)
-              if ps
-                 |> Array.forall (fun t ->
-                    t.IsClass
-                    && not t.IsArray
-                    && not t.IsPointer) then
-                let env = Fresh.newMapper ()
-                {ReturnType = Ty.ofTypeIn env tc
-                 ParTypes = ps |> Array.map (Ty.ofTypeIn env)
-                 GenericArgTypes =
-                   if tc.ContainsGenericParameters
-                   then tc.GetGenericArguments () |> Array.map (Ty.ofTypeIn env)
-                   else [||]
-                 Invoke = fun genArgTys argTys argObjs ->
-                   let tc = if tc.ContainsGenericParameters
-                            then tc.MakeGenericType genArgTys
-                            else tc
-                   match tc.GetConstructor argTys with
-                    | null -> failwith "Bug"
-                    | c ->
-                      c.Invoke argObjs} |> Some
-              else
-                None)
-         ruleSet.cache.rules.Add (tc, rules)
-       addRules [tc] ruleSet
-     | _ ->
-       ruleSet
-
-  let maybeAddRulesObj (o: obj) ruleSet =
-    match o with
-     | null ->
-       ruleSet
-     | o ->
-       let ty = o.GetType ()
-       match ruleClassesOf ty with
-        | [] -> ruleSet
-        | tys ->
-          match tys
-                |> List.filter (fun ty ->
-                   HashEqSet.contains ty ruleSet.rules |> not) with
-           | [] -> ruleSet
-           | tys ->
-             tys
-             |> List.iter (fun t ->
-                if ruleSet.cache.rules.ContainsKey t |> not then
-                  ruleSet.cache.rules.Add (t, rulesOf o t))
-             addRules tys ruleSet
+       match ruleSet.cache.rules.GetOrAdd (tc, fun tc ->
+             tc.GetConstructors ()
+             |> Array.choose (fun c ->
+                let ps =
+                  c.GetParameters () |> Array.map (fun p -> p.ParameterType)
+                if ps
+                   |> Array.forall (fun t ->
+                      t.IsClass
+                      && not t.IsArray
+                      && not t.IsPointer) then
+                  let env = Fresh.newMapper ()
+                  {ReturnType = Ty.ofTypeIn env tc
+                   ParTypes = ps |> Array.map (Ty.ofTypeIn env)
+                   GenericArgTypes =
+                     if tc.ContainsGenericParameters
+                     then tc.GetGenericArguments ()
+                          |> Array.map (Ty.ofTypeIn env)
+                     else [||]
+                   Invoke = fun genArgTys argTys argObjs ->
+                     let tc = if tc.ContainsGenericParameters
+                              then tc.MakeGenericType genArgTys
+                              else tc
+                     match tc.GetConstructor argTys with
+                      | null -> failwith "Bug"
+                      | c ->
+                        c.Invoke argObjs} |> Some
+                else
+                  None)) with
+        | [||] -> ruleSet
+        | _ -> addRules tc ruleSet
+     | _ -> ruleSet
 
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty) =
     TyTree.filter ruleSet.tree desiredTy
@@ -210,7 +189,8 @@ module Engine =
               | None ->
                 failwith "Bug"
               | Some genArgTys ->
-                let o = invoke genArgTys argTys argVals
+                let o = StaticSet.getOrInvokeDyn monoTy <| fun () ->
+                        invoke genArgTys argTys argVals
                 (addObj monoTy o objEnv, Value (monoTy, o))
 
   let inline isRec ty =
@@ -224,7 +204,7 @@ module Engine =
       Seq.empty
     else
       let search limit =
-         let rules = RuleSet.maybeAddRulesTy ty rules
+         let rules = RuleSet.maybeAddConRules ty rules
          RuleSet.rulesFor rules ty
          |> Seq.collect (fun rule ->
             let rule = Rule.freshVars rule
@@ -240,7 +220,8 @@ module Engine =
                     Seq.empty
                   else
                     match Ty.toMonoType ty with
-                     | None -> Seq.empty
+                     | None ->
+                       Seq.empty
                      | Some monoTy ->
                        match HashEqMap.tryFind monoTy objEnv with
                         | Some o ->
@@ -275,6 +256,7 @@ module Engine =
                         match result with
                          | Ruled _ -> objEnv
                          | Value (monoTy, o) ->
+                           let o = StaticSet.getOrSetDyn monoTy o
                            let monoRecTy =
                              typedefof<Rec<_>>.MakeGenericType [|monoTy|]
                            match HashEqMap.tryFind monoRecTy objEnv with
@@ -310,7 +292,7 @@ module Engine =
        | Some monoTy ->
          match HashEqMap.tryFind monoTy objEnv with
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
-          | None -> search limit
+          | None -> search limit |> Seq.truncate 1
 
   let tryGenerateWithLimits minDepth maxDepth (rules: obj) : option<'a> =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'a>
@@ -331,7 +313,7 @@ module Engine =
        | some -> some
     gen minDepth
 
-  let tryGenerate (rules: obj) : option<'a> =
+  let tryGenerate (rules: 'r when 'r :> Rules) : option<'a> =
     tryGenerateWithLimits 1 Int32.MaxValue rules
 
   let inline out<'rules, 'result> (x: option<'result>) =
@@ -339,13 +321,13 @@ module Engine =
      | None -> failwithf "%A cannot derive %A." typeof<'rules> typeof<'result>
      | Some result -> result
 
-  let generate<'rules, 'result when 'rules : (new : unit -> 'rules)> : 'result =
-    StaticMap<'rules>.Memoize <| fun () ->
-    tryGenerate (new 'rules ()) |> out<'rules, 'result>
+  let generate<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v =
+    StaticSet.getOrInvoke<'v> <| fun () ->
+    tryGenerate (new 'r ()) |> out<'r, 'v>
 
-  let tryGenerateDFS (rules: obj) : option<'a> =
+  let tryGenerateDFS (rules: 'r when 'r :> Rules) : option<'a> =
     tryGenerateWithLimits Int32.MaxValue Int32.MaxValue rules
 
-  let generateDFS<'rules,'result when 'rules: (new: unit -> 'rules)> : 'result =
-    StaticMap<'rules>.Memoize <| fun () ->
-    tryGenerateDFS (new 'rules ()) |> out<'rules, 'result>
+  let generateDFS<'r, 'v when 'r :> Rules and 'r: (new: unit -> 'r)> : 'v =
+    StaticSet.getOrInvoke<'v> <| fun () ->
+    tryGenerateDFS (new 'r ()) |> out<'r, 'v>

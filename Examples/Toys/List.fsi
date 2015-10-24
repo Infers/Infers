@@ -44,21 +44,23 @@ type Sublist<'xs, 'ys>
 type Adjacent<'a, 'b, 'xs>
 
 /// A few rules for deriving lists.
-type [<InferenceRules>] List =
+type List =
+  inherit Rules
   new: unit -> List
 
-  member IsList: unit -> IsList<Nil>
-  member IsList: IsList<'xs> -> IsList<Cons<_, 'xs>>
+  static member IsList: unit -> IsList<Nil>
+  static member IsList: IsList<'xs> -> IsList<Cons<_, 'xs>>
 
-  member Append: IsList<'ys> -> Append<Nil, 'ys, 'ys>
-  member Append: Append<'xs, 'ys, 'zs>
-              -> Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>>
+  static member Append: IsList<'ys> -> Append<Nil, 'ys, 'ys>
+  static member Append: Append<'xs, 'ys, 'zs>
+                     -> Append<Cons<'x, 'xs>, 'ys, Cons<'x, 'zs>>
 
-  member Sublist: Append<_, 'xs, 'qs>
-                * Append<'qs, _, 'ys>
-               -> Sublist<'xs, 'ys>
+  static member Sublist: Append<_, 'xs, 'qs>
+                       * Append<'qs, _, 'ys>
+                      -> Sublist<'xs, 'ys>
 
-  member Member: Sublist<List<'x>, 'xs> -> Member<'x, 'xs>
+  static member Member: Sublist<List<'x>, 'xs> -> Member<'x, 'xs>
 
-  member Adjacent: Choice<Sublist<List<'a, 'b>, 'xs>,
-                          Sublist<List<'b, 'a>, 'xs>> -> Adjacent<'a, 'b, 'xs>
+  static member Adjacent: Choice<Sublist<List<'a, 'b>, 'xs>,
+                                 Sublist<List<'b, 'a>, 'xs>>
+                       -> Adjacent<'a, 'b, 'xs>

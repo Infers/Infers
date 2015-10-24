@@ -12,15 +12,16 @@ module Integral =
       Suffix: string
     }
 
-  type [<InferenceRules>] Integral =
+  type Integral =
+    inherit Rules
     new: unit -> Integral
 
-    member Int8: Integral<int8>
-    member Int16: Integral<int16>
-    member Int32: Integral<int32>
-    member Int64: Integral<int64>
+    static member Int8: Integral<int8>
+    static member Int16: Integral<int16>
+    static member Int32: Integral<int32>
+    static member Int64: Integral<int64>
 
-    member UInt8: Integral<uint8>
-    member UInt16: Integral<uint16>
-    member UInt32: Integral<uint32>
-    member UInt64: Integral<uint64>
+    static member UInt8: Integral<uint8>
+    static member UInt16: Integral<uint16>
+    static member UInt32: Integral<uint32>
+    static member UInt64: Integral<uint64>

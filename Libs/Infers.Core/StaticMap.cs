@@ -3,28 +3,52 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System;
 
 namespace Infers.Core {
-  /// <summary>Represents a kind of static, or code generation time, mapping of
-  /// types to objects.</summary>
-  public static class StaticMap<Key, Value> where Value : class {
-    private static Value value;
+  ///
+  public abstract class Box {
+    ///
+    public volatile bool Ready;
+    ///
+    public abstract Object Get();
+    ///
+    public abstract void Set(Object o);
+  }
 
-    /// <summary>Returns the stored object or `null` in case the object has not
-    /// been set.</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Value Get() {
-      return Volatile.Read(ref StaticMap<Key, Value>.value);
+  ///
+  public class Box<T> : Box {
+    ///
+    public T Value;
+    ///
+    public override Object Get() {
+      lock (this)
+        while (!this.Ready)
+          Monitor.Wait(this);
+      return this.Value;
     }
+    ///
+    public override void Set(Object o) {
+      Debug.Assert(!this.Ready);
+      this.Value = (T)o;
+      this.Ready = true;
+    }
+  }
 
-    /// <summary>Atomically, if an object has already been stored, returns it,
-    /// otherwise sets the stored object and returns it.</summary>
-    public static Value TrySetAndGet(Value value) {
-      Debug.Assert(null != value);
-      var was = Interlocked.CompareExchange(ref StaticMap<Key, Value>.value, value, null);
-      if (null != was)
-        value = was;
-      return value;
+  ///
+  public static class StaticMap<Key, Value> {
+    ///
+    public static Box<Value> box;
+    ///
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Box<Value> TryGet() {
+      return StaticMap<Key, Value>.box;
+    }
+    ///
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Box<Value> GetOrSet(Box<Value> box) {
+      Debug.Assert(null != box);
+      return Interlocked.CompareExchange(ref StaticMap<Key, Value>.box, box, null);
     }
   }
 }
