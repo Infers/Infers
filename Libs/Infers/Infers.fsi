@@ -3,11 +3,11 @@
 /// Infers is a library for deriving F# values from their types and, in a way, a
 /// direct application of the Curry-Howard correspondence.
 ///
-/// The basic idea of Infers is to view the types of F# member functions as Horn
-/// clauses.  Using a Prolog-style resolution algorithm it is then possible to
-/// attempt to prove goals given as simple F# types.  During the resolution
-/// process Infers invokes the member functions to build a value of the type
-/// given as the goal.
+/// The basic idea of Infers is to view the types of static member functions as
+/// Horn clauses.  Given a set of `Rules`, it is then possible to attempt to
+/// prove goals using a Prolog-style resolution algorithm.  Infers invokes the
+/// rule functions during the resolution process to `generate` a value of the
+/// type given as the goal.
 ///
 /// Another way to view Infers is as a specialized logic programming language
 /// embedded in F#.  However, to support generation of F# values, the Infers
@@ -32,6 +32,32 @@
 /// something like type classes or when one might want to do polytypic or
 /// datatype generic programming.  Other kinds of applications are also quite
 /// possible.  For example, it is possible to solve logic puzzles using Infers.
+///
+/// Here is an example of a set of rules that can generate functions to
+/// arbitrarily reorder or flip the arguments of a given curried function:
+///
+///> type GFlip () =
+///>   inherit Rules ()
+///>   static member Id () = id
+///>   static member First ab2yz = fun xb -> xb >> ab2yz
+///>   static member Rest (ab2axc, ac2y) = fun ab ->
+///>     let axc = ab2axc ab
+///>     let xac = fun x a -> axc a x
+///>     xac >> ac2y
+///
+/// To generate flipping functions we invoke `generate`:
+///
+///> let gflip f = generate<GFlip, (_ -> _) -> _ -> _> f
+///
+/// Now, for example, we could say:
+///
+///> gflip (sprintf "%s %d %c!") 2 'U' "Hello" = "Hello 2 U!"
+///
+/// You might want to try the above in a REPL.  There is a caveat: When you
+/// request Infers to generate a value, the value must have a monomorphic type.
+///
+/// The above `GFlip` example is very much a toy example, although one could
+/// sometimes find it useful.
 namespace Infers
 
 /// A type that inherits `Rules` is assumed to contain total static rule methods
