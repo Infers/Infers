@@ -45,4 +45,4 @@ type [<Rep; RecFn>] GMap () =
     let sG = Array.ofList sG
     {gm = fun h2h w -> sG.[m.Tag w] h2h w}
 
-let gmap h2h w = Engine.generate<GMap, GMap<_, _>> h2h w
+let gmap h2h w = generateDFS<GMap, GMap<_, _>> h2h w

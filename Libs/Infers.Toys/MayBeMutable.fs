@@ -57,4 +57,4 @@ module MayBeMutable =
 
   //////////////////////////////////////////////////////////////////////////////
 
-  let mayBeMutable<'t> = Engine.generateDFS<MayBeMutable, MBM<'t>>.MBM
+  let mayBeMutable<'t> = generateDFS<MayBeMutable, MBM<'t>>.MBM

@@ -147,7 +147,7 @@ module PU =
       then mkPU (fun w -> uint8 >> w.Write) (fun r -> r.ReadByte () |> int)
       else mkPU (fun w t -> w.Write t) ( fun r -> r.ReadInt32 ())
 
-  let inline pu<'t> = Engine.generateDFS<PU, PU<'t>> |> outO
+  let inline pu<'t> = generateDFS<PU, PU<'t>> |> outO
 
   let pickle x =
     use s = new MemoryStream ()

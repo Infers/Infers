@@ -243,5 +243,5 @@ module Pretty =
       asP.Extract (t, &es)
       atom (enclose lr (gnest 1 (just (pP.Pretty (&es)))))
 
-  let pretty x = Engine.generateDFS<Pretty, _ -> Doc> x
+  let pretty x = generateDFS<Pretty, _ -> Doc> x
   let show x = render None (pretty x)

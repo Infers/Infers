@@ -96,7 +96,5 @@ type [<Basic; List; Solver>] Puzzle () =
      _: Member<House<_, Zebra, _, _, _>, 'solution>)
       : Result<'house1 * 'house2 * 'house3 * 'house4 * 'house5> = Result'1
 
-let test () : unit =
-  if Engine.tryGenerate (Puzzle ()) = Some (Solution'1: Solution<Puzzle>)
-  then printfn "Got solution!"
-  else printfn "No solution?"
+let test () =
+  generate<Puzzle, Solution<Puzzle>> |> ignore

@@ -65,7 +65,5 @@ type [<Basic; List; Solver>] Puzzle () =
                         _: Search<Cons<'s2, 'p>, 'd>)
                          : Search<Cons<'s1, Cons<'s2, 'p>>, 'd> = Search'2
         
-let test () : unit =
-  if Engine.tryGenerate (Puzzle ()) = Some (Solution'1: Solution<Puzzle>)
-  then printfn "Got solution!"
-  else printfn "No solution?"
+let test () =
+  generate<Puzzle, Solution<Puzzle>> |> ignore

@@ -1,33 +1,40 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
-/// `Infers` is a library for deriving F# values from their types and, in a way,
-/// a direct application of the Curry-Howard correspondence. 
+/// Infers is a library for deriving F# values from their types and, in a way, a
+/// direct application of the Curry-Howard correspondence.  Another way to view
+/// Infers is as a specialized logic programming language embedded in F#.
 ///
-/// The basic idea is to view the types of F# member functions as Horn clauses.
-/// Using a Prolog-style resolution engine it is then possible to attempt to
-/// prove goals given as simple F# types.  During the resolution process the
-/// engine invokes the member functions to build a value of the type given as
-/// the goal.
+/// The basic idea of Infers is to view the types of F# member functions as Horn
+/// clauses.  Using a Prolog-style resolution engine it is then possible to
+/// attempt to prove goals given as simple F# types.  During the resolution
+/// process Infers invokes the member functions to build a value of the type
+/// given as the goal.
 ///
 /// Infers can be useful, for example, in situations where one might wish to use
-/// something like type classes or when one might want to do datatype generic
-/// programming.  Other kinds of applications are also quite possible.
+/// something like type classes or when one might want to do polytypic or
+/// datatype generic programming.  Other kinds of applications are also quite
+/// possible.  For example, it is possible to solve logic puzzles using Infers.
 namespace Infers
 
 open System
 
 /// A type that inherits `Rules` is assumed to contain pure static rule methods
-/// that are used by the inference engine.  Dependencies to other rule classes
-/// are specified as attributes.
+/// that are used by the inference `Engine` of Infers.  Dependencies to other
+/// rule classes can be specified as attributes.
 type [<AbstractClass>] Rules =
   inherit Attribute
-
-  /// Default constructor.
   new: unit -> Rules
 
-/// Proxy for a potentially recursive value.
+/// Proxy for a potentially cyclic value of type `'t`.
+///
+#if DOC
+/// When the Infers resolution engine encounters a case where it needs to build
+/// a value in terms of itself, for example, when building a function
+/// manipulating a recursive union type, it automatically looks for a rule to
+/// create a proxy for the value.  So, to support building cyclic values of type
+/// `'t`, a rule must be given to build a `Rec<'t>`.
+#endif
 type [<AbstractClass>] Rec<'x> =
-  /// Empty default constructor.
   new: unit -> Rec<'x>
 
   /// Returns a wrapper of type `'x` that corresponds to the value of the

@@ -17,7 +17,7 @@ module Naive =
     static member Finish () = id
 
   /// Derives a function that uncurries a given n-ary curried function.
-  let guncurry f = Engine.generate<GUncurry, (_ -> _) -> _ -> _> f
+  let guncurry f = generate<GUncurry, (_ -> _) -> _ -> _> f
 
   type AnyProductWillDo<'x, 'y> = {fst: 'x; snd: 'y}
 
@@ -54,7 +54,7 @@ module Optimized =
         override g.Do (x2y, x) = x2y x}
 
   /// Derives a function that uncurries a given n-ary curried function.
-  let guncurry f = Engine.generate<GUncurry, (_ -> _) -> _ -> _> f
+  let guncurry f = generate<GUncurry, (_ -> _) -> _ -> _> f
 
   let test () : unit =
     guncurry (printfn "%d %s") (1, "2")

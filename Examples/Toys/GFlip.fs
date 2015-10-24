@@ -20,7 +20,7 @@ type GFlip () =
 /// Also, due to limitations of the F# type system, the function must have a
 /// monomorphic type.  If the function does not have a monomorphic type, one
 /// must constrain the type to be monomorphic.
-let gflip f = Engine.generate<GFlip, (_ -> _) -> _ -> _> f
+let gflip f = generate<GFlip, (_ -> _) -> _ -> _> f
 
 let test () : unit =
   gflip (printfn "%s %d %b!") true 2 "Hello"
