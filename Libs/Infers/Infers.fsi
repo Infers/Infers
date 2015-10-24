@@ -79,12 +79,12 @@ type [<AbstractClass>] Rules =
 type [<AbstractClass>] Rec<'x> =
   new: unit -> Rec<'x>
 
-  /// Returns a wrapper of type `'x` that corresponds to the value of the
+  /// Must return a wrapper of type `'x` that corresponds to the value of the
   /// proxy.  Note that `Get` may be called on a `Rec` proxy before `Set` is
   /// called.
   abstract Get: unit -> 'x
 
-  /// Sets the value of the proxy.
+  /// Must set the value of the proxy to close the resulting cyclic value.
   abstract Set: 'x -> unit
 
 /// Interface to the Infers resolution algorithm.
