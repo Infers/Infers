@@ -2,6 +2,7 @@
 
 module Toys.GMap
 
+open Infers.Toys
 open Infers
 open Infers.Rep
 
@@ -11,7 +12,7 @@ type GM<'w, 'h> = {gm: GMap<'w, 'h>}
 type GMP<'e, 'r, 'o, 'w, 'h> = P of GMap<'e, 'h>
 type GMS<'p, 'o, 'w, 'h> = S of list<GMap<'w, 'h>>
 
-type [<Rep; RecFn>] GMap () =
+type [<Rep; Rec>] GMap () =
   inherit Rules ()
   static member Same () : GMap<'h, 'h> = id
   static member NotSame (gm: GM<'w, 'h>) = gm.gm
