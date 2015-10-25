@@ -75,6 +75,31 @@ module Pretty =
            |> enclose (o, c)
            |> atom}
 
+  let case name (asP: AsPairs<'p, 't>) (lsP: InternalPretty<'p>) =
+    let con = txt name <^> line
+    doc <| fun x ->
+    let mutable ls = Unchecked.defaultof<_>
+    asP.Extract (x, &ls)
+    part (gnest 2 (con <^> atomize (lsP.Pretty (&ls))))
+
+  let labelled (n: string) i (eP: InternalPretty<'e>) =
+      if n.StartsWith "Item" &&
+         (i = 0 && n.Length = 4 ||
+          let suffix = string (i+1)
+          n.Length = suffix.Length + 4 &&
+          n.EndsWith suffix)
+      then eP
+      else let label = txt n <+> (equals <^> line)
+           {new InternalPretty<'e> () with
+             override t.Pretty e =
+              part (gnest 2 (label <^> just (eP.Pretty (&e))))}
+
+  let pair sep (eP: InternalPretty<'e>) (rP: InternalPretty<'r>) =
+    {new InternalPretty<Pair<'e, 'r>> () with
+      override t.Pretty ees =
+       part (just (eP.Pretty (&ees.Elem)) <^>
+             (sep <^> just (rP.Pretty (&ees.Rest))))}
+
   type [<Rep; Integral>] Pretty () =
     inherit Rules ()
 
@@ -196,13 +221,8 @@ module Pretty =
     static member Case (case: Case<Empty, 'o, 't>) : PrettyS<Empty, 'o, 't> =
       S [doc (con (atxt case.Name))]
 
-    static member Case (case: Case<'p, 'o, 't>,
-                        P lsP: PrettyP<'p, 'p, 'o, 't>) : PrettyS<'p, 'o, 't> =
-      let con = txt case.Name <^> line
-      S [doc <| fun x ->
-         let mutable ls = Unchecked.defaultof<_>
-         case.Extract (x, &ls)
-         part (gnest 2 (con <^> atomize (lsP.Pretty (&ls))))]
+    static member Case (c: Case<'p, 'o, 't>, P lsP: PrettyP<'p, 'p, 'o, 't>) =
+      S [case c.Name c lsP] : PrettyS<'p, 'o, 't>
 
     static member Choice (S pP: PrettyS<       'p,      Choice<'p, 'o>, 't>,
                           S oP: PrettyS<           'o ,            'o , 't>) =
@@ -217,27 +237,12 @@ module Pretty =
       P eP : PrettyP<'e, 'r, 't, 't>
 
     static member Labelled (l: Labelled<'e, 'r, 'o, 't>, O eP: PrettyO<'e>) =
-      let n = l.Name
-      if n.StartsWith "Item" &&
-         (let i = l.Index
-          i = 0 && n.Length = 4 ||
-          let suffix = string (i+1)
-          n.Length = suffix.Length + 4 &&
-          n.EndsWith suffix)
-      then P eP : PrettyP<'e, 'r, 'o, 't>
-      else let label = txt n <+> (equals <^> line)
-           P {new InternalPretty<'e> () with
-               override t.Pretty e =
-                part (gnest 2 (label <^> just (eP.Pretty (&e))))}
+      P (labelled l.Name l.Index eP) : PrettyP<'e, 'r, 'o, 't>
 
     static member Pair (P eP: PrettyP<     'e,      Pair<'e, 'r>, 'o, 't>,
-                        P rP: PrettyP<         'r ,          'r , 'o, 't>)
-                            : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
+                        P rP: PrettyP<         'r ,          'r , 'o, 't>) =
       let sep = if FSharpType.IsRecord typeof<'t> then semiLine else commaLine
-      P {new InternalPretty<Pair<'e, 'r>> () with
-          override t.Pretty ees =
-           part (just (eP.Pretty (&ees.Elem)) <^>
-                 (sep <^> just (rP.Pretty (&ees.Rest))))}
+      P (pair sep eP rP)    : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
 
     static member Product (asP: AsPairs<'p,'t,'t>, P pP: PrettyP<'p,'p,'t,'t>) =
       let lr = if FSharpType.IsRecord typeof<'t> then lrbrace else lrparen
