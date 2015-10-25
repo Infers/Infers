@@ -177,6 +177,9 @@ type IRecObj =
 module StaticMap =
   open Infers.Core
   open System.Threading
+  let tryGetM = typeof<StaticMap>.GetMethod "TryGet"
+  let getOrSetM = typeof<StaticMap>.GetMethod "GetOrSet"
+  let boxM = typeof<StaticMap>.GetMethod "Box"
   let wait (box: Box<'v>) =
     lock box <| fun () ->
       while not box.Ready do
@@ -186,34 +189,22 @@ module StaticMap =
     match StaticMap<'k, 'v>.box with
      | null -> mk ()
      | box -> wait box
-  let tryGetDyn keyType valueType =
-    match typedefof<StaticMap<_, _>>
-           .MakeGenericType([|keyType; valueType|])
-           .GetMethod("TryGet")
-           .Invoke(null, null) with
+  let tryGetDyn kT vT =
+    match tryGetM.MakeGenericMethod([|kT; vT|]).Invoke(null, null) with
      | :? Box as box -> box.Get () |> Some
      | _ -> None
-  let getOrInvokeDyn keyType valueType mk =
-    match typedefof<StaticMap<_, _>>
-           .MakeGenericType([|keyType; valueType|])
-           .GetMethod("TryGet")
-           .Invoke(null, null) with
+  let getOrInvokeDyn kT vT mk =
+    match tryGetM.MakeGenericMethod([|kT; vT|]).Invoke(null, null) with
      | :? Box as box -> box.Get ()
      | _ -> mk ()
-  let getOrSetDyn keyType valueType value =
-    let newBox = typedefof<Box<_>>
-                  .MakeGenericType([|valueType|])
-                  .GetConstructor([||])
-                  .Invoke(null)
+  let getOrSetDyn kT vT v =
+    let newB = boxM.MakeGenericMethod([|vT|]).Invoke(null, null)
     let box =
-      lock newBox <| fun () ->
-        match typedefof<StaticMap<_, _>>
-               .MakeGenericType([|keyType; valueType|])
-               .GetMethod("GetOrSet")
-               .Invoke(null, [|newBox|]) with
-         | null ->
-           let newBox = unbox<Box> newBox
-           newBox.Set value
-           newBox
-         | oldBox -> unbox<Box> oldBox
+      lock newB <| fun () ->
+      match getOrSetM.MakeGenericMethod([|kT; vT|]).Invoke(null, [|newB|]) with
+       | null ->
+         let newB = unbox<Box> newB
+         newB.Set v
+         newB
+       | oldB -> unbox<Box> oldB
     box.Get ()

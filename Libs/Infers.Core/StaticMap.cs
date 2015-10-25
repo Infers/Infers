@@ -51,4 +51,20 @@ namespace Infers.Core {
       return Interlocked.CompareExchange(ref StaticMap<Key, Value>.box, box, null);
     }
   }
+
+  ///
+  public static class StaticMap {
+    ///
+    public static Box<Value> TryGet<Key, Value>() {
+      return StaticMap<Key, Value>.TryGet();
+    }
+    ///
+    public static Box<Value> GetOrSet<Key, Value>(Box<Value> box) {
+      return StaticMap<Key, Value>.GetOrSet(box);
+    }
+    ///
+    public static Box<Value> Box<Value>() {
+      return new Box<Value>();
+    }
+  }
 }
