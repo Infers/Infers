@@ -37,18 +37,17 @@ type Rep =
   static member AsPairs: Rep<'t> * AsPairs<'p, 'o, 't> -> AsPairs<'p, 'o, 't>
 
   /// View a single case union type as nested pairs.
-  static member ViewAsPairs: AsChoices<'p, 't> * Case<'p, 'p, 't>
-                          -> AsPairs<'p, 'p, 't>
+  static member AsPairs: AsChoices<'p,'t> * Case<'p,'p,'t> -> AsPairs<'p,'p,'t>
 
   /// Trivially view a labelled elem as an elem.
   static member AsElem: Labelled<'e, 'r, 'o, 't> -> Elem<'e, 'r, 'o, 't>
 
   /// Trivially view a tuple item as an elem.
-  static member AsElem: Tuple<'t> * Item<'e, 'r, 't> -> Elem<'e, 'r, 't, 't>
+  static member AsElem: Item<'e, 'r, 't> -> Elem<'e, 'r, 't, 't>
 
   /// Trivially view a record field as a labelled elem.
   static member AsLabelled: Field<'e, 'r, 't> -> Labelled<'e, 'r, 't, 't>
 
   /// Trivially view a case label as a labelled elem.
-  static member AsLabelled: Union<'t> * Label<'e, 'r, 'o, 't>
-                         -> Labelled<'e, 'r, 'o, 't>
+  static member AsLabelled: Label<'e, 'r, 'o, 't> -> Labelled<'e, 'r, 'o, 't>
+
