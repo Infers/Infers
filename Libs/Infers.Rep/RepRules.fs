@@ -115,6 +115,9 @@ type Builder =
   static member inline emit (op, t: Type) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, t) ; ilgen
 
+  static member inline emit (op, v: LocalBuilder) = fun (ilgen: ILGenerator) ->
+    ilgen.Emit (op, v) ; ilgen
+
   static member overrideMethod name resultType paramTypes code =
     Builder.getTypeBuilder >>= fun typeBuilder ->
     let methodBuilder =
@@ -182,40 +185,44 @@ module Products =
        | getMethod ->
          Builder.emit (OpCodes.Ldarg_1) >>
          Builder.emit (OpCodes.Call, getMethod)
-    let rec emitLoadAddr arg i =
-      if i = 0
-      then Builder.emit arg
-      else emitLoadAddr arg (i-1)
-           >> if i <> products.Length-1
-              then Builder.emit (OpCodes.Ldflda, getField products.[i-1] "Rest")
-              else id
-    let emitLoadOrStore objOp fldOp i =
-      if products.Length = 1
-      then Builder.emit (objOp, products.[i])
-      else Builder.emit (fldOp, if i < products.Length-1
-                                then getField products.[i] "Elem"
-                                else getField products.[i-1] "Rest")
-    let inline emitStore i = emitLoadOrStore OpCodes.Stobj OpCodes.Stfld i
-    let inline emitCopy i =
-      emitLoadAddr OpCodes.Ldarg_2 i >> emitGet i >> emitStore i
-    let rec emitCopies n =
-      if n > 1 then emitCopies (n-1) else id
-      >> emitCopy (n-1)
-    let inline emitLoad i =
-      emitLoadAddr OpCodes.Ldarg_1 i >>
-      emitLoadOrStore OpCodes.Ldobj OpCodes.Ldfld i
-    let rec emitLoads n =
-      if n > 1 then emitLoads (n-1) else id
-      >> emitLoad (n-1)
+    let rec emitCopies i =
+      if i+1 = props.Length
+      then emitGet i
+           >> Builder.emit (OpCodes.Stobj, products.[i])
+      else Builder.emit OpCodes.Dup
+           >> emitGet i
+           >> Builder.emit (OpCodes.Stfld, getField products.[i] "Elem")
+           >> Builder.emit (OpCodes.Ldflda, getField products.[i] "Rest")
+           >> emitCopies (i+1)
+    let rec emitLoads ldaddr i =
+      ldaddr
+      >> if i+1 = props.Length
+         then Builder.emit (OpCodes.Ldobj, products.[i])
+         else Builder.emit (OpCodes.Ldfld, getField products.[i] "Elem")
+              >> ldaddr
+              >> let rest = getField products.[i] "Rest" in
+                 if i+1 < props.Length
+                 then fun (ilg: ILGenerator) ->
+                        let v = ilg.DeclareLocal (rest.FieldType.MakeByRefType ())
+                        ilg
+                        |> Builder.emit (OpCodes.Ldflda, rest)
+                        |> Builder.emit (OpCodes.Stloc, v)
+                        |> emitLoads (Builder.emit (OpCodes.Ldloc, v)) (i+1)
+                 else Builder.emit (OpCodes.Ldfld, rest)
     Builder.overrideMethod "Extract"
      typeof<Void>
      [|t; products.[0].MakeByRefType ()|]
-     (if props.Length > 0 then emitCopies props.Length else id
-      >> Builder.emit (OpCodes.Ret)) >>= fun () ->
+     (if props.Length > 0
+      then Builder.emit OpCodes.Ldarg_2
+           >> emitCopies 0
+      else id
+      >> Builder.emit OpCodes.Ret) >>= fun () ->
     Builder.overrideMethod "Create"
      t
      [|products.[0].MakeByRefType ()|]
-     (if props.Length > 0 then emitLoads props.Length else id
+     (if props.Length > 0
+      then emitLoads (Builder.emit OpCodes.Ldarg_1) 0
+      else id
       >> emitCtor
       >> Builder.emit (OpCodes.Ret))
 
