@@ -75,7 +75,7 @@ module Pair =
 #endif
 type [<AbstractClass>] AsChoices<'s, 't> =
   inherit Rules
-  new: int -> AsChoices<'s, 't>
+  new: unit -> AsChoices<'s, 't>
 
   /// The number of cases the discriminated union type `'t` has.
   val Arity: int
@@ -129,7 +129,7 @@ type [<AbstractClass>] Product<'t> =
 
 /// Abstract representation of an element of type `'e` of the product type `'t`.
 type [<AbstractClass>] Elem<'e, 't> =
-  new: int -> Elem<'e, 't>
+  new: unit -> Elem<'e, 't>
 
   /// The index of the element.
   val Index: int
@@ -140,12 +140,12 @@ type [<AbstractClass>] Elem<'e, 't> =
 /// Unique representation of an element of type `'e` of the product type `'t`.
 type [<AbstractClass>] Elem<'e, 'r, 'o, 't> =
   inherit Elem<'e, 't>
-  new: int -> Elem<'e, 'r, 'o, 't>
+  new: unit -> Elem<'e, 'r, 'o, 't>
 
 /// Representation of a possibly labelled element of type `'e`.
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
   inherit Elem<'e, 'r, 'o, 't>
-  new: int * string -> Labelled<'e, 'r, 'o, 't>
+  new: unit -> Labelled<'e, 'r, 'o, 't>
   
   /// The name of the label.
   val Name: string
@@ -160,7 +160,7 @@ type [<AbstractClass>] Tuple<'t> =
 /// Representation of an element of type `'e` of a tuple of type `'t`.
 type [<AbstractClass>] Item<'e, 'r, 't> =
   inherit Elem<'e, 'r, 't, 't>
-  new: int -> Item<'e, 'r, 't>
+  new: unit -> Item<'e, 'r, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -172,7 +172,7 @@ type [<AbstractClass>] Record<'t> =
 /// Representation of a field of type `'e` of the record type `'t`.
 type [<AbstractClass>] Field<'e, 'r, 't> =
   inherit Labelled<'e, 'r, 't, 't>
-  new: int * string * bool -> Field<'e, 'r, 't>
+  new: unit -> Field<'e, 'r, 't>
 
   /// Whether the field is mutable.
   val IsMutable: bool
@@ -198,7 +198,7 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 #endif
 type [<AbstractClass>] AsPairs<'p, 'o, 't> =
   inherit Rules
-  new: int * bool -> AsPairs<'p, 'o, 't>
+  new: unit -> AsPairs<'p, 'o, 't>
 
   /// The number of elements the product type has.
   val Arity: int
@@ -263,7 +263,7 @@ type [<AbstractClass>] Union<'t> =
 /// Representation of a case of the F# discriminated union type `'t`.
 type [<AbstractClass>] Case<'p, 'o, 't> =
   inherit AsPairs<'p, 'o, 't>
-  new: string * int * int -> Case<'p, 'o, 't>
+  new: unit -> Case<'p, 'o, 't>
 
   /// The name of the case.
   val Name: string
@@ -275,4 +275,4 @@ type [<AbstractClass>] Case<'p, 'o, 't> =
 /// F# discriminated union type `'t`.
 type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
   inherit Labelled<'e, 'r, 'o, 't>
-  new: int * string -> Label<'e, 'r, 'o, 't>
+  new: unit -> Label<'e, 'r, 'o, 't>

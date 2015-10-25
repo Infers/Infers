@@ -36,8 +36,7 @@ type B = Reflection.BindingFlags
 
 type [<AbstractClass>] AsPairs<'p, 'o, 't> =
   inherit Rules
-  new (arity, isMutable) =
-    {inherit Rules (); Arity = arity; IsMutable = isMutable}
+  new () = {inherit Rules (); Arity = 0; IsMutable = false}
   val Arity: int
   val IsMutable: bool
   abstract Extract: 't * byref<'p> -> unit
@@ -63,47 +62,45 @@ type [<AbstractClass>] AsPairs<'p, 'o, 't> =
 
 type [<AbstractClass>] AsChoices<'s, 't> =
   inherit Rules
-  new (arity) = {inherit Rules (); Arity = arity}
+  new () = {inherit Rules (); Arity = 0}
   val Arity: int
   abstract Tag: 't -> int
 
 type [<AbstractClass>] Elem<'e, 't> =
-  new (index) = {Index = index}
+  new () = {Index = 0}
   val Index: int
   abstract Get: 't -> 'e
 
-type [<AbstractClass>] Elem<'e, 'r, 'o, 't> (index) =
-  inherit Elem<'e, 't> (index)
+type [<AbstractClass>] Elem<'e, 'r, 'o, 't> () =
+  inherit Elem<'e, 't> ()
 
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
   inherit Elem<'e, 'r, 'o, 't>
-  new (index, name) = {inherit Elem<'e, 'r, 'o, 't>(index); Name = name}
+  new () = {inherit Elem<'e, 'r, 'o, 't>(); Name = null}
   val Name: string
 
 type [<AbstractClass>] Tuple<'t> () =
   inherit Product<'t> ()
 
-type [<AbstractClass>] Item<'e, 'r, 't> (index) =
-  inherit Elem<'e, 'r, 't, 't> (index)
+type [<AbstractClass>] Item<'e, 'r, 't> () =
+  inherit Elem<'e, 'r, 't, 't> ()
 
 type [<AbstractClass>] Union<'t> () =
   inherit Rep<'t> ()
 
 type [<AbstractClass>] Case<'p, 'o, 't> =
   inherit AsPairs<'p, 'o, 't>
-  new (name, arity, tag) =
-    {inherit AsPairs<'p, 'o, 't>(arity, false); Name = name; Tag = tag}
+  new () = {inherit AsPairs<'p, 'o, 't>(); Name = null; Tag = 0}
   val Name: string
   val Tag: int
 
 type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
   inherit Labelled<'e, 'r, 'o, 't>
-  new (index, name) = {inherit Labelled<'e, 'r, 'o, 't> (index, name)}
+  new () = {inherit Labelled<'e, 'r, 'o, 't> ()}
 
 type [<AbstractClass>] Field<'e, 'r, 't> =
   inherit Labelled<'e, 'r, 't, 't>
-  new (index, name, isMutable) =
-    {inherit Labelled<'e, 'r, 't, 't> (index, name); IsMutable = isMutable}
+  new () = {inherit Labelled<'e, 'r, 't, 't> (); IsMutable = false}
   val IsMutable: bool
   abstract Set: 't * 'e -> unit
   default f.Set (_: 't, _: 'e) = raise <| NotImplementedException ()
