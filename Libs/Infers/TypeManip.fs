@@ -62,6 +62,30 @@ let (|App'|Var'|) ty =
      else
        App' (Def t, [||])
 
+let (|TyCon'|_|) ty =
+  match ty with
+   | Var _ -> None
+   | App (tc, _) -> Some tc
+   | Mono t ->
+     if t.IsArray then
+       Arr (t.GetArrayRank ()) |> Some
+     elif t.IsGenericType then
+       Def (t.GetGenericTypeDefinition ()) |> Some
+     else
+       Def t |> Some
+
+let (|TyArgs'|) ty =
+  match ty with
+   | Var _ -> [||]
+   | App (_, tys) -> tys
+   | Mono t ->
+     if t.IsArray then
+       [|t.GetElementType () |> Mono|]
+     elif t.IsGenericType then
+       t.GetGenericArguments () |> Array.map Mono
+     else
+       [||]
+
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module TyCon =
   let apply tc ts =
@@ -248,7 +272,7 @@ module TyTree =
        Some ty
      | i::is ->
        match getAt is ty with
-        | Some (App' (_, args)) when i < args.Length ->
+        | Some (TyArgs' args) when i < args.Length ->
           Some args.[i]
         | _ ->
           None
@@ -304,14 +328,14 @@ module TyTree =
      | Many rs -> yield! rs
      | Branch (at, apps, vars) ->
        match getAt at actual with
-        | None | Some (Var' _) ->
-          yield! HashEqMap.toSeq apps
-                 |> Seq.collect (fun (_, formal) ->
-                    filter formal actual)
-        | Some (App' (tc, _)) ->
+        | Some (TyCon' tc) ->
           match HashEqMap.tryFind tc apps with
            | None -> ()
            | Some formal ->
              yield! filter formal actual
+        | _ ->
+          yield! HashEqMap.toSeq apps
+                 |> Seq.collect (fun (_, formal) ->
+                    filter formal actual)
        yield! filter vars actual
   }

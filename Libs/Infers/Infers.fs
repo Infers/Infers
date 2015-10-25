@@ -320,19 +320,20 @@ module Infers =
                       let objEnv =
                         match result with
                          | Ruled _ -> objEnv
-                         | Value (monoTy, key, o) ->
+                         | Value (monoTy, key, o') ->
                            let o = match key with
-                                    | None -> o
+                                    | None -> o'
                                     | Some key ->
-                                      StaticMap.getOrSetDyn key monoTy o
-                           let monoRecTy =
-                             typedefof<Rec<_>>.MakeGenericType [|monoTy|]
-                           match HashEqMap.tryFind monoRecTy objEnv with
-                            | None -> ()
-                            | Some recO ->
-                              match recO with
-                               | :? IRecObj as recO' -> recO'.SetObj o
-                               | _ -> failwith "Bug"
+                                      StaticMap.getOrSetDyn key monoTy o'
+                           if LanguagePrimitives.PhysicalEquality o o' then
+                             let monoRecTy =
+                               typedefof<Rec<_>>.MakeGenericType [|monoTy|]
+                             match HashEqMap.tryFind monoRecTy objEnv with
+                              | None -> ()
+                              | Some recO ->
+                                match recO with
+                                 | :? IRecObj as recO' -> recO'.SetObj o
+                                 | _ -> failwith "Bug"
                            objEnv
                            |> HashEqMap.add monoTy o
                       Seq.singleton (result, objEnv, tyEnv)
