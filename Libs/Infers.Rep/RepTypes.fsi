@@ -62,6 +62,16 @@ module Pair =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type [<AbstractClass>] AsChoices<'t> =
+  inherit Rules
+  new: unit -> AsChoices<'t>
+
+  /// The number of cases the discriminated union type `'t` has.
+  val Arity: int
+
+  /// Returns the integer tag of the given discriminated union value.
+  abstract Tag: 't -> int
+
 /// Representation of the type `'t` as nested choices of type `'s`.
 #if DOC
 ///
@@ -74,14 +84,8 @@ module Pair =
 /// choice that identifies the particular case.
 #endif
 type [<AbstractClass>] AsChoices<'s, 't> =
-  inherit Rules
+  inherit AsChoices<'t>
   new: unit -> AsChoices<'s, 't>
-
-  /// The number of cases the discriminated union type `'t` has.
-  val Arity: int
-
-  /// Returns the integer tag of the given discriminated union value.
-  abstract Tag: 't -> int
 
 //  abstract ToSum: 'u -> 'c
 //  abstract OfSum: 'c -> 'u
@@ -182,23 +186,9 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation of the type `'t` as nested pairs of type `'p`.
-#if DOC
-///
-/// A product object also contains members for accessing the elements of the
-/// product.  Depending on the type `'t` those members are of one of the
-/// following forms:
-///
-///> member _:  Item<e,r,  t>                      :> Elem<e,r,t,t> :> Elem<e,t>
-///> member _: Label<e,r,o,t> :> Labelled<e,r,o,t> :> Elem<e,r,o,t> :> Elem<e,t>
-///> member _: Field<e,r,  t> :> Labelled<e,r,o,t> :> Elem<e,r,t,t> :> Elem<e,t>
-///
-/// Those members are visible to inference rules, but they cannot be given a
-/// signature in F#.
-#endif
-type [<AbstractClass>] AsPairs<'p, 'o, 't> =
+type [<AbstractClass>] AsPairs<'p, 't> =
   inherit Rules
-  new: unit -> AsPairs<'p, 'o, 't>
+  new: unit -> AsPairs<'p, 't>
 
   /// The number of elements the product type has.
   val Arity: int
@@ -225,6 +215,24 @@ type [<AbstractClass>] AsPairs<'p, 'o, 't> =
   /// Convenience function to create a new default valued (all default values)
   /// object of the record type `'t`.
   abstract Default: Record<'t> -> 't
+
+/// Representation of the type `'t` as nested pairs of type `'p`.
+#if DOC
+///
+/// A product object also contains members for accessing the elements of the
+/// product.  Depending on the type `'t` those members are of one of the
+/// following forms:
+///
+///> member _:  Item<e,r,  t>                      :> Elem<e,r,t,t> :> Elem<e,t>
+///> member _: Label<e,r,o,t> :> Labelled<e,r,o,t> :> Elem<e,r,o,t> :> Elem<e,t>
+///> member _: Field<e,r,  t> :> Labelled<e,r,o,t> :> Elem<e,r,t,t> :> Elem<e,t>
+///
+/// Those members are visible to inference rules, but they cannot be given a
+/// signature in F#.
+#endif
+type [<AbstractClass>] AsPairs<'p, 'o, 't> =
+  inherit AsPairs<'p, 't>
+  new: unit -> AsPairs<'p, 'o, 't>
 
 ////////////////////////////////////////////////////////////////////////////////
 

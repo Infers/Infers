@@ -34,7 +34,7 @@ type [<AbstractClass>] Record<'t> () =
 
 type B = Reflection.BindingFlags
 
-type [<AbstractClass>] AsPairs<'p, 'o, 't> =
+type [<AbstractClass>] AsPairs<'p, 't> =
   inherit Rules
   new () = {inherit Rules (); Arity = 0; IsMutable = false}
   val Arity: int
@@ -60,11 +60,17 @@ type [<AbstractClass>] AsPairs<'p, 'o, 't> =
     let mutable p = Unchecked.defaultof<_>
     this.Create (&p)
 
-type [<AbstractClass>] AsChoices<'s, 't> =
+type [<AbstractClass>] AsPairs<'p, 'o, 't> () =
+  inherit AsPairs<'p, 't> ()
+
+type [<AbstractClass>] AsChoices<'t> =
   inherit Rules
   new () = {inherit Rules (); Arity = 0}
   val Arity: int
   abstract Tag: 't -> int
+
+type [<AbstractClass>] AsChoices<'s, 't> () =
+  inherit AsChoices<'t> ()
 
 type [<AbstractClass>] Elem<'e, 't> =
   new () = {Index = 0}
