@@ -263,7 +263,7 @@ module Unions =
 type Rep () =
   inherit Rules ()
 
-  static member rep () : Rep<'t> =
+  static member Rep () : Rep<'t> =
     let t = typeof<'t>
 
     match
@@ -362,21 +362,21 @@ type Rep () =
     | _ ->
       failwith "Bug"
 
-  static member union (_: Rep<'t>, r: Union<'t>) = r
-  static member product (_: Rep<'t>, r: Product<'t>) = r
-  static member record (_: Rep<'t>, r: Record<'t>) = r
-  static member tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
-  static member prim (_: Rep<'t>, r: Prim<'t>) = r
-  static member unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
+  static member Union (_: Rep<'t>, r: Union<'t>) = r
+  static member Product (_: Rep<'t>, r: Product<'t>) = r
+  static member Record (_: Rep<'t>, r: Record<'t>) = r
+  static member Tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
+  static member Prim (_: Rep<'t>, r: Prim<'t>) = r
+  static member Unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
 
-  static member asChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
-  static member asPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p
-  static member viewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
+  static member AsChoices (_: Rep<'t>, c: AsChoices<'s, 't>) = c
+  static member AsPairs (_: Rep<'t>, p: AsPairs<'p, 'o, 't>) = p
+  static member ViewAsPairs (_: AsChoices<'p, 't>, m: Case<'p, 'p, 't>) =
     m :> AsPairs<'p, 'p, 't>
 
-  static member asElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
+  static member AsElem (_: Rep.Tuple<'t>, i: Item<'e, 'r, 't>) =
     i :> Elem<'e, 'r, 't, 't>
-  static member asElem (l: Labelled<'e, 'r, 'o, 't>) = l :> Elem<'e,'r,'o,'t>
-  static member asLabelled (f: Field<'e, 'r, 't>) = f :> Labelled<'e,'r,'t,'t>
-  static member asLabelled (_: Union<'t>, l: Label<'e, 'r, 'o, 't>) =
+  static member AsElem (l: Labelled<'e, 'r, 'o, 't>) = l :> Elem<'e,'r,'o,'t>
+  static member AsLabelled (f: Field<'e, 'r, 't>) = f :> Labelled<'e,'r,'t,'t>
+  static member AsLabelled (_: Union<'t>, l: Label<'e, 'r, 'o, 't>) =
     l :> Labelled<'e, 'r, 'o, 't>
