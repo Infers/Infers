@@ -197,9 +197,6 @@ module Pretty =
           nest 1 (vcat parts)
         atom (if sawLF || sawCR then choice wide (delay narrow) else wide)
 
-    static member Unsupported (_: Unsupported<'t>) : PrettyO<'t> =
-      fmt "%A"
-
     static member Option (O tP) =
       let n = atxt "None"
       let s = txt "Some" <^> line

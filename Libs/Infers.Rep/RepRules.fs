@@ -23,6 +23,9 @@ type T = TypeAttributes
 
 [<AutoOpen>]
 module Util =
+  let memoDict = ConcurrentDictionary<Type, Lazy<obj>>()
+  let inline memo t (oL: Lazy<_>) = memoDict.GetOrAdd(t, oL).Force()
+
   let repModule =
     let appDomain = AppDomain.CurrentDomain;
     let assemblyName = AssemblyName "RepAssembly"
@@ -106,8 +109,8 @@ type Builder =
   static member inline emit (op, m: MethodInfo) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, m) ; ilgen
 
-  static member inline emit (op, c: ConstructorInfo) = fun (ilgen: ILGenerator) ->
-    ilgen.Emit (op, c) ; ilgen
+  static member inline emit (op, c: ConstructorInfo) = fun (ilg: ILGenerator) ->
+    ilg.Emit (op, c) ; ilg
 
   static member inline emit (op, f: FieldInfo) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, f) ; ilgen
@@ -200,15 +203,15 @@ module Products =
          then Builder.emit (OpCodes.Ldobj, products.[i])
          else Builder.emit (OpCodes.Ldfld, getField products.[i] "Elem")
               >> ldaddr
-              >> let rest = getField products.[i] "Rest" in
+              >> let r = getField products.[i] "Rest" in
                  if i+1 < props.Length
                  then fun (ilg: ILGenerator) ->
-                        let v = ilg.DeclareLocal (rest.FieldType.MakeByRefType ())
+                        let v = ilg.DeclareLocal (r.FieldType.MakeByRefType ())
                         ilg
-                        |> Builder.emit (OpCodes.Ldflda, rest)
+                        |> Builder.emit (OpCodes.Ldflda, r)
                         |> Builder.emit (OpCodes.Stloc, v)
                         |> emitLoads (Builder.emit (OpCodes.Ldloc, v)) (i+1)
-                 else Builder.emit (OpCodes.Ldfld, rest)
+                 else Builder.emit (OpCodes.Ldfld, r)
     Builder.overrideMethod "Extract"
      typeof<Void>
      [|t; products.[0].MakeByRefType ()|]
@@ -269,7 +272,7 @@ type Rep () =
 
   static member Rep () : Rep<'t> =
     let t = typeof<'t>
-
+    unbox<Rep<'t>> << memo t << Lazy.Create <| fun () ->
     if FSharpType.IsRecord (t, B.Public) then
       let fields = FSharpType.GetRecordFields (t, B.Public)
       let products =
@@ -290,7 +293,7 @@ type Rep () =
                ("Name", box fields.[i].Name)
                ("IsMutable", box fields.[i].CanWrite)|]
              (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
-              Builder.overrideSetMethodWhenCanWrite "Set" fields.[i]))) |> unbox
+              Builder.overrideSetMethodWhenCanWrite "Set" fields.[i])))
     elif FSharpType.IsUnion (t, B.Public) then
       let cases = FSharpType.GetUnionCases (t, B.Public)
       let caseFields = cases |> Array.map (fun case -> case.GetFields ())
@@ -328,7 +331,6 @@ type Rep () =
                [|("Index", box j)
                  ("Name", box caseFields.[i].[j].Name)|]
                (Builder.overrideGetMethod "Get" t caseFields.[i].[j])))))
-      |> unbox
     elif FSharpType.IsTuple t then
       let elems = FSharpType.GetTupleElements t
       if 7 < elems.Length then
@@ -354,11 +356,11 @@ type Rep () =
              typedefof<Item<_, _, _>>.MakeGenericType
               [|elems.[i]; products.[i]; t|]
            Builder.metaField elemType [|("Index", box i)|]
-            (Builder.overrideGetMethod "Get" t props.[i]))) |> unbox
+            (Builder.overrideGetMethod "Get" t props.[i])))
     elif t.IsPrimitive then
-      Prim'<'t> () :> Rep<_>
+      upcast Prim'<'t> ()
     else
-      Unsupported'<'t> () :> Rep<_>
+      upcast Unsupported'<'t> ()
 
   static member Union (_: Rep<'t>, r: Union<'t>) = r
   static member Product (_: Rep<'t>, r: Product<'t>) = r

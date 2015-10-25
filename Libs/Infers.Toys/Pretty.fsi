@@ -51,8 +51,6 @@ module Pretty =
 
     // Special -----------------------------------------------------------------
 
-    static member Unsupported: Unsupported<'t> -> PrettyO<'t>
-
     static member Option: PrettyO<'t> -> PrettyO<option<'t>>
 
     static member Ref: PrettyO<'t> -> PrettyO<ref<'t>>

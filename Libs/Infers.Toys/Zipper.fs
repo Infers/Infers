@@ -87,8 +87,6 @@ module Zipper =
   type [<Rep>] Zipper () =
     inherit Rules ()
 
-    static let warned = Dictionary<Type, unit> ()
-
     static member ToZipper (wD: Down<'w, 'w>) =
       {new Up<'w, 'w> () with
         member u.Up w =
@@ -115,12 +113,6 @@ module Zipper =
         member t.Set d = r := d}
 
     static member Prim (_: Prim<'t>) = downNone<'w, 't>
-
-    static member Unsupported (_: Unsupported<'t>) =
-      if warned.ContainsKey typeof<'t> |> not then
-        warned.[typeof<'t>] <- ()
-        printfn "WARNING: Type %A is seen as primitive by Zipper." typeof<'t>
-      downNone<'w, 't>
 
     static member String () : Down<'w, string> =
       let rec at (up: Up<'w, string>) (s: string) i =

@@ -31,8 +31,7 @@ type [<AbstractClass>] Rec<'x> () =
 ////////////////////////////////////////////////////////////////////////////////
 
 type Rule =
-  {Key: option<Type>
-   ReturnType: Ty
+  {ReturnType: Ty
    ParTypes: array<Ty>
    GenericArgTypes: array<Ty>
    Invoke: array<Type> -> array<Type> -> array<obj> -> obj}
@@ -43,18 +42,18 @@ type Rule =
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Rule =
   let mapVars v2w (rule: Rule) =
-    {rule with
-      ReturnType = Ty.mapVars v2w rule.ReturnType
-      ParTypes = Array.map (Ty.mapVars v2w) rule.ParTypes
-      GenericArgTypes = Array.map (Ty.mapVars v2w) rule.GenericArgTypes
-      Invoke = rule.Invoke}
+    {ReturnType = Ty.mapVars v2w rule.ReturnType
+     ParTypes = Array.map (Ty.mapVars v2w) rule.ParTypes
+     GenericArgTypes = Array.map (Ty.mapVars v2w) rule.GenericArgTypes
+     Invoke = rule.Invoke}
 
   let freshVars (rule: Rule) : Rule =
     mapVars (Fresh.newMapper ()) rule
 
 module RuleSet =
   type Cache =
-    {rules: ConcurrentDictionary<Type, array<Rule>>
+    {key: Type
+     rules: ConcurrentDictionary<Type, array<Rule>>
      trees: ConcurrentDictionary<HashEqSet<Type>, TyTree<Rule>>
      lastFailures: Queue<string * list<Ty>>
      mutable limitReached: bool}
@@ -63,8 +62,9 @@ module RuleSet =
      rules: HashEqSet<Type>
      tree: TyTree<Rule>}
 
-  let newEmpty () =
-    {cache = {rules = ConcurrentDictionary<_, _> ()
+  let newEmpty key =
+    {cache = {key = key
+              rules = ConcurrentDictionary<_, _> ()
               trees = ConcurrentDictionary<_, _> ()
               lastFailures = Queue ()
               limitReached = false}
@@ -76,8 +76,7 @@ module RuleSet =
   let fieldsOf (t: Type) =
     t.GetFields (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
     |> Array.map (fun f ->
-       {Key = None
-        ReturnType = Ty.Mono f.FieldType
+       {ReturnType = Ty.Mono f.FieldType
         ParTypes = [||]
         GenericArgTypes = [||]
         Invoke = fun _ _ _ -> f.GetValue null})
@@ -86,8 +85,7 @@ module RuleSet =
     t.GetMethods (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
     |> Array.map (fun m ->
        let env = Fresh.newMapper ()
-       {Key = Some t
-        ReturnType = Ty.ofTypeIn env m.ReturnType
+       {ReturnType = Ty.ofTypeIn env m.ReturnType
         ParTypes =
           m.GetParameters ()
           |> Array.map (fun p -> Ty.ofTypeIn env p.ParameterType)
@@ -151,8 +149,7 @@ module RuleSet =
                       && not t.IsArray
                       && not t.IsPointer) then
                   let env = Fresh.newMapper ()
-                  {Key = None // XXX
-                   ReturnType = Ty.ofTypeIn env tc
+                  {ReturnType = Ty.ofTypeIn env tc
                    ParTypes = ps |> Array.map (Ty.ofTypeIn env)
                    GenericArgTypes =
                      if tc.ContainsGenericParameters
@@ -181,12 +178,10 @@ module RuleSet =
 module Infers =
   type Result =
     | Value of monoTy: Type
-             * key: option<Type>
              * value: obj
     | Ruled of ty: Ty
              * args: array<Result>
              * genArgTys: array<Ty>
-             * key: option<Type>
              * invoke: (array<Type> -> array<Type> -> array<obj> -> obj)
 
   let addObj monoTy o objEnv =
@@ -202,43 +197,39 @@ module Infers =
            lp t.BaseType (HashEqMap.add t o objEnv)
        lp (o.GetType ()) objEnv
 
-  let rec resolveResult objEnv tyEnv result =
+  let rec resolveResult key objEnv tyEnv result =
     match result with
-     | Value (_, _, _) -> (objEnv, result)
-     | Ruled (ty, args', genArgTys, key, invoke) ->
+     | Value (_, _) -> (objEnv, result)
+     | Ruled (ty, args', genArgTys, invoke) ->
        let args = Array.zeroCreate <| Array.length args'
        let rec lp objEnv i =
          if args.Length <= i then
            (objEnv, args)
          else
-           let (objEnv, arg) = resolveResult objEnv tyEnv args'.[i]
+           let (objEnv, arg) = resolveResult key objEnv tyEnv args'.[i]
            args.[i] <- arg
            lp objEnv (i+1)
        let (objEnv, args) = lp objEnv 0
        let ty = Ty.resolve tyEnv ty
        match Ty.toMonoType ty with
         | None ->
-          (objEnv, Ruled (ty, args, genArgTys, key, invoke))
+          (objEnv, Ruled (ty, args, genArgTys, invoke))
         | Some monoTy ->
           match Array.chooseAll
-                  <| function Value (t, _, v) -> Some (t, v) | Ruled _ -> None
+                  <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
                   <| args
                 |> Option.map Array.unzip with
            | None ->
-             (objEnv, Ruled (ty, args, genArgTys, key, invoke))
+             (objEnv, Ruled (ty, args, genArgTys, invoke))
            | Some (argTys, argVals) ->
              match genArgTys
                    |> Array.chooseAll (Ty.resolve tyEnv >> Ty.toMonoType) with
               | None ->
                 failwith "Bug"
               | Some genArgTys ->
-                let o =
-                  match key with
-                   | None -> invoke genArgTys argTys argVals
-                   | Some key ->
-                     StaticMap.getOrInvokeDyn key monoTy <| fun () ->
-                     invoke genArgTys argTys argVals
-                (addObj monoTy o objEnv, Value (monoTy, key, o))
+                let o = StaticMap.getOrInvokeDyn key monoTy <| fun () ->
+                        invoke genArgTys argTys argVals
+                (addObj monoTy o objEnv, Value (monoTy, o))
 
   let inline isRec ty =
     match ty with
@@ -282,7 +273,7 @@ module Infers =
                      | Some monoTy ->
                        match HashEqMap.tryFind monoTy objEnv with
                         | Some o ->
-                          Seq.singleton (Value (monoTy, None, o), objEnv, tyEnv)
+                          Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
                         | None ->
                           let recTy = App (Def typedefof<Rec<_>>, [|ty|])
                           match
@@ -291,11 +282,11 @@ module Infers =
                             |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
                                match result with
                                 | Ruled _ -> None
-                                | Value (monoRecTy, _, recO) ->
+                                | Value (monoRecTy, recO) ->
                                   match recO with
                                    | :? IRecObj as recO' ->
                                      let o = recO'.GetObj ()
-                                     Some (Value (monoTy, None, o),
+                                     Some (Value (monoTy, o),
                                            objEnv
                                            |> HashEqMap.add monoRecTy recO
                                            |> addObj monoTy o,
@@ -314,17 +305,14 @@ module Infers =
                         Ruled (ty,
                                List.rev args |> Array.ofList,
                                rule.GenericArgTypes,
-                               rule.Key,
                                rule.Invoke)
-                        |> resolveResult objEnv tyEnv
+                        |> resolveResult rules.cache.key objEnv tyEnv
                       let objEnv =
                         match result with
                          | Ruled _ -> objEnv
-                         | Value (monoTy, key, o') ->
-                           let o = match key with
-                                    | None -> o'
-                                    | Some key ->
-                                      StaticMap.getOrSetDyn key monoTy o'
+                         | Value (monoTy, o') ->
+                           let o =
+                             StaticMap.getOrSetDyn rules.cache.key monoTy o'
                            if LanguagePrimitives.PhysicalEquality o o' then
                              let monoRecTy =
                                typedefof<Rec<_>>.MakeGenericType [|monoTy|]
@@ -346,11 +334,11 @@ module Infers =
                              outer resolvedArgs rules objEnv tyEnv ty parTys
                            | arg::args ->
                              let (objEnv, resolvedArg) =
-                               resolveResult objEnv tyEnv arg
+                               resolveResult rules.cache.key objEnv tyEnv arg
                              inner <| resolvedArg::resolvedArgs
                                    <| match resolvedArg with
                                        | Ruled _ -> rules
-                                       | Value (_, _, value) ->
+                                       | Value (_, value) ->
                                          RuleSet.maybeAddRulesObj value rules
                                    <| objEnv
                                    <| args
@@ -360,13 +348,13 @@ module Infers =
        | None -> search (limit - 1)
        | Some monoTy ->
          match HashEqMap.tryFind monoTy objEnv with
-          | Some o -> Seq.singleton (Value (monoTy, None, o), objEnv, tyEnv)
+          | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
           | None -> search limit |> Seq.truncate 1
 
   let generateWithLimits minDepth maxDepth (rulesObj: obj) : 't =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'t>
     let rules =
-      RuleSet.newEmpty ()
+      RuleSet.newEmpty (rulesObj.GetType ())
       |> RuleSet.maybeAddRulesObj rulesObj
     let rec gen limit =
       rules.cache.limitReached <- false
@@ -375,7 +363,7 @@ module Infers =
             |> Seq.tryPick (fun (result, _, _) ->
                match result with
                 | Ruled _ -> None
-                | Value (_, _, value) -> Some (unbox<'t> value)) with
+                | Value (_, value) -> Some (unbox<'t> value)) with
        | None ->
          if rules.cache.limitReached && limit < maxDepth
          then gen (limit + 1)
