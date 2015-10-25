@@ -55,36 +55,30 @@ module Util =
       [|typeof<Empty>|] // Special case
 
 type Builder =
-  static member result x : Builder<_> = fun (_, vs) -> (vs, x)
+  static member inline result x : Builder<_> = fun (_, vs) -> (vs, x)
 
-  static member getTypeBuilder : Builder<TypeBuilder> =
+  static member inline getTypeBuilder : Builder<TypeBuilder> =
     fun (typeBuilder, values) ->
       (values, typeBuilder)
 
   static member metaType (baseType: Type)
                          (basePars: array<string * obj>)
                          (builder: Builder<unit>) =
-    lock repModule <| fun () ->
-    let typeBuilder = repModule.DefineType (uniqueName (), T.Public, baseType)
-    let (values, ()) = builder (typeBuilder, [])
-    let metaType = typeBuilder.CreateType ()
+    let (values, metaType) =
+      lock repModule <| fun () ->
+      let typeBuilder = repModule.DefineType (uniqueName (), T.Public, baseType)
+      let (values, ()) = builder (typeBuilder, [])
+      (values, typeBuilder.CreateType ())
     values
     |> List.iter (fun (name, _, _, value) ->
-       let rec find (t: Type) =
-         match t.GetField name with // Only public is ok here.
-          | null ->
-            if t = typeof<obj> then
-              failwithf "Type %A :> %A has no field named %s"
-               metaType baseType name
-            find t.BaseType
-          | field ->
-            if not field.IsStatic then
-              failwithf "Field %s of type %A :> %A is not static"
-               name metaType baseType
-            field.SetValue (null, value)
-       find metaType)
-    let ctor = metaType.GetConstructor [||] //baseArgTypes
-    let o = ctor.Invoke [||] //basePars
+       match metaType.GetField (name, B.Public ||| B.Static) with
+        | null ->
+          failwithf "Type %A :> %A has no static field named %s"
+           metaType baseType name
+        | field ->
+          field.SetValue (null, value))
+    let ctor = metaType.GetConstructor [||]
+    let o = ctor.Invoke null
     let fields = metaType.GetFields (B.Instance ||| B.NonPublic)
     for (name, value) in basePars do
       match fields |> Array.tryFind (fun f -> f.Name.StartsWith name) with
@@ -106,19 +100,19 @@ type Builder =
      name fb baseType
      (Builder.metaType baseType basePars definition)
 
-  static member emit op = fun (ilgen: ILGenerator) ->
+  static member inline emit op = fun (ilgen: ILGenerator) ->
     ilgen.Emit op ; ilgen
 
-  static member emit (op, m: MethodInfo) = fun (ilgen: ILGenerator) ->
+  static member inline emit (op, m: MethodInfo) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, m) ; ilgen
 
-  static member emit (op, c: ConstructorInfo) = fun (ilgen: ILGenerator) ->
+  static member inline emit (op, c: ConstructorInfo) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, c) ; ilgen
 
-  static member emit (op, f: FieldInfo) = fun (ilgen: ILGenerator) ->
+  static member inline emit (op, f: FieldInfo) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, f) ; ilgen
 
-  static member emit (op, t: Type) = fun (ilgen: ILGenerator) ->
+  static member inline emit (op, t: Type) = fun (ilgen: ILGenerator) ->
     ilgen.Emit (op, t) ; ilgen
 
   static member overrideMethod name resultType paramTypes code =
@@ -180,7 +174,7 @@ module Products =
       match t.GetField name with
        | null -> failwithf "The %A type has no field named \"%s\"" t name
        | field -> field
-    let emitGet i =
+    let inline emitGet i =
       match props.[i].GetGetMethod () with
        | null ->
          failwithf "Failed to get Get-method for property \"%s\" of \"%s\""
@@ -201,13 +195,13 @@ module Products =
       else Builder.emit (fldOp, if i < products.Length-1
                                 then getField products.[i] "Elem"
                                 else getField products.[i-1] "Rest")
-    let emitStore = emitLoadOrStore OpCodes.Stobj OpCodes.Stfld
-    let emitCopy i =
+    let inline emitStore i = emitLoadOrStore OpCodes.Stobj OpCodes.Stfld i
+    let inline emitCopy i =
       emitLoadAddr OpCodes.Ldarg_2 i >> emitGet i >> emitStore i
     let rec emitCopies n =
       if n > 1 then emitCopies (n-1) else id
       >> emitCopy (n-1)
-    let emitLoad i =
+    let inline emitLoad i =
       emitLoadAddr OpCodes.Ldarg_1 i >>
       emitLoadOrStore OpCodes.Ldobj OpCodes.Ldfld i
     let rec emitLoads n =
@@ -260,107 +254,104 @@ module Unions =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type Prim'<'t> () = inherit Prim<'t> ()
+type Unsupported'<'t> () = inherit Unsupported<'t> ()
+
 type Rep () =
   inherit Rules ()
 
   static member Rep () : Rep<'t> =
     let t = typeof<'t>
 
-    match
-      if FSharpType.IsRecord (t, B.Public) then
-        let fields = FSharpType.GetRecordFields (t, B.Public)
-        let products =
-          fields |> Array.map (fun p -> p.PropertyType) |> Products.products
+    if FSharpType.IsRecord (t, B.Public) then
+      let fields = FSharpType.GetRecordFields (t, B.Public)
+      let products =
+        fields |> Array.map (fun p -> p.PropertyType) |> Products.products
 
-        Builder.metaType typeof<Record<'t>> [||]
-         (Products.asPairsField t
-           (Builder.emit
-             (OpCodes.Newobj,
-              FSharpValue.PreComputeRecordConstructorInfo (t, B.Public)))
-           fields
-           products
-           (Builder.forTo 0 (fields.Length-1) <| fun i ->
+      Builder.metaType typeof<Record<'t>> [||]
+       (Products.asPairsField t
+         (Builder.emit
+           (OpCodes.Newobj,
+            FSharpValue.PreComputeRecordConstructorInfo (t, B.Public)))
+         fields
+         products
+         (Builder.forTo 0 (fields.Length-1) <| fun i ->
+            Builder.metaField
+             (typedefof<Field<_, _, _>>.MakeGenericType
+               [|fields.[i].PropertyType; products.[i]; t|])
+             [|("Index", box i)
+               ("Name", box fields.[i].Name)
+               ("IsMutable", box fields.[i].CanWrite)|]
+             (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
+              Builder.overrideSetMethodWhenCanWrite "Set" fields.[i]))) |> unbox
+    elif FSharpType.IsUnion (t, B.Public) then
+      let cases = FSharpType.GetUnionCases (t, B.Public)
+      let caseFields = cases |> Array.map (fun case -> case.GetFields ())
+      let caseProducts =
+        caseFields
+        |> Array.map
+            (Array.map (fun p -> p.PropertyType) >> Products.products)
+      let choices =
+        caseProducts |> Array.map (fun ts -> ts.[0]) |> Unions.choices
+
+      Builder.metaType typeof<Union<'t>> [||]
+       (Unions.asChoicesField t choices
+         (Builder.forTo 0 (cases.Length-1) (fun i ->
+           Builder.metaField
+            (typedefof<Case<_, _, _>>.MakeGenericType
+              [|caseProducts.[i].[0]; choices.[i]; t|])
+            [|("Name", box cases.[i].Name)
+              ("Arity", box caseFields.[i].Length)
+              ("Tag", box i)|]
+            (Products.defineExtractAndCreate
+              t
+              (Builder.emit
+                (OpCodes.Call,
+                 FSharpValue.PreComputeUnionConstructorInfo
+                  (cases.[i], B.Public)))
+              caseFields.[i]
+              caseProducts.[i] >>= fun () ->
+             Builder.forTo 0 (caseFields.[i].Length-1) <| fun j ->
               Builder.metaField
-               (typedefof<Field<_, _, _>>.MakeGenericType
-                 [|fields.[i].PropertyType; products.[i]; t|])
-               [|("Index", box i)
-                 ("Name", box fields.[i].Name)
-                 ("IsMutable", box fields.[i].CanWrite)|]
-               (Builder.overrideGetMethod "Get" t fields.[i] >>= fun () ->
-                Builder.overrideSetMethodWhenCanWrite "Set" fields.[i])))
-      elif FSharpType.IsUnion (t, B.Public) then
-        let cases = FSharpType.GetUnionCases (t, B.Public)
-        let caseFields = cases |> Array.map (fun case -> case.GetFields ())
-        let caseProducts =
-          caseFields
-          |> Array.map
-              (Array.map (fun p -> p.PropertyType) >> Products.products)
-        let choices =
-          caseProducts |> Array.map (fun ts -> ts.[0]) |> Unions.choices
+               (typedefof<Label<_,_,_,_>>.MakeGenericType
+                 [|caseFields.[i].[j].PropertyType;
+                   caseProducts.[i].[j];
+                   choices.[i];
+                   t|])
+               [|("Index", box j)
+                 ("Name", box caseFields.[i].[j].Name)|]
+               (Builder.overrideGetMethod "Get" t caseFields.[i].[j])))))
+      |> unbox
+    elif FSharpType.IsTuple t then
+      let elems = FSharpType.GetTupleElements t
+      if 7 < elems.Length then
+        failwith "XXX: Tuples with more than 7 elements are not yet \
+                  supported.  Pull requests are welcome!"
 
-        Builder.metaType typeof<Union<'t>> [||]
-         (Unions.asChoicesField t choices
-           (Builder.forTo 0 (cases.Length-1) (fun i ->
-             Builder.metaField
-              (typedefof<Case<_, _, _>>.MakeGenericType
-                [|caseProducts.[i].[0]; choices.[i]; t|])
-              [|("Name", box cases.[i].Name)
-                ("Arity", box caseFields.[i].Length)
-                ("Tag", box i)|]
-              (Products.defineExtractAndCreate
-                t
-                (Builder.emit
-                  (OpCodes.Call,
-                   FSharpValue.PreComputeUnionConstructorInfo
-                    (cases.[i], B.Public)))
-                caseFields.[i]
-                caseProducts.[i] >>= fun () ->
-               Builder.forTo 0 (caseFields.[i].Length-1) <| fun j ->
-                Builder.metaField
-                 (typedefof<Label<_,_,_,_>>.MakeGenericType
-                   [|caseFields.[i].[j].PropertyType;
-                     caseProducts.[i].[j];
-                     choices.[i];
-                     t|])
-                 [|("Index", box j)
-                   ("Name", box caseFields.[i].[j].Name)|]
-                 (Builder.overrideGetMethod "Get" t caseFields.[i].[j])))))
-      elif FSharpType.IsTuple t then
-        let elems = FSharpType.GetTupleElements t
-        if 7 < elems.Length then
-          failwith "XXX: Tuples with more than 7 elements are not yet \
-                    supported.  Pull requests are welcome!"
+      let props =
+        Array.init elems.Length <| fun i ->
+        t.GetProperty (sprintf "Item%d" (i + 1))
+      let products = Products.products elems
 
-        let props =
-          Array.init elems.Length <| fun i ->
-          t.GetProperty (sprintf "Item%d" (i + 1))
-        let products = Products.products elems
-
-        Builder.metaType typeof<Rep.Tuple<'t>> [||]
-         (Products.asPairsField t
-           (Builder.emit
-             (OpCodes.Newobj,
-              match FSharpValue.PreComputeTupleConstructorInfo t with
-               | (ctor, None) -> ctor
-               | (_, Some _) -> failwith "XXX"))
-           props
-           products
-           (Builder.forTo 0 (elems.Length-1) <| fun i ->
-             let elemType =
-               typedefof<Item<_, _, _>>.MakeGenericType
-                [|elems.[i]; products.[i]; t|]
-             Builder.metaField elemType [|("Index", box i)|]
-              (Builder.overrideGetMethod "Get" t props.[i])))
-      elif t.IsPrimitive then
-        Builder.metaType typeof<Prim<'t>> [||]
-         (Builder.result ())
-      else
-        Builder.metaType typeof<Unsupported<'t>> [||]
-         (Builder.result ()) with
-    | :? Rep<'t> as rep ->
-      rep
-    | _ ->
-      failwith "Bug"
+      Builder.metaType typeof<Rep.Tuple<'t>> [||]
+       (Products.asPairsField t
+         (Builder.emit
+           (OpCodes.Newobj,
+            match FSharpValue.PreComputeTupleConstructorInfo t with
+             | (ctor, None) -> ctor
+             | (_, Some _) -> failwith "XXX"))
+         props
+         products
+         (Builder.forTo 0 (elems.Length-1) <| fun i ->
+           let elemType =
+             typedefof<Item<_, _, _>>.MakeGenericType
+              [|elems.[i]; products.[i]; t|]
+           Builder.metaField elemType [|("Index", box i)|]
+            (Builder.overrideGetMethod "Get" t props.[i]))) |> unbox
+    elif t.IsPrimitive then
+      Prim'<'t> () :> Rep<_>
+    else
+      Unsupported'<'t> () :> Rep<_>
 
   static member Union (_: Rep<'t>, r: Union<'t>) = r
   static member Product (_: Rep<'t>, r: Product<'t>) = r
