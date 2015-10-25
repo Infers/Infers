@@ -84,12 +84,6 @@ type Builder =
          failwithf "Type %A used as metatype base must have exactly one ctor \
                     with %d params.  Got: %A"
           baseType basePars.Length cs
-    values
-    |> List.iter (fun (name, field, baseType, _) ->
-       let meth = typeBuilder.DefineMethod (name, M.Public ||| M.Static, baseType, [||])
-       let ilGen = meth.GetILGenerator ()
-       ilGen.Emit (OpCodes.Ldsfld, field)
-       ilGen.Emit (OpCodes.Ret))
     let metaType = typeBuilder.CreateType ()
     values
     |> List.iter (fun (name, _, _, value) ->

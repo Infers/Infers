@@ -31,7 +31,7 @@ type [<AbstractClass>] Rec<'x> () =
 ////////////////////////////////////////////////////////////////////////////////
 
 type Rule =
-  {Key: Type
+  {Key: option<Type>
    ReturnType: Ty
    ParTypes: array<Ty>
    GenericArgTypes: array<Ty>
@@ -73,11 +73,20 @@ module RuleSet =
 
   type B = BindingFlags
 
-  let rulesOf (t: Type) =
+  let fieldsOf (t: Type) =
+    t.GetFields (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
+    |> Array.map (fun f ->
+       {Key = None
+        ReturnType = Ty.Mono f.FieldType
+        ParTypes = [||]
+        GenericArgTypes = [||]
+        Invoke = fun _ _ _ -> f.GetValue null})
+
+  let methodsOf (t: Type) =
     t.GetMethods (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
     |> Array.map (fun m ->
        let env = Fresh.newMapper ()
-       {Key = t
+       {Key = Some t
         ReturnType = Ty.ofTypeIn env m.ReturnType
         ParTypes =
           m.GetParameters ()
@@ -92,6 +101,9 @@ module RuleSet =
                   then m.MakeGenericMethod genArgTys
                   else m
           m.Invoke (null, argObjs)})
+
+  let rulesOf (t: Type) =
+    Array.append (fieldsOf t) (methodsOf t)
 
   let addRules t ruleSet =
     let rules = HashEqSet.add t ruleSet.rules
@@ -139,7 +151,7 @@ module RuleSet =
                       && not t.IsArray
                       && not t.IsPointer) then
                   let env = Fresh.newMapper ()
-                  {Key = typeof<Type>
+                  {Key = None // XXX
                    ReturnType = Ty.ofTypeIn env tc
                    ParTypes = ps |> Array.map (Ty.ofTypeIn env)
                    GenericArgTypes =
@@ -302,7 +314,7 @@ module Infers =
                         Ruled (ty,
                                List.rev args |> Array.ofList,
                                rule.GenericArgTypes,
-                               Some rule.Key,
+                               rule.Key,
                                rule.Invoke)
                         |> resolveResult objEnv tyEnv
                       let objEnv =
