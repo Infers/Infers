@@ -8,41 +8,41 @@ module Elems =
 
   type Elems<'h, 'w> = 'w -> array<'h>
 
-  type ElemsP<'e, 'r, 'o, 'h, 'w> =
-    | Miss
-    | Hit of num: int * ext: ('w -> int -> array<'h> -> unit)
+  type ElemsP<'e, 'r, 'o, 'h, 'w> = PE of list<Elem<'h, 'w>>
   type ElemsS<'p, 'o, 'h, 'w> = SE of list<Elems<'h, 'w>>
 
   let missE _ = [||]
 
   type [<Rep>] Elems () =
     inherit Rules ()
-    static member Elem0 (_: Elem<'e, 'r, 'o, 'w>) : ElemsP<'e,'r,'o,'h,'w> =
-      Miss
-    static member Elem1 (hE: Elem<'h, 'r, 'o, 'w>) : ElemsP<'h,'r,'o,'h,'w> =
-      Hit (1, fun w i hs -> hs.[i] <- hE.Get w)
-    static member Pair (eF: ElemsP<     'e     , Pair<'e, 'r>, 'o, 'p, 'w>,
-                        rF: ElemsP<         'r ,          'r , 'o, 'p, 'w>)
-                          : ElemsP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 'p, 'w> =
-      match (eF, rF) with
-       | (Miss, Miss) -> Miss
-       | (Hit (n, e), Miss) | (Miss, Hit (n, e)) -> Hit (n, e)
-       | (Hit (numE, extE), Hit (numR, extR)) ->
-         Hit (numE + numR, fun w i hs -> extE w i hs; extR w (i + numE) hs)
-    static member Product (_: AsPairs<'p, 'o, 'w>, pF: ElemsP<'p,'p,'o,'h,'w>) =
-      match pF with
-       | Miss -> missE
-       | Hit (n, ext) -> fun w -> let hs = Array.zeroCreate n in ext w 0 hs; hs
-    static member Case (_: Case<Empty, 'o, 'w>) : ElemsS<Empty, 'o, 'h, 'w> =
+
+    static member Elem0(_: Elem<'e,'r,'o,'w>) : ElemsP<'e,'r,'o,'h,'w> =
+      PE []
+
+    static member Elem1(hE: Elem<'h,'r,'o,'w>) : ElemsP<'h,'r,'o,'h,'w> =
+      PE [hE]
+
+    static member Pair(PE eE: ElemsP<     'e    , Pair<'e,'r>,'o,'p,'w>,
+                       PE rE: ElemsP<        'r ,         'r ,'o,'p,'w>) =
+      PE <| eE @ rE         : ElemsP<Pair<'e,'r>, Pair<'e,'r>,'o,'p,'w>
+
+    static member Product(_: AsPairs<'p,'o,'w>, PE pE: ElemsP<'p,'p,'o,'h,'w>) =
+      let hEs = Array.ofList pE
+      fun w -> hEs |> Array.map (fun hE -> hE.Get w)
+
+    static member Case(_: Case<Empty, 'o, 'w>) : ElemsS<Empty, 'o, 'h, 'w> =
       SE [missE]
-    static member Case (m: Case<'p, 'o, 'w>, pF: ElemsP<'p, 'p, 'o, 'h, 'w>) =
-      SE [Elems.Product (m, pF)] : ElemsS<'p, 'o, 'h, 'w>
-    static member Choice (SE pF: ElemsS<       'p    , Choice<'p,'o>,'h,'w>,
-                          SE oF: ElemsS<          'o ,           'o ,'h,'w>) =
-      SE (pF @ oF)             : ElemsS<Choice<'p,'o>, Choice<'p,'o>,'h,'w>
-    static member Sum (m: AsChoices<'s, 'w>, SE sF: ElemsS<'s, 's, 'h, 'w>) =
-      let sF = Array.ofList sF
-      fun w -> sF.[m.Tag w] w
+
+    static member Case(m: Case<'p,'o,'w>, pE: ElemsP<'p,'p,'o,'h,'w>) =
+      SE [Elems.Product(m, pE)] : ElemsS<'p,'o,'h,'w>
+
+    static member Choice(SE pE: ElemsS<       'p    , Choice<'p,'o>,'h,'w>,
+                         SE oE: ElemsS<          'o ,           'o ,'h,'w>) =
+      SE <| pE @ oE           : ElemsS<Choice<'p,'o>, Choice<'p,'o>,'h,'w>
+
+    static member Sum(m: AsChoices<'s,'w>, SE sE: ElemsS<'s,'s,'h,'w>) =
+      let sE = Array.ofList sE
+      fun w -> sE.[m.Tag w] w
 
   let elems<'h, 'w> w = generateDFS<Elems, Elems<'h, 'w>> w
 
