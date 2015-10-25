@@ -62,6 +62,8 @@ module Pair =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Base class for `AsChoices<'s, 't>` that does not include the `'s` type
+/// parameter to allow it to be ignored.
 type [<AbstractClass>] AsChoices<'t> =
   inherit Rules
   new: unit -> AsChoices<'t>
@@ -186,6 +188,8 @@ type [<AbstractClass>] Field<'e, 'r, 't> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Base class for `AsPairs<'p, 'o, 't>` that does not include the `'o` type
+/// parameter to allow it to be ignored.
 type [<AbstractClass>] AsPairs<'p, 't> =
   inherit Rules
   new: unit -> AsPairs<'p, 't>
