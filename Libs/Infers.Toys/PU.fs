@@ -3,6 +3,7 @@
 namespace Infers.Toys
 
 module PU =
+  open System.Runtime.CompilerServices
   open System.Collections.Generic
   open System.IO
   open Infers
@@ -32,7 +33,11 @@ module PU =
       member pu.P (_, w, t) = pW w t
       member pu.U (_, r, t) = t <- pR r}
 
-  let inline asPairs (asP: AsPairs<'p, 'o, 't>) (P pPU: PUP<'p, 'p, 'o, 't>) =
+  let case0 (asP: AsPairs<Empty, 't>) =
+    let v = asP.OfPairs Unchecked.defaultof<_>
+    prim (fun _ -> v) (fun _ _ -> ())
+
+  let asPairs (asP: AsPairs<'p, 't>) (pPU: PUI<'p>) =
     {new PUI<'t> () with
       member pu.P (d, w, t) =
         let mutable p = asP.ToPairs t
@@ -41,6 +46,11 @@ module PU =
         let mutable p = Unchecked.defaultof<_>
         pPU.U (d, r, &p)
         t <- asP.Create (&p)}
+
+  let pair (ePU: PUI<'e>) (rPU: PUI<'r>) =
+    {new PUI<Pair<'e, 'r>> () with
+       member pu.P (d, w, t) = ePU.P (d, w, &t.Elem); rPU.P (d, w, &t.Rest)
+       member pu.U (d, r, t) = ePU.U (d, r, &t.Elem); rPU.U (d, r, &t.Rest)}
 
   type [<Bitwise; Rep>] PU () =
     inherit Rules ()
@@ -77,15 +87,12 @@ module PU =
       P ePU : PUP<'e, 'r, 'o, 't>
 
     static member Pair (P ePU: PUP<     'e     , Pair<'e, 'r>, 'o, 't>,
-                        P rPU: PUP<         'r ,          'r , 'o, 't>)
-                             : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
-      P {new PUI<Pair<'e, 'r>> () with
-          member pu.P (d, w, t) = ePU.P (d, w, &t.Elem); rPU.P (d, w, &t.Rest)
-          member pu.U (d, r, t) = ePU.U (d, r, &t.Elem); rPU.U (d, r, &t.Rest)}
+                        P rPU: PUP<         'r ,          'r , 'o, 't>) =
+      P (pair ePU rPU)       : PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
 
     static member Tuple (_: Tuple<'t>,
                          asP: AsPairs<'p, 'o, 't>,
-                         pPU: PUP<'p, 'p, 'o, 't>) = O <| asPairs asP pPU
+                         P pPU: PUP<'p, 'p, 'o, 't>) = O <| asPairs asP pPU
 
     static member Record (tR: Record<'t>,
                           asP: AsPairs<'p, 'o, 't>,
@@ -127,9 +134,9 @@ module PU =
                     asP.Overwrite (tR, t, &p)}
 
     static member Case (c: Case<Empty, 'o, 't>) : PUS<Empty, 'o, 't> =
-      S [prim (fun _ -> c.OfPairs Unchecked.defaultof<_>) (fun _ _ -> ())]
+      S [case0 c]
 
-    static member Case (c: Case<'p, 'o, 't>, pPU: PUP<'p, 'p, 'o, 't>) =
+    static member Case (c: Case<'p, 'o, 't>, P pPU: PUP<'p, 'p, 'o, 't>) =
       S [asPairs c pPU] : PUS<'p, 'o, 't>
 
     static member Choice (S pPU: PUS<       'p     , Choice<'p, 'o>, 't>,
