@@ -39,28 +39,18 @@ namespace Infers.Core {
   public static class StaticMap<Key, Value> {
     ///
     public static Box<Value> box;
-    ///
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Box<Value> TryGet() {
-      return StaticMap<Key, Value>.box;
-    }
-    ///
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Box<Value> GetOrSet(Box<Value> box) {
-      Debug.Assert(null != box);
-      return Interlocked.CompareExchange(ref StaticMap<Key, Value>.box, box, null);
-    }
   }
 
   ///
   public static class StaticMap {
     ///
     public static Box<Value> TryGet<Key, Value>() {
-      return StaticMap<Key, Value>.TryGet();
+      return StaticMap<Key, Value>.box;
     }
     ///
     public static Box<Value> GetOrSet<Key, Value>(Box<Value> box) {
-      return StaticMap<Key, Value>.GetOrSet(box);
+      Debug.Assert(null != box);
+      return Interlocked.CompareExchange(ref StaticMap<Key, Value>.box, box, null);
     }
     ///
     public static Box<Value> Box<Value>() {
