@@ -134,42 +134,6 @@ module RuleSet =
      | :? Rules -> maybeAddRules (o.GetType ()) ruleSet
      | _ -> ruleSet
 
-  let maybeAddConRules ty ruleSet =
-    match ty with
-     | App' (Def tc, _) when tc.IsClass && not tc.IsAbstract
-                          && not <| HashEqSet.contains tc ruleSet.rules ->
-       match ruleSet.cache.rules.GetOrAdd (tc, fun tc ->
-             tc.GetConstructors ()
-             |> Array.choose (fun c ->
-                let ps =
-                  c.GetParameters () |> Array.map (fun p -> p.ParameterType)
-                if ps
-                   |> Array.forall (fun t ->
-                      t.IsClass
-                      && not t.IsArray
-                      && not t.IsPointer) then
-                  let env = Fresh.newMapper ()
-                  {ReturnType = Ty.ofTypeIn env tc
-                   ParTypes = ps |> Array.map (Ty.ofTypeIn env)
-                   GenericArgTypes =
-                     if tc.ContainsGenericParameters
-                     then tc.GetGenericArguments ()
-                          |> Array.map (Ty.ofTypeIn env)
-                     else [||]
-                   Invoke = fun genArgTys argTys argObjs ->
-                     let tc = if tc.ContainsGenericParameters
-                              then tc.MakeGenericType genArgTys
-                              else tc
-                     match tc.GetConstructor argTys with
-                      | null -> failwith "Bug"
-                      | c ->
-                        c.Invoke argObjs} |> Some
-                else
-                  None)) with
-        | [||] -> ruleSet
-        | _ -> addRules tc ruleSet
-     | _ -> ruleSet
-
   let rulesFor (ruleSet: RuleSet) (desiredTy: Ty) =
     TyTree.filter ruleSet.tree desiredTy
 
@@ -248,7 +212,6 @@ module Infers =
       Seq.empty
     else
       let search limit =
-        let rules = RuleSet.maybeAddConRules ty rules
         RuleSet.rulesFor rules ty
         |> Seq.collect (fun rule ->
            let rule = Rule.freshVars rule
