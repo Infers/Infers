@@ -1,7 +1,8 @@
 ﻿// Copyright (C) by Vesa Karvonen
 
 /// Infers is a library for deriving F# values from their types and, in a way, a
-/// direct application of the Curry-Howard correspondence.
+/// direct application of the Curry-Howard correspondence aka Propositions as
+/// Types.
 ///
 /// The basic idea of Infers is to view the types of static member functions as
 /// Horn clauses.  Given a set of `Rules`, it is then possible to attempt to
@@ -18,7 +19,9 @@
 /// a monomorphic value, it only tries to find one way, rather than all possible
 /// ways, to build it.
 ///
-/// - Infers implicitly memoizes final and intermediate results.
+/// - Infers statically memoizes all final and intermediate values that it has
+/// built.  When you invoke Infers twice with the same set of rules and the same
+/// type to generate, Infers returns the same (physical) value.
 ///
 /// - Infers has special support, `Rec<'t>`, for building cyclic values.  It is
 /// very common to need to build cyclic values to manipulate recursive types.
@@ -33,7 +36,7 @@
 /// datatype generic programming.  Other kinds of applications are also quite
 /// possible.  For example, it is possible to solve logic puzzles using Infers.
 ///
-/// Here is an example of a set of rules that can generate functions to
+/// Here is a toy example of a set of rules that can generate functions to
 /// arbitrarily reorder or flip the arguments of a given curried function:
 ///
 ///> type GFlip () =
@@ -55,14 +58,13 @@
 ///
 /// You might want to try the above in a REPL.  There is a caveat: When you
 /// request Infers to generate a value, the value must have a monomorphic type.
-///
-/// The above `GFlip` example is very much a toy example, although one could
-/// sometimes find it useful.
 namespace Infers
 
 /// A type that inherits `Rules` is assumed to contain total static rule methods
-/// that are used by the resolution algorithm of Infers.  A rule class can also
-/// specify dependencies to other rule classes as attributes.
+/// that are used by the resolution algorithm of Infers.  Do not inherit from a
+/// class that inherits `Rules`.  A rule class can specify dependencies to other
+/// rule classes as attributes.  Specify any rule classes that you wish to
+/// include as dependency attributes, e.g. `type [<Rules1;...;RulesN>] MyRules`.
 type [<AbstractClass>] Rules =
   inherit System.Attribute
   new: unit -> Rules
@@ -73,33 +75,51 @@ type [<AbstractClass>] Rules =
 /// When the Infers resolution algorithm encounters a case where it needs to
 /// build a value in terms of itself, for example, when building a function
 /// manipulating a recursive union type, it automatically looks for a rule to
-/// create a proxy for the value.  So, to support building cyclic values of type
+/// create a proxy for the value.  To support building cyclic values of type
 /// `'t`, a rule must be given to build a `Rec<'t>`.
 #endif
-type [<AbstractClass>] Rec<'x> =
-  new: unit -> Rec<'x>
+type [<AbstractClass>] Rec<'t> =
+  new: unit -> Rec<'t>
 
-  /// Must return a wrapper of type `'x` that corresponds to the value of the
+  /// Must return a wrapper of type `'t` that corresponds to the value of the
   /// proxy.  Note that `Get` may be called on a `Rec` proxy before `Set` is
   /// called.
-  abstract Get: unit -> 'x
+  abstract Get: unit -> 't
 
   /// Must set the value of the proxy to close the resulting cyclic value.
-  abstract Set: 'x -> unit
+  abstract Set: 't -> unit
 
 /// Interface to the Infers resolution algorithm.
+#if DOC
+#endif
 [<AutoOpen>]
 module Infers =
-  /// Using IDDFS, tries to generate a value of the type `'t` by using the given
-  /// set of rules.  IDDFS is slow, but works even in cases where the given
-  /// rules allow infinite non-productive derivations.  An exception is raised
-  /// in case Infers detects that there is no way to build the desired value
-  /// with the given rules.
+  /// Using IDDFS, tries to generate a value of type `'t` by using the given set
+  /// of rules `'r`.  If a value can be generated, it is statically memoized, so
+  /// that invoking `generate<'r, 't>` again returns the same value instantly.
+  /// An exception is raised in case Infers detects that there is no way to
+  /// build the desired value with the given rules.  See also: `generateDFS<'r,
+  /// 't>`.
+#if DOC
+  ///
+  /// IDDFS is slow, but works even in cases where the given rules allow
+  /// infinite non-productive derivations.  IDDFS also always finds a minimal
+  /// solution in the sense that the depth of the derivation tree is minimal.
+#endif
   val generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't
 
-  /// Using DFS, tries to generate a value of the type `'t` by using the given
-  /// set of rules.  DFS is fast, but requires that the given rules do not allow
-  /// infinite non-productive derivations.  An exception is raised in case
-  /// Infers detects that there is no way to build the desired value with the
-  /// given rules.
+  /// Using DFS, tries to generate a value of type `'t` by using the given set
+  /// of rules `'r`.  If a value can be generated, it is statically memoized, so
+  /// that invoking `generate<'r, 't>` again returns the same value instantly.
+  /// An exception is raised in case Infers detects that there is no way to
+  /// build the desired value with the given rules.  See also: `generate<'r,
+  /// 't>`.
+#if DOC
+  ///
+  /// DFS is fast, but requires that the given rules do not allow infinite
+  /// non-productive derivations.  DFS also does not necessarily find a minimal
+  /// solution.  Therefore, DFS should only be used when the rules are
+  /// essentially deterministic, which basically means that there is only one
+  /// way to generate a value of any given type using the rules.
+#endif
   val generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't
