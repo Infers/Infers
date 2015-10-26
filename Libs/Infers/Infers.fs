@@ -313,15 +313,14 @@ module Infers =
                          | Value (monoTy, o') ->
                            let o =
                              StaticMap.getOrSetDyn rules.cache.key monoTy o'
-                           if LanguagePrimitives.PhysicalEquality o o' then
-                             let monoRecTy =
-                               typedefof<Rec<_>>.MakeGenericType [|monoTy|]
-                             match HashEqMap.tryFind monoRecTy objEnv with
-                              | None -> ()
-                              | Some recO ->
-                                match recO with
-                                 | :? IRecObj as recO' -> recO'.SetObj o
-                                 | _ -> failwith "Bug"
+                           let monoRecTy =
+                             typedefof<Rec<_>>.MakeGenericType [|monoTy|]
+                           match HashEqMap.tryFind monoRecTy objEnv with
+                            | None -> ()
+                            | Some recO ->
+                              match recO with
+                               | :? IRecObj as recO' -> recO'.SetObj o
+                               | _ -> failwith "Bug"
                            objEnv
                            |> HashEqMap.add monoTy o
                       Seq.singleton (result, objEnv, tyEnv)
