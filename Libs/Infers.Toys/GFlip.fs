@@ -4,7 +4,6 @@ namespace Infers.Toys
 
 open Infers
 
-[<AutoOpen>]
 module GFlip =
   type GFlip () =
     inherit Rules ()

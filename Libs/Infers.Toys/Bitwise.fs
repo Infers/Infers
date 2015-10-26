@@ -4,7 +4,6 @@ namespace Infers.Toys
 
 open System
 
-[<AutoOpen>]
 module Bitwise =
   open Infers
 

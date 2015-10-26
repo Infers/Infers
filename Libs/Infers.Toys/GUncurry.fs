@@ -5,7 +5,6 @@ namespace Infers.Toys
 open Infers.Rep
 open Infers
 
-[<AutoOpen>]
 module GUncurry =
   type [<Rep>] GUncurry () =
     inherit Rules ()
