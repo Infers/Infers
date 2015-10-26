@@ -74,6 +74,8 @@
     <Compile Include="Integral.fs" />
     <Compile Include="Bitwise.fsi" />
     <Compile Include="Bitwise.fs" />
+    <Compile Include="SomeOf.fsi" />
+    <Compile Include="SomeOf.fs" />
     <Compile Include="PU.fsi" />
     <Compile Include="PU.fs" />
     <Compile Include="Pretty.fsi" />
