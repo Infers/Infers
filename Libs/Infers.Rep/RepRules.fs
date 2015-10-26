@@ -369,12 +369,17 @@ type Rep () =
   static member Prim (_: Rep<'t>, r: Prim<'t>) = r
   static member Unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
 
+  static member AnyCase (_: AsChoices<'s,'t>, c: Case<'p,'o,'t>) = c
+
   static member AsChoices (_: Rep<'t>, c: AsChoices<'s,'t>) = c
+
+  static member AsPairs (p: AsPairs<'p,'t,'t>) = p :> AsPairs<'p,'t>
   static member AsPairs (_: Rep<'t>, p: AsPairs<'p,'o,'t>) = p
   static member AsPairs (_: AsChoices<'p,'t>, m: Case<'p,'p,'t>) =
     m :> AsPairs<'p,'p,'t>
 
   static member AsElem (i: Item<'e,'r,'t>) = i :> Elem<'e,'r,'t,'t>
   static member AsElem (l: Labelled<'e,'r,'o,'t>) = l :> Elem<'e,'r,'o,'t>
+
   static member AsLabelled (f: Field<'e,'r,'t>) = f :> Labelled<'e,'r,'t,'t>
   static member AsLabelled (l: Label<'e,'r,'o,'t>) = l :> Labelled<'e,'r,'o,'t>

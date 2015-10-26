@@ -18,8 +18,11 @@ type Rep =
   static member Prim: Rep<'t> * Prim<'t> -> Prim<'t>
   static member Unsupported: Rep<'t> * Unsupported<'t> -> Unsupported<'t>
 
+  static member AnyCase: AsChoices<'s,'t> * Case<'p,'o,'t> -> Case<'p,'o,'t>
+
   static member AsChoices: Rep<'t> * AsChoices<'s,'t> -> AsChoices<'s,'t>
 
+  static member AsPairs: AsPairs<'p,'t,'t> -> AsPairs<'p,'t>
   static member AsPairs: Rep<'t> * AsPairs<'p,'o,'t> -> AsPairs<'p,'o,'t>
   static member AsPairs: AsChoices<'p,'t> * Case<'p,'p,'t> -> AsPairs<'p,'p,'t>
 
