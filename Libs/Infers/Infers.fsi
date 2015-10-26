@@ -64,7 +64,7 @@ namespace Infers
 /// that are used by the resolution algorithm of Infers.  Do not inherit from a
 /// class that inherits `Rules`.  A rule class can specify dependencies to other
 /// rule classes as attributes.  Specify any rule classes that you wish to
-/// include as dependency attributes, e.g. `type [<Rules1;...;RulesN>] MyRules`.
+/// include as attributes, e.g. `type [<Rules1;...;RulesN>] MyRules`.
 type [<AbstractClass>] Rules =
   inherit System.Attribute
   new: unit -> Rules
