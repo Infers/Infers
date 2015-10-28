@@ -76,6 +76,8 @@
     <Compile Include="Bitwise.fs" />
     <Compile Include="SomeOf.fsi" />
     <Compile Include="SomeOf.fs" />
+    <Compile Include="Json.fsi" />
+    <Compile Include="Json.fs" />
     <Compile Include="PU.fsi" />
     <Compile Include="PU.fs" />
     <Compile Include="Pretty.fsi" />
