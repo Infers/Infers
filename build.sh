@@ -11,13 +11,24 @@ else
     exit 1
 fi
 
+if hash paket &> /dev/null ; then
+    PAKET=paket
+else
+    PAKET=.paket/paket.exe
+fi
+
 function build () {
     $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
 }
 
-build $SOLUTION Debug
-build $SOLUTION Release
+if [ "$1" != "" ] ; then
+    build $SOLUTION "$*"
+else
+    build $SOLUTION Debug
+    build $SOLUTION Release
 
-.paket/paket pack output . templatefile Infers.paket.template
-.paket/paket pack output . templatefile Infers.Rep.paket.template
-.paket/paket pack output . templatefile Infers.Toys.paket.template
+    $PAKET pack output . templatefile Infers.paket.template
+    $PAKET pack output . templatefile Infers.Rep.paket.template
+    $PAKET pack output . templatefile Infers.Toys.paket.template
+fi
+

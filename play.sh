@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-./build.sh
+./build.sh Debug
 
 for fsi in fsharpi fsianycpu.exe fsi.exe ; do
     if hash $fsi &> /dev/null ; then
