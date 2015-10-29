@@ -12,6 +12,11 @@ open FParsec.CharParsers
 open PPrint
 
 module Json =
+  module Choice =
+    let inline fold f g = function Choice1Of2 x -> f x
+                                 | Choice2Of2 y -> g y
+    let inline map f g = fold (f >> Choice1Of2) (g >> Choice2Of2)
+
   type Obj = Map<string, Value>
   and Value =
    | Obj of Obj
@@ -83,10 +88,12 @@ module Json =
                       | id -> sprintf "Unexpected: %s" id |> fail] "value"
   let pJSON = spaces >>. pJSON'
 
-  let ofString string =
+  let tryOfString string =
     runParserOnString pJSON () "string" string
     |> function Success (result, (), _) -> Choice1Of2 result
               | Failure (error, _, ()) -> Choice2Of2 error
+  let ofString string =
+    tryOfString string |> Choice.fold id (failwithf "Expected: %s")
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -202,9 +209,7 @@ module Json =
        ToJson = Array.map tJ.ToJson >> List.ofArray >> List}
 
     static member List (tsJ: JsonO<array<'t>>) =
-      {OfJson = tsJ.OfJson >>
-                function Choice1Of2 ts -> List.ofArray ts |> Choice1Of2
-                       | Choice2Of2 ex -> Choice2Of2 ex
+      {OfJson = tsJ.OfJson >> Choice.map List.ofArray id
        ToJson = Array.ofList >> tsJ.ToJson}
 
     static member Elem (eL: Labelled<'e,'r,'o,'t>, eJ: JsonO<'e>) =
@@ -258,8 +263,17 @@ module Json =
     static member Case (_: Case<Empty,'o,'t>) : JsonS<Empty,'o,'t> =
       failwithf "Empty cases not supported, see type: %s" typeof<'t>.Name
 
-    static member Case (m: Case<'p,'o,'t>, pJ: JsonP<'p,'p,'o,'t>) =
-      S [Json.Product (m, pJ)] : JsonS<'p,'o,'t>
+    static member Case (m: Case<Pair<'e,'r>,'o,'t>,
+                        pJ: JsonP<Pair<'e,'r>,Pair<'e,'r>,'o,'t>) =
+      S [Json.Product (m, pJ)] : JsonS<Pair<'e,'p>,'o,'t>
+
+    static member Case (m: Case<'e,'o,'t>,
+                        eL: Labelled<'e,'e,'o,'t>,
+                        eJ: JsonO<'e>) =
+      S [(if eL.Name = "Item"
+          then {OfJson = eJ.OfJson >> Choice.map m.OfPairs id
+                ToJson = m.ToPairs >> eJ.ToJson}
+          else Json.Product (m, Json.Elem (eL, eJ)))] : JsonS<'p,'o,'t>
 
     static member Choice (S pJ: JsonS<       'p    , Choice<'p,'o>,'t>,
                           S oJ: JsonS<          'o ,           'o ,'t>) =
@@ -278,10 +292,11 @@ module Json =
        ToJson = fun t -> pJ.[asC.Tag t].ToJson t}
 
   let toJson<'t> t = generateDFS<Json, JsonO<'t>>.ToJson t
-  let ofJson<'t> j = generateDFS<Json, JsonO<'t>>.OfJson j
+  let tryOfJson<'t> j = generateDFS<Json, JsonO<'t>>.OfJson j
+  let ofJson<'t> j =
+    tryOfJson<'t> j |> Choice.fold id  (failwithf "Expected: %s")
 
-  let toJsonString<'t> t =
-    toJson<'t> t |> toString
-  let ofJsonString<'t> s =
-    ofString s |> function Choice1Of2 j -> ofJson<'t> j
-                         | Choice2Of2 e -> Choice2Of2 e
+  let toJsonString<'t> t = toJson<'t> t |> toString
+  let ofJsonString<'t> s = ofString s |> ofJson<'t>
+  let tryOfJsonString<'t> s =
+    tryOfString s |> Choice.fold tryOfJson<'t> Choice2Of2
