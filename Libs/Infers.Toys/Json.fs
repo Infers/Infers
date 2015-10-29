@@ -265,7 +265,7 @@ module Json =
 
     static member Case (m: Case<Pair<'e,'r>,'o,'t>,
                         pJ: JsonP<Pair<'e,'r>,Pair<'e,'r>,'o,'t>) =
-      S [Json.Product (m, pJ)] : JsonS<Pair<'e,'p>,'o,'t>
+      S [Json.Product (m, pJ)] : JsonS<Pair<'e,'r>,'o,'t>
 
     static member Case (m: Case<'e,'o,'t>,
                         eL: Labelled<'e,'e,'o,'t>,
@@ -273,7 +273,7 @@ module Json =
       S [(if eL.Name = "Item"
           then {OfJson = eJ.OfJson >> Choice.map m.OfPairs id
                 ToJson = m.ToPairs >> eJ.ToJson}
-          else Json.Product (m, Json.Elem (eL, eJ)))] : JsonS<'p,'o,'t>
+          else Json.Product (m, Json.Elem (eL, eJ)))] : JsonS<'e,'o,'t>
 
     static member Choice (S pJ: JsonS<       'p    , Choice<'p,'o>,'t>,
                           S oJ: JsonS<          'o ,           'o ,'t>) =
