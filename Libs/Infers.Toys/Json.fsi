@@ -23,3 +23,6 @@ module Json =
 
   val toJson<'t> : 't -> Value
   val ofJson<'t> : Value -> Choice<'t, string>
+
+  val toJsonString<'t> : 't -> string
+  val ofJsonString<'t> : string -> Choice<'t, string>

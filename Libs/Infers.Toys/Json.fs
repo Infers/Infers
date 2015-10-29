@@ -279,3 +279,9 @@ module Json =
 
   let toJson<'t> t = generateDFS<Json, JsonO<'t>>.ToJson t
   let ofJson<'t> j = generateDFS<Json, JsonO<'t>>.OfJson j
+
+  let toJsonString<'t> t =
+    toJson<'t> t |> toString
+  let ofJsonString<'t> s =
+    ofString s |> function Choice1Of2 j -> ofJson<'t> j
+                         | Choice2Of2 e -> Choice2Of2 e
