@@ -1,3 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
-rlwrap -t dumb fsharpi --use:Infers.fsx
+./build.sh
+
+for fsi in fsharpi fsianycpu.exe fsi.exe ; do
+    if hash $fsi &> /dev/null ; then
+        rlwrap -t dumb $fsi --use:Infers.fsx
+        exit
+    fi
+done

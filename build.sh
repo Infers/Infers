@@ -1,18 +1,23 @@
-#!/bin/bash
-
-set -e
+#!/bin/bash -e
 
 SOLUTION=Infers.sln
 
-nuget restore $SOLUTION -Verbosity quiet
+if hash xbuild &> /dev/null ; then
+    BUILD=xbuild
+elif hash msbuild.exe &> /dev/null ; then
+    BUILD=msbuild.exe
+else
+    echo "Couldn't find build command."
+    exit 1
+fi
 
 function build () {
-    xbuild /nologo /verbosity:quiet /p:Configuration=$2 $1
+    $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
 }
 
 build $SOLUTION Debug
 build $SOLUTION Release
 
-paket pack output . templatefile Infers.paket.template
-paket pack output . templatefile Infers.Rep.paket.template
-paket pack output . templatefile Infers.Toys.paket.template
+.paket/paket pack output . templatefile Infers.paket.template
+.paket/paket pack output . templatefile Infers.Rep.paket.template
+.paket/paket pack output . templatefile Infers.Toys.paket.template
