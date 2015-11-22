@@ -97,7 +97,7 @@ module TyCon =
        then t.MakeArrayType ()
        else t.MakeArrayType r
      | _ ->
-       failwith "Bug: apply %A %A" tc ts
+       failwithf "Bug: apply %A %A" tc ts
 
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Ty =
