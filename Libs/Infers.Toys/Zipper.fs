@@ -388,7 +388,7 @@ module Zipper =
 
   let rec mapBottomUpThe f z =
     let rec g z = nextTheT g (mapBottomUpThe f z)
-    mapThe f (downHeadTheT g z)
+    mapThe f ^ downHeadTheT g z
 
   let rec mapTopDownThe f z =
     let z = mapThe f z

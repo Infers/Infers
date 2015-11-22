@@ -144,7 +144,7 @@ module Ty =
   let rec resolve v2ty ty =
     match resolveTop v2ty ty with
      | App (tc, tys) ->
-       let tys = tys |> Array.map (resolve v2ty)
+       let tys = tys |> Array.map ^ resolve v2ty
        if Array.exists containsVars tys
        then App (tc, tys)
        else tys
@@ -168,13 +168,13 @@ module Ty =
      | Var v ->
        Var (v2w v)
      | App (tc, tys) ->
-       App (tc, tys |> Array.map (mapVars v2w))
+       App (tc, tys |> Array.map ^ mapVars v2w)
 
   let rec tryMatchIn formal actual v2ty =
     match (resolveTop v2ty formal, resolveTop v2ty actual) with
      | (Var fv, Var av) when fv = av ->
        Some v2ty
-     | (Var v, ty) | (ty, Var v) when not (occurs v2ty v ty) ->
+     | (Var v, ty) | (ty, Var v) when not ^ occurs v2ty v ty ->
        Some (Map.add v ty v2ty)
      | (Mono f, Mono a) ->
        if f = a then Some v2ty else None
@@ -183,7 +183,7 @@ module Ty =
        let rec loop i v2ty =
          if i < pars.Length then
            tryMatchIn pars.[i] args.[i] v2ty
-           |> Option.bind (loop (i+1))
+           |> Option.bind ^ loop ^ i+1
          else
            Some v2ty
        loop 0 v2ty
@@ -335,7 +335,7 @@ module TyTree =
              yield! filter formal actual
         | _ ->
           yield! HashEqMap.toSeq apps
-                 |> Seq.collect (fun (_, formal) ->
-                    filter formal actual)
+                 |> Seq.collect ^ fun (_, formal) ->
+                      filter formal actual
        yield! filter vars actual
   }

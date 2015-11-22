@@ -55,7 +55,7 @@ type [<AbstractClass>] AsPairs<'p, 't> =
   default this.Overwrite (_, into, from) =
     let from = this.Create (&from)
     for field in typeof<'t>.GetFields (B.Instance|||B.Public|||B.NonPublic) do
-      field.SetValue (into, field.GetValue (from))
+      field.SetValue (into, field.GetValue from)
   default this.Default (_) =
     let mutable p = Unchecked.defaultof<_>
     this.Create (&p)

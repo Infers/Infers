@@ -28,7 +28,7 @@ module Elems =
 
     static member Product(_: AsPairs<'p,'o,'w>, PE pE: ElemsP<'p,'p,'o,'h,'w>) =
       let hEs = Array.ofList pE
-      fun w -> hEs |> Array.map (fun hE -> hE.Get w)
+      fun w -> hEs |> Array.map ^ fun hE -> hE.Get w
 
     static member Case(_: Case<Empty, 'o, 'w>) : ElemsS<Empty, 'o, 'h, 'w> =
       SE [missE]
@@ -55,7 +55,7 @@ module Elems =
 
   let universe w = Seq.append (Seq.singleton w) (elemsDn w)
 
-  let rec para op w = children w |> Array.map (para op) |> op w
+  let rec para op w = children w |> Array.map ^ para op |> op w
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -116,7 +116,7 @@ module Elems =
   let inline descend w2w w = subst<'w, 'w> w2w w
 
   let rec substUp<'h, 'w> (h2h: 'h -> 'h) (w: 'w) =
-    w |> descend (substUp h2h) |> subst h2h
+    w |> descend ^ substUp h2h |> subst h2h
 
   let inline transform w2w w = w |> substUp w2w |> w2w
 

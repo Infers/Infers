@@ -25,13 +25,13 @@ module Rec =
   type [<Rep>] Rec () =
     inherit Rules ()
 
-    static member Func () = recVal <| fun r -> fun x -> r.Rec x
+    static member Func () = recVal ^ fun r -> fun x -> r.Rec x
     static member Func0 () =
-      recVal <| fun r -> Func<'x>(fun () -> r.Rec.Invoke ())
+      recVal ^ fun r -> Func<'x>(fun () -> r.Rec.Invoke ())
     static member Func1 () =
-      recVal <| fun r -> Func<'x, 'y>(fun x -> r.Rec.Invoke x)
+      recVal ^ fun r -> Func<'x, 'y>(fun x -> r.Rec.Invoke x)
     static member Func2 () =
-      recVal <| fun r -> Func<'x, 'y, 'z>(fun x y -> r.Rec.Invoke (x, y))
+      recVal ^ fun r -> Func<'x, 'y, 'z>(fun x y -> r.Rec.Invoke (x, y))
 
     static member Elem (_: Elem<'e, 'r, 'o, 't>, eR: Rec<'e>) =
       P {new RecI<_> () with

@@ -24,6 +24,8 @@ let inline constant x _ = x
 /// an imperative operation to be used in a pipe.
 let inline (|>!) x effect = effect x ; x
 
+let inline ( ^ ) x = x
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Forces a lazy computation object.
@@ -43,7 +45,7 @@ module Option =
 
 module Array =
   let chooseAll x2yO xs =
-    let ys = Array.zeroCreate <| Array.length xs
+    let ys = Array.zeroCreate ^ Array.length xs
     let rec lp i =
       if xs.Length <= i then
         Some ys
@@ -121,10 +123,8 @@ module HashEqMap =
   /// Tries to find the value associated with the given key from the given map.
   let tryFind k (HEM m) =
     Map.tryFind (hash k) m
-    |> Option.bind (fun kvs ->
-       List.tryFind (fst >> (=) k) kvs
-       |> Option.map (fun (_, v) ->
-          v))
+    |> Option.bind (List.tryFind (fst >> (=) k)
+                    >> Option.map ^ fun (_, v) -> v)
 
   /// Creates a new map containing the key value pairs in the given map and the
   /// key value pair produced either by `onAdd`, in case the given map doesn't
@@ -140,7 +140,9 @@ module HashEqMap =
   /// Transforms all values in the map with the given function producing a new
   /// map.
   let map v2w (HEM m) =
-    HEM (Map.map (fun _ kvs -> List.map (fun (k, v) -> (k, v2w v)) kvs) m)
+    m
+    |> Map.map ^ fun _ -> List.map ^ fun (k, v) -> (k, v2w v)
+    |> HEM
 
   /// Determines whether the given map is empty.
   let isEmpty (HEM m) =
@@ -160,7 +162,7 @@ module Dictionary =
 
   let inline getOr (d: Dictionary<_, _>) k u2v =
     let mutable v = Unchecked.defaultof<_>
-    if d.TryGetValue (k, &v) |> not then
+    if not ^ d.TryGetValue (k, &v) then
       v <- u2v ()
       d.Add (k, v)
     v
@@ -181,7 +183,7 @@ module StaticMap =
   let getOrSetM = typeof<StaticMap>.GetMethod "GetOrSet"
   let boxM = typeof<StaticMap>.GetMethod "Box"
   let wait (box: Box<'v>) =
-    lock box <| fun () ->
+    lock box ^ fun () ->
       while not box.Ready do
         Monitor.Wait box |> ignore
     box.Value

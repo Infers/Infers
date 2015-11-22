@@ -34,18 +34,18 @@ module Pretty =
     let inline atom (d: Doc) = (Atomic, d)
     let inline part (d: Doc) = (Part, d)
 
-    let inline atxt x = atom <| txt x
+    let inline atxt x = atom ^ txt x
     let inline con x _ = x
     let inline doc fn =
       {new InternalPretty<'x> () with
         override this.Pretty (x) =
          fn x}
     let inline str fn = doc (fn >> txt >> atom)
-    let inline fmt fmt = str (sprintf fmt) |> O
+    let inline fmt fmt = O ^ str ^ sprintf fmt
     let inline atomize (f, x) =
       match f with
        | Atomic -> x
-       | Part -> gnest 1 <| parens x
+       | Part -> gnest 1 ^ parens x
     let inline just (_, x) = x
 
     let inline hexc c =
@@ -67,9 +67,9 @@ module Pretty =
       O {new InternalPretty<'xs> () with
           override this.Pretty (xs) =
            toSeq xs
-           |> Seq.map (fun (x: 'x) ->
+           |> Seq.map ^ fun (x: 'x) ->
                 let mutable x = x
-                xP.Pretty (&x) |> snd)
+                xP.Pretty (&x) |> snd
            |> joinSep semiLine
            |> gnest i
            |> enclose (o, c)
@@ -77,10 +77,10 @@ module Pretty =
 
   let case name (asP: AsPairs<'p, 't>) (lsP: InternalPretty<'p>) =
     let con = txt name <^> line
-    doc <| fun x ->
+    doc ^ fun x ->
     let mutable ls = Unchecked.defaultof<_>
     asP.Extract (x, &ls)
-    part (gnest 2 (con <^> atomize (lsP.Pretty (&ls))))
+    part ^ gnest 2 (con <^> atomize ^ lsP.Pretty (&ls))
 
   let labelled (n: string) i (eP: InternalPretty<'e>) =
       if n.StartsWith "Item" &&
@@ -92,20 +92,20 @@ module Pretty =
       else let label = txt n <+> (equals <^> line)
            {new InternalPretty<'e> () with
              override t.Pretty e =
-              part (gnest 2 (label <^> just (eP.Pretty (&e))))}
+              part ^ gnest 2 (label <^> just ^ eP.Pretty (&e))}
 
   let pair sep (eP: InternalPretty<'e>) (rP: InternalPretty<'r>) =
     {new InternalPretty<Pair<'e, 'r>> () with
       override t.Pretty ees =
-       part (just (eP.Pretty (&ees.Elem)) <^>
-             (sep <^> just (rP.Pretty (&ees.Rest))))}
+       part (just ^ eP.Pretty (&ees.Elem) <^>
+             (sep <^> just ^ rP.Pretty (&ees.Rest)))}
 
   type [<Rep; Integral>] Pretty () =
     inherit Rules ()
 
     static member Enter (O p: PrettyO<'t>) : Pretty<'t> = fun x ->
       let mutable x = x
-      just <| p.Pretty (&x)
+      just ^ p.Pretty (&x)
 
     static member Rec () : Rec<PrettyO<'t>> =
       let r = RecPretty<'t> ()
@@ -114,15 +114,15 @@ module Pretty =
         override t.Get () = o
         override t.Set (O x) = r.impl <- x}
 
-    static member Unit: PrettyO<unit> = O (doc (con (atxt "()")))
+    static member Unit: PrettyO<unit> = O ^ doc ^ con ^ atxt "()"
 
     static member Bool: PrettyO<bool> =
       let t = atxt "true"
       let f = atxt "false"
-      O (doc (fun b -> if b then t else f))
+      O ^ doc ^ fun b -> if b then t else f
 
     static member Integral (i: Integral<'t>) : PrettyO<'t> =
-      O (str <| fun x -> x.ToString () + i.Suffix)
+      O ^ str ^ fun x -> x.ToString () + i.Suffix
 
     static member Float32: PrettyO<float32> = fmt "%.9gf"
     static member Float64: PrettyO<float>   = fmt "%.17g"
@@ -135,14 +135,14 @@ module Pretty =
       let r = atxt "'\\r'"
       let s = atxt "'\\\\'"
       let t = atxt "'\\t'"
-      O << doc <| function
+      O ^ doc ^ function
        | '\'' -> a | '\b' -> b | '\n' -> n | '\"' -> q | '\r' -> r | '\\' -> s
        | '\t' -> t
        | c when Char.IsControl c -> hexc c |> txt |> squotes |> atom
        | c -> sprintf "'%c'" c |> atxt
 
     static member String: PrettyO<string> =
-      O << doc <| fun s ->
+      O ^ doc ^ fun s ->
         let mutable sawLF = false
         let mutable sawCR = false
         let wide =
@@ -162,13 +162,13 @@ module Pretty =
              | c when Char.IsControl c -> S (hexc c)
              | c -> C c
           C '\"'
-          txt (sb.ToString ())
+          txt ^ sb.ToString ()
         let cutOnLF = sawLF
         let inline narrow () =
           let parts = ResizeArray<_> ()
           let sb = StringBuilder ()
           let cut () =
-            parts.Add (txt (sb.ToString ()))
+            parts.Add ^ txt ^ sb.ToString ()
             sb.Clear () |> ignore
           let inline S (s: string) = sb.Append s |> ignore
           let inline C (c: char) = sb.Append c |> ignore
@@ -195,7 +195,7 @@ module Pretty =
           C '\"'
           cut ()
           nest 1 (vcat parts)
-        atom (if sawLF || sawCR then choice wide (delay narrow) else wide)
+        atom (if sawLF || sawCR then choice wide ^ delay narrow else wide)
 
     static member Option (O tP) =
       let n = atxt "None"
@@ -204,19 +204,19 @@ module Pretty =
        | None -> n
        | Some x ->
          let mutable x = x
-         part (gnest 2 (s <^> atomize (tP.Pretty (&x))))
+         part ^ gnest 2 (s <^> atomize ^ tP.Pretty (&x))
 
     static member Ref (O tP) =
       let con = txt "ref" <^> line
       O {new InternalPretty<ref<'t>> () with
           override t.Pretty (rx) =
-           part (gnest 2 (con <^> just (tP.Pretty rx)))}
+           part ^ gnest 2 (con <^> just ^ tP.Pretty rx)}
 
     static member List (O tP) = seq "[" "]" tP List.toSeq
     static member Array (O tP) = seq "[|" "|]" tP Array.toSeq
 
     static member Case (case: Case<Empty, 'o, 't>) : PrettyS<Empty, 'o, 't> =
-      S [doc (con (atxt case.Name))]
+      S [doc ^ con ^ atxt case.Name]
 
     static member Case (c: Case<'p, 'o, 't>, P lsP: PrettyP<'p, 'p, 'o, 't>) =
       S [case c.Name c lsP] : PrettyS<'p, 'o, 't>
@@ -246,7 +246,7 @@ module Pretty =
       O << doc <| fun t ->
       let mutable es = Unchecked.defaultof<_>
       asP.Extract (t, &es)
-      atom (enclose lr (gnest 1 (just (pP.Pretty (&es)))))
+      atom ^ enclose lr ^ gnest 1 ^ just ^ pP.Pretty (&es)
 
   let pretty x = generateDFS<Pretty, _ -> Doc> x
-  let show x = render None (pretty x)
+  let show x = render None ^ pretty x

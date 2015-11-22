@@ -25,8 +25,8 @@ type [<AbstractClass>] Rec<'x> () =
   // to know about it, because being able to have this kind of internal
   // functionality is a fairly common need.
   interface IRecObj with
-   override this.GetObj () = box (this.Get ())
-   override this.SetObj x = this.Set (unbox<'x> x)
+   override this.GetObj () = box ^ this.Get ()
+   override this.SetObj x = this.Set ^ unbox<'x> x
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -75,30 +75,30 @@ module RuleSet =
 
   let fieldsOf (t: Type) =
     t.GetFields (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
-    |> Array.map (fun f ->
+    |> Array.map ^ fun f ->
        {ReturnType = Ty.Mono f.FieldType
         ParTypes = [||]
         GenericArgTypes = [||]
-        Invoke = fun _ _ _ -> f.GetValue null})
+        Invoke = fun _ _ _ -> f.GetValue null}
 
   let methodsOf (t: Type) =
     t.GetMethods (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
-    |> Array.map (fun m ->
+    |> Array.map ^ fun m ->
        let env = Fresh.newMapper ()
        {ReturnType = Ty.ofTypeIn env m.ReturnType
         ParTypes =
           m.GetParameters ()
-          |> Array.map (fun p -> Ty.ofTypeIn env p.ParameterType)
+          |> Array.map ^ fun p -> Ty.ofTypeIn env p.ParameterType
         GenericArgTypes =
           if m.ContainsGenericParameters
           then m.GetGenericArguments ()
-               |> Array.map (Ty.ofTypeIn env)
+               |> Array.map ^ Ty.ofTypeIn env
           else [||]
         Invoke = fun genArgTys _ argObjs ->
           let m = if m.ContainsGenericParameters
                   then m.MakeGenericMethod genArgTys
                   else m
-          m.Invoke (null, argObjs)})
+          m.Invoke (null, argObjs)}
 
   let rulesOf (t: Type) =
     Array.append (fieldsOf t) (methodsOf t)
@@ -109,9 +109,9 @@ module RuleSet =
       ruleSet.cache.trees.GetOrAdd (rules, fun _ ->
         lazy (rules
               |> HashEqSet.toSeq
-              |> Seq.collect (fun t ->
-                 ruleSet.cache.rules.[t]
-                 |> Seq.map (fun rule -> (rule.ReturnType, rule)))
+              |> Seq.collect ^ fun t ->
+                   ruleSet.cache.rules.[t]
+                   |> Seq.map ^ fun rule -> (rule.ReturnType, rule)
               |> TyTree.build
               |> force))
     {ruleSet with rules = rules; tree = tree}
@@ -158,30 +158,31 @@ module Infers =
             || HashEqMap.tryFind t objEnv |> Option.isSome then
            objEnv
          else
-           lp t.BaseType (HashEqMap.add t o objEnv)
+           lp t.BaseType ^ HashEqMap.add t o objEnv
        lp (o.GetType ()) objEnv
 
   let rec resolveResult key objEnv tyEnv result =
     match result with
      | Value (_, _) -> (objEnv, result)
      | Ruled (ty, args', genArgTys, invoke) ->
-       let args = Array.zeroCreate <| Array.length args'
+       let args = Array.zeroCreate ^ Array.length args'
        let rec lp objEnv i =
          if args.Length <= i then
            (objEnv, args)
          else
            let (objEnv, arg) = resolveResult key objEnv tyEnv args'.[i]
            args.[i] <- arg
-           lp objEnv (i+1)
+           lp objEnv ^ i+1
        let (objEnv, args) = lp objEnv 0
        let ty = Ty.resolve tyEnv ty
        match Ty.toMonoType ty with
         | None ->
           (objEnv, Ruled (ty, args, genArgTys, invoke))
         | Some monoTy ->
-          match Array.chooseAll
-                  <| function Value (t, v) -> Some (t, v) | Ruled _ -> None
-                  <| args
+          match args
+                |> Array.chooseAll ^ function
+                    | Value (t, v) -> Some (t, v)
+                    | Ruled _ -> None
                 |> Option.map Array.unzip with
            | None ->
              (objEnv, Ruled (ty, args, genArgTys, invoke))
@@ -191,7 +192,7 @@ module Infers =
               | None ->
                 failwith "Bug"
               | Some genArgTys ->
-                let o = StaticMap.getOrInvokeDyn key monoTy <| fun () ->
+                let o = StaticMap.getOrInvokeDyn key monoTy ^ fun () ->
                         invoke genArgTys argTys argVals
                 (addObj monoTy o objEnv, Value (monoTy, o))
 
@@ -201,7 +202,7 @@ module Infers =
      | _ -> false
 
   let addFailurePath (rules: RuleSet.RuleSet) stack ty msg =
-    lock rules.cache.lastFailures <| fun () ->
+    lock rules.cache.lastFailures ^ fun () ->
     rules.cache.lastFailures.Enqueue (msg, ty::stack)
     if rules.cache.lastFailures.Count > 10 then
       rules.cache.lastFailures.Dequeue () |> ignore
@@ -213,7 +214,7 @@ module Infers =
     else
       let search limit =
         RuleSet.rulesFor rules ty
-        |> Seq.collect (fun rule ->
+        |> Seq.collect ^ fun rule ->
            let rule = Rule.freshVars rule
            match Ty.tryMatchIn rule.ReturnType ty tyEnv with
             | None ->
@@ -222,7 +223,7 @@ module Infers =
             | Some tyEnv ->
                let rec outer args rules objEnv tyEnv ty parTys =
                  let ty = Ty.resolve tyEnv ty
-                 let stack = stack |> List.map (Ty.resolve tyEnv)
+                 let stack = stack |> List.map ^ Ty.resolve tyEnv
 
                  if rule.ParTypes.Length <> 0
                     && stack |> List.exists ((=) ty) then
@@ -242,25 +243,26 @@ module Infers =
                           match
                             recTy
                             |> tryGen limit rules objEnv tyEnv (ty::stack)
-                            |> Seq.tryPick (fun (result, objEnv, tyEnv) ->
-                               match result with
-                                | Ruled _ -> None
-                                | Value (monoRecTy, recO) ->
-                                  match recO with
-                                   | :? IRecObj as recO' ->
-                                     let o = recO'.GetObj ()
-                                     Some (Value (monoTy, o),
-                                           objEnv
-                                           |> HashEqMap.add monoRecTy recO
-                                           |> addObj monoTy o,
-                                           tyEnv)
-                                   | _ ->
-                                     failwith "Bug") with
-                           | None ->
-                             addFailurePath rules stack recTy "No Rec rule"
-                             Seq.empty
-                           | Some x ->
-                             Seq.singleton x
+                            |> Seq.tryPick ^ fun (result, objEnv, tyEnv) ->
+                                 match result with
+                                  | Ruled _ -> None
+                                  | Value (monoRecTy, recO) ->
+                                    match recO with
+                                     | :? IRecObj as recO' ->
+                                       let o = recO'.GetObj ()
+                                       Some (Value (monoTy, o),
+                                             objEnv
+                                             |> HashEqMap.add monoRecTy recO
+                                             |> addObj monoTy o,
+                                             tyEnv)
+                                     | _ ->
+                                       failwith "Bug"
+                           with
+                            | None ->
+                              addFailurePath rules stack recTy "No Rec rule"
+                              Seq.empty
+                            | Some x ->
+                              Seq.singleton x
                  else
                    match parTys with
                     | [] ->
@@ -290,22 +292,22 @@ module Infers =
                     | parTy::parTys ->
                       Ty.resolve tyEnv parTy
                       |> tryGen limit rules objEnv tyEnv (ty::stack)
-                      |> Seq.collect (fun (result, objEnv, tyEnv) ->
-                         let rec inner resolvedArgs rules objEnv = function
-                           | [] ->
-                             outer resolvedArgs rules objEnv tyEnv ty parTys
-                           | arg::args ->
-                             let (objEnv, resolvedArg) =
-                               resolveResult rules.cache.key objEnv tyEnv arg
-                             inner <| resolvedArg::resolvedArgs
-                                   <| match resolvedArg with
-                                       | Ruled _ -> rules
-                                       | Value (_, value) ->
-                                         RuleSet.maybeAddRulesObj value rules
-                                   <| objEnv
-                                   <| args
-                         result::args |> List.rev |> inner [] rules objEnv)
-               rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty)
+                      |> Seq.collect ^ fun (result, objEnv, tyEnv) ->
+                           let rec inner resolvedArgs rules objEnv = function
+                             | [] ->
+                               outer resolvedArgs rules objEnv tyEnv ty parTys
+                             | arg::args ->
+                               let (objEnv, resolvedArg) =
+                                 resolveResult rules.cache.key objEnv tyEnv arg
+                               inner <| resolvedArg::resolvedArgs
+                                     <| match resolvedArg with
+                                         | Ruled _ -> rules
+                                         | Value (_, value) ->
+                                           RuleSet.maybeAddRulesObj value rules
+                                     <| objEnv
+                                     <| args
+                           result::args |> List.rev |> inner [] rules objEnv
+               rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty
       match Ty.toMonoType ty with
        | None -> search (limit - 1)
        | Some monoTy ->
@@ -316,48 +318,49 @@ module Infers =
   let generateWithLimits minDepth maxDepth (rulesObj: obj) : 't =
     let desTy = Ty.ofTypeIn <| Fresh.newMapper () <| typeof<'t>
     let rules =
-      RuleSet.newEmpty (rulesObj.GetType ())
+      RuleSet.newEmpty ^ rulesObj.GetType ()
       |> RuleSet.maybeAddRulesObj rulesObj
     let rec gen limit =
       rules.cache.limitReached <- false
       rules.cache.lastFailures.Clear ()
       match tryGen limit rules HashEqMap.empty Map.empty [] desTy
-            |> Seq.tryPick (fun (result, _, _) ->
-               match result with
-                | Ruled _ -> None
-                | Value (_, value) -> Some (unbox<'t> value)) with
-       | None ->
-         if rules.cache.limitReached && limit < maxDepth
-         then gen (limit + 1)
-         else match rules.cache.lastFailures.ToArray () with
-               | [||] ->
-                 failwithf "%A cannot derive %A."
-                  <| rulesObj.GetType ()
-                  <| typeof<'t>
-               | paths ->
-                 failwithf "%A cannot derive %A.  Last failure paths:\n\n%s\n"
-                  <| rulesObj.GetType ()
-                  <| typeof<'t>
-                  <| (paths
-                      |> Array.map (fun (msg, path) ->
-                         sprintf "%s:\n%s" msg
-                          (path
-                          |> List.map (sprintf "  %A")
-                          |> String.concat "\n"))
-                      |> String.concat "\n\n")
-       | Some t -> t
+            |> Seq.tryPick ^ fun (result, _, _) ->
+                 match result with
+                  | Ruled _ -> None
+                  | Value (_, value) -> Some ^ unbox<'t> value
+       with
+        | None ->
+          if rules.cache.limitReached && limit < maxDepth
+          then gen (limit + 1)
+          else match rules.cache.lastFailures.ToArray () with
+                | [||] ->
+                  failwithf "%A cannot derive %A."
+                   <| rulesObj.GetType ()
+                   <| typeof<'t>
+                | paths ->
+                  failwithf "%A cannot derive %A.  Last failure paths:\n\n%s\n"
+                   <| rulesObj.GetType ()
+                   <| typeof<'t>
+                   <| (paths
+                       |> Array.map ^ fun (msg, path) ->
+                            sprintf "%s:\n%s" msg
+                             (path
+                              |> List.map ^ sprintf "  %A"
+                              |> String.concat "\n")
+                       |> String.concat "\n\n")
+        | Some t -> t
     gen minDepth
 
   let generate' (rules: 'r when 'r :> Rules) : 't =
     generateWithLimits 1 Int32.MaxValue rules
 
   let generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't =
-    StaticMap.getOrInvoke<'r, 't> <| fun () ->
-    generate' (new 'r ())
+    StaticMap.getOrInvoke<'r, 't> ^ fun () ->
+    generate' ^ new 'r ()
 
   let generateDFS' (rules: 'r when 'r :> Rules) : 't =
     generateWithLimits Int32.MaxValue Int32.MaxValue rules
 
   let generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't =
-    StaticMap.getOrInvoke<'r, 't> <| fun () ->
-    generateDFS' (new 'r ())
+    StaticMap.getOrInvoke<'r, 't> ^ fun () ->
+    generateDFS' ^ new 'r ()

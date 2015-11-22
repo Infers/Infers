@@ -61,12 +61,12 @@ module PU =
         override pu.Get () = O r
         override pu.Set (O tPU) = r.Rec <- tPU}
 
-    static member Unit = O <| prim (fun _ -> ()) (fun _ _ -> ())
+    static member Unit = O ^ prim (fun _ -> ()) (fun _ _ -> ())
 
-    static member UInt8 = O <| prim (fun r -> r.ReadByte ()) (fun w -> w.Write)
-    static member Int16 = O <| prim (fun r -> r.ReadInt16 ()) (fun w -> w.Write)
-    static member Int32 = O <| prim (fun r -> r.ReadInt32 ()) (fun w -> w.Write)
-    static member Int64 = O <| prim (fun r -> r.ReadInt64 ()) (fun w -> w.Write)
+    static member UInt8 = O ^ prim (fun r -> r.ReadByte ()) (fun w -> w.Write)
+    static member Int16 = O ^ prim (fun r -> r.ReadInt16 ()) (fun w -> w.Write)
+    static member Int32 = O ^ prim (fun r -> r.ReadInt32 ()) (fun w -> w.Write)
+    static member Int64 = O ^ prim (fun r -> r.ReadInt64 ()) (fun w -> w.Write)
 
     static member Bitwise (bIt: Bitwise<'b, 't>, O bPU: PU<'b>) : PU<'t> =
       O {new PUI<'t> () with

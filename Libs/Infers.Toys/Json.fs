@@ -143,8 +143,8 @@ module Json =
       vs |> Seq.map toDoc |> punctuate commaLn |> hcat |> brackets |> gnest 1
     | Obj kvs ->
       kvs
-      |> Seq.map (fun kv ->
-         gnest 1 (pString kv.Key <^> colonLn <^> toDoc kv.Value))
+      |> Seq.map ^ fun kv ->
+           gnest 1 (pString kv.Key <^> colonLn <^> toDoc kv.Value)
       |> punctuate commaLn |> hcat |> braces |> gnest 1
 
   let toString v = toDoc v |> PPrint.render None
@@ -176,7 +176,7 @@ module Json =
       {OfJson = function Bool v -> Choice1Of2 v | _ -> Choice2Of2 "bool"
        ToJson = Bool}
     static member Int32 = number int string
-    static member Float = number float (sprintf "%.17g")
+    static member Float = number float ^ sprintf "%.17g"
     static member Int64 = number int64 string
     static member String =
       {OfJson = function String v -> Choice1Of2 v | _ -> Choice2Of2 "string"
@@ -203,7 +203,7 @@ module Json =
                   ts.[i] <- v
                   lp (i+1) js
                 | Choice2Of2 expected ->
-                  Choice2Of2 ("[" + expected + "]")
+                  Choice2Of2 ^ "[" + expected + "]"
           lp 0 js
         | _ -> Choice2Of2 "list"
        ToJson = Array.map tJ.ToJson >> List.ofArray >> List}
@@ -216,11 +216,11 @@ module Json =
       P {new JsonI<'e> () with
           member jm.OfJson (o, e) =
             match Map.tryFind eL.Name o with
-             | None -> Some (eL.Name + ": ...")
+             | None -> Some ^ eL.Name + ": ..."
              | Some v ->
                match eJ.OfJson v with
                 | Choice1Of2 v -> e <- v ; None
-                | Choice2Of2 e -> Some (eL.Name + ":" + e)
+                | Choice2Of2 e -> Some ^ eL.Name + ":" + e
           member jm.ToJson (e, o) =
             Map.add eL.Name (eJ.ToJson e) o} : JsonP<'e,'r,'o,'t>
 
@@ -232,7 +232,7 @@ module Json =
             | Some v ->
               match eJ.OfJson v with
                | Choice1Of2 v -> eO <- Some v; None
-               | Choice2Of2 e -> Some (eL.Name + ":" + e)
+               | Choice2Of2 e -> Some ^ eL.Name + ":" + e
           member jm.ToJson (eO, o) =
             match eO with
              | None -> o
