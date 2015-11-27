@@ -34,4 +34,4 @@ dependencies
         Infers >= 0.2.0
 files
         Libs/Infers.Rep/bin/Release/Infers.Rep.dll      ==> lib/net45
-        Libs/Infers.Rep/bin/Release/Infers.Rep.XML      ==> lib/net45
+        Libs/Infers.Rep/bin/Release/Infers.Rep.xml      ==> lib/net45

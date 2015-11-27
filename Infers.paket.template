@@ -35,6 +35,6 @@ dependencies
         FSharp.Core >= 4.0.0.1
 files
         Libs/Infers/bin/Release/Infers.dll              ==> lib/net45
-        Libs/Infers/bin/Release/Infers.XML              ==> lib/net45
+        Libs/Infers/bin/Release/Infers.xml              ==> lib/net45
         Libs/Infers.Core/bin/Release/Infers.Core.dll    ==> lib/net45
-        Libs/Infers.Core/bin/Release/Infers.Core.XML    ==> lib/net45
+        Libs/Infers.Core/bin/Release/Infers.Core.xml    ==> lib/net45

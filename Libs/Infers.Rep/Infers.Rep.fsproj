@@ -21,7 +21,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\Infers.Rep.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\Infers.Rep.xml</DocumentationFile>
     <GenerateTailCalls>true</GenerateTailCalls>
     <OtherFlags>--warnon:1182</OtherFlags>
   </PropertyGroup>
@@ -32,7 +32,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\Infers.Rep.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Infers.Rep.xml</DocumentationFile>
     <DebugSymbols>true</DebugSymbols>
     <GenerateTailCalls>true</GenerateTailCalls>
     <OtherFlags>--warnon:1182</OtherFlags>

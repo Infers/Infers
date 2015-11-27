@@ -38,4 +38,4 @@ dependencies
         PPrint >= 1.4.3
 files
         Libs/Infers.Toys/bin/Release/Infers.Toys.dll      ==> lib/net45
-        Libs/Infers.Toys/bin/Release/Infers.Toys.XML      ==> lib/net45
+        Libs/Infers.Toys/bin/Release/Infers.Toys.xml      ==> lib/net45
