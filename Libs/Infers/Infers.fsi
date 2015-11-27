@@ -1,4 +1,4 @@
-﻿// Copyright (C) by Vesa Karvonen
+// Copyright (C) by Vesa Karvonen
 
 /// Infers is a library for deriving F# values from their types and, in a way, a
 /// direct application of the Curry-Howard correspondence aka Propositions as

@@ -1,4 +1,4 @@
-﻿// Copyright (C) by Vesa Karvonen
+// Copyright (C) by Vesa Karvonen
 
 /// Infers.Rep is a library providing inference rules for polytypic or datatype
 /// generic programming with the Infers library.
