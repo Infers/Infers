@@ -44,6 +44,30 @@ module Rec =
   /// Rules for computing fixed points over products, single case union types
   /// (aka newtypes) and functions.
 #if DOC
+  ///
+  /// Consider the following toy example:
+  ///
+  ///> type Fib () =
+  ///>   inherit Rules ()
+  ///>   static member fib (fib: int -> int) : int -> int =
+  ///>     fun n -> if n < 2 then n else fib (n-1) + fib (n-2)
+  ///
+  /// An attempt to `generate<Fib, int -> int>` fails: the only rule, namely
+  /// `fib`, that could generate `int -> int`, requires a `int -> int`, which
+  /// leads Infers to look for a `Rec<int -> int>` rule, which fails.
+  ///
+  /// We can make `Fib` depend on `Rec` to add a rule for making recursive
+  /// functions:
+  ///
+  ///> type [<Rec>] Fib () =
+  ///>   inherit Rules ()
+  ///>   static member fib (fib: int -> int) : int -> int =
+  ///>     fun n -> if n < 2 then n else fib (n-1) + fib (n-2)
+  ///
+  /// Now `generate<Fib, int -> int>` returns the desired function.
+  ///
+  /// Of course, the above is very much a toy example.  One usually uses `Rec`
+  /// to allow Infers to generate functions to manipulate recursive types.
 #endif
   type Rec =
     inherit Rules
