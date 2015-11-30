@@ -57,7 +57,7 @@ module Util =
     else
       [|typeof<Empty>|] // Special case
 
-  let inline ( ^ ) x = x
+  let inline (^) x = x
 
 type Builder =
   static member inline result x : Builder<_> = fun (_, vs) -> (vs, x)
