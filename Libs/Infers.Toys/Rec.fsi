@@ -25,7 +25,7 @@ module Rec =
   type Rec =
     inherit Rules
     new: unit -> Rec
-    static member Func: unit -> Rec<'x -> 'y>
+    static member Fun: unit -> Rec<'x -> 'y>
     static member Func0: unit -> Rec<Func<'x>>
     static member Func1: unit -> Rec<Func<'x, 'y>>
     static member Func2: unit -> Rec<Func<'x, 'y, 'z>>

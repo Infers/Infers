@@ -25,7 +25,7 @@ module Rec =
   type [<Rep>] Rec () =
     inherit Rules ()
 
-    static member Func () = recVal ^ fun r -> fun x -> r.Rec x
+    static member Fun () = recVal ^ fun r -> fun x -> r.Rec x
     static member Func0 () =
       recVal ^ fun r -> Func<'x>(fun () -> r.Rec.Invoke ())
     static member Func1 () =
