@@ -92,7 +92,7 @@ module PU =
 
     static member Tuple (_: Tuple<'t>,
                          asP: AsPairs<'p, 'o, 't>,
-                         P pPU: PUP<'p, 'p, 'o, 't>) = O <| asPairs asP pPU
+                         P pPU: PUP<'p, 'p, 'o, 't>) = O ^ asPairs asP pPU
 
     static member Record (tR: Record<'t>,
                           asP: AsPairs<'p, 'o, 't>,

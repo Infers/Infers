@@ -208,7 +208,7 @@ module Products =
               >> let r = getField products.[i] "Rest" in
                  if i+1 < props.Length
                  then fun (ilg: ILGenerator) ->
-                        let v = ilg.DeclareLocal (r.FieldType.MakeByRefType ())
+                        let v = ilg.DeclareLocal ^ r.FieldType.MakeByRefType ()
                         ilg
                         |> Builder.emit (OpCodes.Ldflda, r)
                         |> Builder.emit (OpCodes.Stloc, v)
@@ -239,7 +239,7 @@ module Products =
     Builder.metaField
      (typedefof<AsPairs<_, _, _>>.MakeGenericType [|products.[0]; t; t|])
      [|("Arity", box props.Length)
-       ("IsMutable", box (props |> Array.exists (fun p -> p.CanWrite)))|]
+       ("IsMutable", box (props |> Array.exists ^ fun p -> p.CanWrite))|]
      (defineExtractAndCreate t emitCtor props products >>= fun () ->
       defineRest)
 
@@ -278,7 +278,9 @@ type Rep () =
     if FSharpType.IsRecord (t, B.Public) then
       let fields = FSharpType.GetRecordFields (t, B.Public)
       let products =
-        fields |> Array.map (fun p -> p.PropertyType) |> Products.products
+        fields
+        |> Array.map ^ fun p -> p.PropertyType
+        |> Products.products
 
       Builder.metaType typeof<Record<'t>> [||] ^
         Products.asPairsField t
@@ -327,9 +329,9 @@ type Rep () =
               Builder.forTo 0 (caseFields.[i].Length-1) ^ fun j ->
                 Builder.metaField
                   (typedefof<Label<_,_,_,_>>.MakeGenericType
-                    [|caseFields.[i].[j].PropertyType;
-                      caseProducts.[i].[j];
-                      choices.[i];
+                    [|caseFields.[i].[j].PropertyType
+                      caseProducts.[i].[j]
+                      choices.[i]
                       t|])
                   [|("Index", box j)
                     ("Name", box caseFields.[i].[j].Name)|] ^
@@ -341,8 +343,8 @@ type Rep () =
                   supported.  Pull requests are welcome!"
 
       let props =
-        Array.init elems.Length <| fun i ->
-        t.GetProperty (sprintf "Item%d" (i + 1))
+        Array.init elems.Length ^ fun i ->
+        t.GetProperty ^ sprintf "Item%d" ^ i + 1
       let products = Products.products elems
 
       Builder.metaType typeof<Rep.Tuple<'t>> [||] ^

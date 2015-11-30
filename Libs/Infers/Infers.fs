@@ -42,13 +42,13 @@ type Rule =
 [<CompilationRepresentation (CompilationRepresentationFlags.ModuleSuffix)>]
 module Rule =
   let mapVars v2w (rule: Rule) =
-    {ReturnType = Ty.mapVars v2w rule.ReturnType
-     ParTypes = Array.map (Ty.mapVars v2w) rule.ParTypes
-     GenericArgTypes = Array.map (Ty.mapVars v2w) rule.GenericArgTypes
+    {ReturnType = rule.ReturnType |> Ty.mapVars v2w
+     ParTypes = rule.ParTypes |> Array.map ^ Ty.mapVars v2w
+     GenericArgTypes = rule.GenericArgTypes |> Array.map ^ Ty.mapVars v2w
      Invoke = rule.Invoke}
 
   let freshVars (rule: Rule) : Rule =
-    mapVars (Fresh.newMapper ()) rule
+    rule |> mapVars ^ Fresh.newMapper ()
 
 module RuleSet =
   type Cache =
@@ -74,31 +74,33 @@ module RuleSet =
   type B = BindingFlags
 
   let fieldsOf (t: Type) =
-    t.GetFields (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
+    B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic
+    |> t.GetFields
     |> Array.map ^ fun f ->
-       {ReturnType = Ty.Mono f.FieldType
-        ParTypes = [||]
-        GenericArgTypes = [||]
-        Invoke = fun _ _ _ -> f.GetValue null}
+         {ReturnType = Ty.Mono f.FieldType
+          ParTypes = [||]
+          GenericArgTypes = [||]
+          Invoke = fun _ _ _ -> f.GetValue null}
 
   let methodsOf (t: Type) =
-    t.GetMethods (B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic)
+    B.DeclaredOnly ||| B.Static ||| B.Public ||| B.NonPublic
+    |> t.GetMethods
     |> Array.map ^ fun m ->
-       let env = Fresh.newMapper ()
-       {ReturnType = Ty.ofTypeIn env m.ReturnType
-        ParTypes =
-          m.GetParameters ()
-          |> Array.map ^ fun p -> Ty.ofTypeIn env p.ParameterType
-        GenericArgTypes =
-          if m.ContainsGenericParameters
-          then m.GetGenericArguments ()
-               |> Array.map ^ Ty.ofTypeIn env
-          else [||]
-        Invoke = fun genArgTys _ argObjs ->
-          let m = if m.ContainsGenericParameters
-                  then m.MakeGenericMethod genArgTys
-                  else m
-          m.Invoke (null, argObjs)}
+         let env = Fresh.newMapper ()
+         {ReturnType = Ty.ofTypeIn env m.ReturnType
+          ParTypes =
+            m.GetParameters ()
+            |> Array.map ^ fun p -> Ty.ofTypeIn env p.ParameterType
+          GenericArgTypes =
+            if m.ContainsGenericParameters
+            then m.GetGenericArguments ()
+                 |> Array.map ^ Ty.ofTypeIn env
+            else [||]
+          Invoke = fun genArgTys _ argObjs ->
+            let m = if m.ContainsGenericParameters
+                    then m.MakeGenericMethod genArgTys
+                    else m
+            m.Invoke (null, argObjs)}
 
   let rulesOf (t: Type) =
     Array.append (fieldsOf t) (methodsOf t)
@@ -124,10 +126,8 @@ module RuleSet =
     then ruleSet
     else ruleSet.cache.rules.GetOrAdd (t, rulesOf) |> ignore
          requiresRules t
-         |> Seq.fold
-             (fun ruleSet o ->
-                maybeAddRulesObj o ruleSet)
-             (addRules t ruleSet)
+         |> Seq.foldFrom (addRules t ruleSet) ^ fun ruleSet o ->
+              maybeAddRulesObj o ruleSet
 
   and maybeAddRulesObj (o: obj) ruleSet =
     match o with
@@ -148,18 +148,18 @@ module Infers =
              * genArgTys: array<Ty>
              * invoke: (array<Type> -> array<Type> -> array<obj> -> obj)
 
-  let addObj monoTy o objEnv =
+  let addObj monoTy o =
     match o with
-     | null -> HashEqMap.add monoTy o objEnv
+     | null -> HashEqMap.add monoTy o
      | o ->
        let rec lp t objEnv =
          if t = typeof<Object>
             || t = typeof<ValueType>
-            || HashEqMap.tryFind t objEnv |> Option.isSome then
+            || Option.isSome ^ HashEqMap.tryFind t objEnv then
            objEnv
          else
            lp t.BaseType ^ HashEqMap.add t o objEnv
-       lp (o.GetType ()) objEnv
+       lp ^ o.GetType ()
 
   let rec resolveResult key objEnv tyEnv result =
     match result with
@@ -226,7 +226,7 @@ module Infers =
                  let stack = stack |> List.map ^ Ty.resolve tyEnv
 
                  if rule.ParTypes.Length <> 0
-                    && stack |> List.exists ((=) ty) then
+                    && stack |> List.exists ^ (=) ty then
                   if isRec ty then
                     Seq.empty
                   else
@@ -309,7 +309,7 @@ module Infers =
                            result::args |> List.rev |> inner [] rules objEnv
                rule.ParTypes |> Array.toList |> outer [] rules objEnv tyEnv ty
       match Ty.toMonoType ty with
-       | None -> search (limit - 1)
+       | None -> search ^ limit - 1
        | Some monoTy ->
          match HashEqMap.tryFind monoTy objEnv with
           | Some o -> Seq.singleton (Value (monoTy, o), objEnv, tyEnv)
@@ -331,7 +331,7 @@ module Infers =
        with
         | None ->
           if rules.cache.limitReached && limit < maxDepth
-          then gen (limit + 1)
+          then gen ^ limit + 1
           else match rules.cache.lastFailures.ToArray () with
                 | [||] ->
                   failwithf "%A cannot derive %A."
@@ -343,10 +343,10 @@ module Infers =
                    <| typeof<'t>
                    <| (paths
                        |> Array.map ^ fun (msg, path) ->
-                            sprintf "%s:\n%s" msg
-                             (path
-                              |> List.map ^ sprintf "  %A"
-                              |> String.concat "\n")
+                            path
+                            |> List.map ^ sprintf "  %A"
+                            |> String.concat "\n"
+                            |> sprintf "%s:\n%s" msg
                        |> String.concat "\n\n")
         | Some t -> t
     gen minDepth

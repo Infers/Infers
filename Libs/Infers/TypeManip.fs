@@ -17,7 +17,7 @@ module Fresh =
   let newMapper () =
     let v2w = Dictionary<_, _> ()
     fun v ->
-      Dictionary.getOr v2w v <| fun () ->
+      Dictionary.getOr v2w v ^ fun () ->
         Interlocked.Increment &counter
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,10 +55,10 @@ let (|App'|Var'|) ty =
    | App (tc, tys) -> App' (tc, tys)
    | Mono t ->
      if t.IsArray then
-       App' (Arr (t.GetArrayRank ()), [|t.GetElementType () |> Mono|])
+       App' (Arr ^ t.GetArrayRank (), [|Mono ^ t.GetElementType ()|])
      elif t.IsGenericType then
-       App' (Def (t.GetGenericTypeDefinition ()),
-             t.GetGenericArguments () |> Array.map Mono)
+       App' (Def ^ t.GetGenericTypeDefinition (),
+             Array.map Mono ^ t.GetGenericArguments ())
      else
        App' (Def t, [||])
 
@@ -67,12 +67,9 @@ let (|TyCon'|_|) ty =
    | Var _ -> None
    | App (tc, _) -> Some tc
    | Mono t ->
-     if t.IsArray then
-       Arr (t.GetArrayRank ()) |> Some
-     elif t.IsGenericType then
-       Def (t.GetGenericTypeDefinition ()) |> Some
-     else
-       Def t |> Some
+     Some ^ if   t.IsArray       then Arr ^ t.GetArrayRank ()
+            elif t.IsGenericType then Def ^ t.GetGenericTypeDefinition ()
+            else                      Def t
 
 let (|TyArgs'|) ty =
   match ty with
@@ -80,9 +77,9 @@ let (|TyArgs'|) ty =
    | App (_, tys) -> tys
    | Mono t ->
      if t.IsArray then
-       [|t.GetElementType () |> Mono|]
+       [|Mono ^ t.GetElementType ()|]
      elif t.IsGenericType then
-       t.GetGenericArguments () |> Array.map Mono
+       Array.map Mono ^ t.GetGenericArguments ()
      else
        [||]
 
@@ -109,17 +106,17 @@ module Ty =
   let ofTypeIn env (t: Type) =
     let rec ofType (t: Type) =
       if t.IsArray then
-        match t.GetElementType () |> ofType with
+        match ofType ^ t.GetElementType () with
          | Mono _ ->
            Mono t
          | ty ->
            App (Arr (t.GetArrayRank ()), [|ty|])
       elif t.IsGenericParameter then
-        Var (env t)
+        Var ^ env t
       elif t.IsGenericType then
-        let tys = t.GetGenericArguments () |> Array.map ofType
+        let tys = Array.map ofType ^ t.GetGenericArguments ()
         if Array.exists containsVars tys
-        then App (Def (t.GetGenericTypeDefinition ()), tys)
+        then App (Def ^ t.GetGenericTypeDefinition (), tys)
         else Mono t
       else
         Mono t
@@ -165,8 +162,7 @@ module Ty =
   let rec mapVars v2w ty =
     match ty with
      | Mono t -> Mono t
-     | Var v ->
-       Var (v2w v)
+     | Var v -> Var ^ v2w v
      | App (tc, tys) ->
        App (tc, tys |> Array.map ^ mapVars v2w)
 
@@ -201,7 +197,7 @@ module Ty =
           | Some b' ->
             if b' = b then Some v2ty else None
           | None ->
-            Some (Map.add a b v2ty)
+            Some ^ Map.add a b v2ty
        | (App' (aTc, aArgs), App' (bTc, bArgs)) when aTc = bTc ->
          assert (aArgs.Length = bArgs.Length)
          let rec args i v2ty =
@@ -210,12 +206,11 @@ module Ty =
            else
              match types aArgs.[i] bArgs.[i] v2ty with
               | None -> None
-              | Some v2ty ->
-                args (i+1) v2ty
+              | Some v2ty -> args (i+1) v2ty
          args 0 v2ty
        | _ ->
          None
-    types aTy bTy Map.empty |> Option.isSome
+    Option.isSome ^ types aTy bTy Map.empty
 
   type MoreSpecific =
    | Lhs
@@ -228,9 +223,9 @@ module Ty =
     match tryMatch lhs rhs with
      | None -> Unmatchable
      | Some v2ty ->
-       assert (areEqual (resolve v2ty lhs) (resolve v2ty rhs))
-       match (areEqual (resolve v2ty lhs) lhs,
-              areEqual (resolve v2ty rhs) rhs) with
+       assert (areEqual <| resolve v2ty lhs <| resolve v2ty rhs)
+       match (areEqual <| resolve v2ty lhs <| lhs,
+              areEqual <| resolve v2ty rhs <| rhs) with
         | ( true,  true) -> Equal
         | ( true, false) -> Lhs
         | (false,  true) -> Rhs
@@ -277,8 +272,7 @@ module TyTree =
         | _ ->
           None
 
-  let rec private build' (ats: list<TyCursor>)
-                         (tyrs: list<Ty * 'r>) : TyTree<'r> =
+  let rec private build' (ats: list<TyCursor>) (tyrs: list<Ty * 'r>) =
     lazy match tyrs with
           | [] -> Empty
           | [(_, r)] -> One r
@@ -292,34 +286,32 @@ module TyTree =
                |> Many
              | at::ats ->
                tyrs
-               |> List.fold
-                   (fun (apps, vars) (ty, r) ->
-                     match getAt at ty with
-                      | None ->
-                        failwith "Bug: Only existing positions are produced?"
-                      | Some (Var' _) ->
-                        (apps, (ty, r)::vars)
-                      | Some (App' (tc, args)) ->
-                        (HashEqMap.addOrUpdate tc
-                          (fun _ -> (args.Length, [(ty, r)]))
-                          (fun _ (n, tyrs) -> (n, (ty, r)::tyrs))
-                          apps,
-                         vars))
-                   (HashEqMap.empty, [])
+               |> List.foldFrom (HashEqMap.empty, []) ^
+                    fun (apps, vars) (ty, r) ->
+                      match getAt at ty with
+                       | None ->
+                         failwith "Bug: Only existing positions are produced?"
+                       | Some (Var' _) ->
+                         (apps, (ty, r)::vars)
+                       | Some (App' (tc, args)) ->
+                         (HashEqMap.addOrUpdate tc
+                           <| fun _ -> (args.Length, [(ty, r)])
+                           <| fun _ (n, tyrs) -> (n, (ty, r)::tyrs)
+                           <| apps,
+                          vars)
                |> fun (apps, vars) ->
                   let vars = build' ats vars
                   if HashEqMap.isEmpty apps then
                     force vars
                   else
-                    (at,
-                     apps
-                     |> HashEqMap.map
-                         (fun (n, tyds) ->
-                            let ats = List.init n (fun i -> i::at) @ ats
-                            build' ats tyds),
-                     vars) |> Branch
+                    Branch (at
+                          , apps
+                            |> HashEqMap.map ^ fun (n, tyds) ->
+                                 let ats = List.init n (fun i -> i::at) @ ats
+                                 build' ats tyds
+                          , vars)
 
-  let build tyrs = build' [[]] (List.ofSeq tyrs)
+  let build tyrs = build' [[]] ^ List.ofSeq tyrs
 
   let rec filter (formal: TyTree<'r>) (actual: Ty) : seq<'r> = seq {
     match force formal with
