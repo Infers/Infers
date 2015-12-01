@@ -13,7 +13,8 @@ module Basic =
   /// 'z>>`.
   type Eq<'x, 'y, 'z>
 
-  /// Some basic rules for logic programming.
+  /// Basic rules for logic programming: equality (`Eq<...>`) and disjunction
+  /// (`Choice<...>`).
   type Basic =
     inherit Rules
     new: unit -> Basic
