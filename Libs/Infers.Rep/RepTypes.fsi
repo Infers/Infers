@@ -107,11 +107,32 @@ type [<AbstractClass>] Prim<'t> =
 
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Representation for types that are not yet supported.  Pull requests are
-/// welcome!
-type [<AbstractClass>] Unsupported<'t> =
+/// Representation for enumerated types.
+type [<AbstractClass>] Enum<'t> =
   inherit Rep<'t>
-  new: unit -> Unsupported<'t>
+  new: unit -> Enum<'t>
+
+////////////////////////////////////////////////////////////////////////////////
+
+/// Representation for "subtyped" .Net types.
+type [<AbstractClass>] Subtyped<'t> =
+  inherit Rep<'t>
+  new: unit -> Subtyped<'t>
+
+/// Representation for struct or value types.
+type [<AbstractClass>] Struct<'t> =
+  inherit Subtyped<'t>
+  new: unit -> Struct<'t>
+
+/// Representation for class types.
+type [<AbstractClass>] Class<'t> =
+  inherit Subtyped<'t>
+  new: unit -> Class<'t>
+
+/// Representation for interface types.
+type [<AbstractClass>] Interface<'t> =
+  inherit Subtyped<'t>
+  new: unit -> Interface<'t>
 
 ////////////////////////////////////////////////////////////////////////////////
 

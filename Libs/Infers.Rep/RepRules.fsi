@@ -12,11 +12,19 @@ type Rep =
   static member Rep: unit -> Rep<'t>
 
   static member Union: Rep<'t> * Union<'t> -> Union<'t>
+
   static member Product: Rep<'t> * Product<'t> -> Product<'t>
   static member Record: Rep<'t> * Record<'t> -> Record<'t>
   static member Tuple: Rep<'t> * Tuple<'t> -> Tuple<'t>
+
   static member Prim: Rep<'t> * Prim<'t> -> Prim<'t>
-  static member Unsupported: Rep<'t> * Unsupported<'t> -> Unsupported<'t>
+
+  static member Enum: Rep<'t> * Enum<'t> -> Enum<'t>
+
+  static member Subtyped: Rep<'t> * Subtyped<'t> -> Subtyped<'t>
+  static member Struct: Rep<'t> * Struct<'t> -> Struct<'t>
+  static member Class: Rep<'t> * Class<'t> -> Class<'t>
+  static member Interface: Rep<'t> * Interface<'t> -> Interface<'t>
 
   static member AnyCase: AsChoices<'s,'t> * Case<'p,'o,'t> -> Case<'p,'o,'t>
 

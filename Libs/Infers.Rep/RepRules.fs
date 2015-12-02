@@ -266,8 +266,11 @@ module Unions =
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type Class'<'t> () = inherit Class<'t> ()
+type Enum'<'t> () = inherit Enum<'t> ()
+type Interface'<'t> () = inherit Interface<'t> ()
 type Prim'<'t> () = inherit Prim<'t> ()
-type Unsupported'<'t> () = inherit Unsupported<'t> ()
+type Struct'<'t> () = inherit Struct<'t> ()
 
 type Rep () =
   inherit Rules ()
@@ -364,15 +367,25 @@ type Rep () =
               Builder.overrideGetMethod "Get" t props.[i]
     elif t.IsPrimitive then
       upcast Prim'<'t> ()
+    elif t.IsEnum then
+      upcast Enum'<'t> ()
+    elif t.IsValueType then
+      upcast Struct'<'t> ()
+    elif t.IsInterface then
+      upcast Interface'<'t> ()
     else
-      upcast Unsupported'<'t> ()
+      upcast Class'<'t> ()
 
   static member Union (_: Rep<'t>, r: Union<'t>) = r
   static member Product (_: Rep<'t>, r: Product<'t>) = r
   static member Record (_: Rep<'t>, r: Record<'t>) = r
   static member Tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
   static member Prim (_: Rep<'t>, r: Prim<'t>) = r
-  static member Unsupported (_: Rep<'t>, r: Unsupported<'t>) = r
+  static member Enum (_: Rep<'t>, r: Enum<'t>) = r
+  static member Subtyped (_: Rep<'t>, r: Subtyped<'t>) = r
+  static member Struct (_: Rep<'t>, r: Struct<'t>) = r
+  static member Class (_: Rep<'t>, r: Class<'t>) = r
+  static member Interface (_: Rep<'t>, r: Interface<'t>) = r
 
   static member AnyCase (_: AsChoices<'s,'t>, c: Case<'p,'o,'t>) = c
 

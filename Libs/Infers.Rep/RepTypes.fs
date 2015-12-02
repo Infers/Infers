@@ -5,6 +5,55 @@ namespace Infers.Rep
 open System
 open Infers
 
+type B = Reflection.BindingFlags
+
+////////////////////////////////////////////////////////////////////////////////
+
+type [<AbstractClass>] Rep<'t> () =
+  inherit Rules ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Prim<'t> () =
+  inherit Rep<'t> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Union<'t> () =
+  inherit Rep<'t> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Product<'t> () =
+  inherit Rep<'t> ()
+
+type [<AbstractClass>] Record<'t> () =
+  inherit Product<'t> ()
+
+type [<AbstractClass>] Tuple<'t> () =
+  inherit Product<'t> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Enum<'t> () =
+  inherit Rep<'t> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Subtyped<'t> () =
+  inherit Rep<'t> ()
+
+type [<AbstractClass>] Class<'t> () =
+  inherit Subtyped<'t> ()
+
+type [<AbstractClass>] Struct<'t> () =
+  inherit Subtyped<'t> ()
+
+type [<AbstractClass>] Interface<'t> () =
+  inherit Subtyped<'t> ()
+
+////////////////////////////////////////////////////////////////////////////////
+
 type Empty = struct end
 
 type [<Struct>] Pair<'x, 'xs> =
@@ -17,22 +66,7 @@ type [<Struct>] Pair<'x, 'xs> =
 module Pair =
   let inline (|Pair|) (xxs: Pair<_, _>) = (xxs.Elem, xxs.Rest)
 
-type [<AbstractClass>] Rep<'t> () =
-  inherit Rules ()
-
-type [<AbstractClass>] Prim<'t> () =
-  inherit Rep<'t> ()
-
-type [<AbstractClass>] Unsupported<'t> () =
-  inherit Rep<'t> ()
-
-type [<AbstractClass>] Product<'r> () =
-  inherit Rep<'r> ()
-
-type [<AbstractClass>] Record<'t> () =
-  inherit Product<'t> ()
-
-type B = Reflection.BindingFlags
+////////////////////////////////////////////////////////////////////////////////
 
 type [<AbstractClass>] AsPairs<'p, 't> =
   inherit Rules
@@ -60,8 +94,20 @@ type [<AbstractClass>] AsPairs<'p, 't> =
     let mutable p = Unchecked.defaultof<_>
     this.Create (&p)
 
+//------------------------------------------------------------------------------
+
 type [<AbstractClass>] AsPairs<'p, 'o, 't> () =
   inherit AsPairs<'p, 't> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Case<'p, 'o, 't> =
+  inherit AsPairs<'p, 'o, 't>
+  new () = {inherit AsPairs<'p, 'o, 't>(); Name = null; Tag = 0}
+  val Name: string
+  val Tag: int
+
+////////////////////////////////////////////////////////////////////////////////
 
 type [<AbstractClass>] AsChoices<'t> =
   inherit Rules
@@ -69,36 +115,34 @@ type [<AbstractClass>] AsChoices<'t> =
   val Arity: int
   abstract Tag: 't -> int
 
+//------------------------------------------------------------------------------
+
 type [<AbstractClass>] AsChoices<'s, 't> () =
   inherit AsChoices<'t> ()
+
+////////////////////////////////////////////////////////////////////////////////
 
 type [<AbstractClass>] Elem<'e, 't> =
   new () = {Index = 0}
   val Index: int
   abstract Get: 't -> 'e
 
+//------------------------------------------------------------------------------
+
 type [<AbstractClass>] Elem<'e, 'r, 'o, 't> () =
   inherit Elem<'e, 't> ()
+
+//------------------------------------------------------------------------------
+
+type [<AbstractClass>] Item<'e, 'r, 't> () =
+  inherit Elem<'e, 'r, 't, 't> ()
+
+//------------------------------------------------------------------------------
 
 type [<AbstractClass>] Labelled<'e, 'r, 'o, 't> =
   inherit Elem<'e, 'r, 'o, 't>
   new () = {inherit Elem<'e, 'r, 'o, 't>(); Name = null}
   val Name: string
-
-type [<AbstractClass>] Tuple<'t> () =
-  inherit Product<'t> ()
-
-type [<AbstractClass>] Item<'e, 'r, 't> () =
-  inherit Elem<'e, 'r, 't, 't> ()
-
-type [<AbstractClass>] Union<'t> () =
-  inherit Rep<'t> ()
-
-type [<AbstractClass>] Case<'p, 'o, 't> =
-  inherit AsPairs<'p, 'o, 't>
-  new () = {inherit AsPairs<'p, 'o, 't>(); Name = null; Tag = 0}
-  val Name: string
-  val Tag: int
 
 type [<AbstractClass>] Label<'e, 'r, 'o, 't> =
   inherit Labelled<'e, 'r, 'o, 't>
