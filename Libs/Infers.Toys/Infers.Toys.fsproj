@@ -64,6 +64,8 @@
     <Compile Include="Basic.fs" />
     <Compile Include="Rec.fsi" />
     <Compile Include="Rec.fs" />
+    <Compile Include="Flatten.fsi" />
+    <Compile Include="Flatten.fs" />
     <Compile Include="GFlip.fsi" />
     <Compile Include="GFlip.fs" />
     <Compile Include="GUncurry.fsi" />
