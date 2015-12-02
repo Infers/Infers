@@ -27,7 +27,7 @@ module SomeOf =
     static member Product (asP: AsPairs<'p,'t>, pS: SomeOf<'p>) =
       let mutable p = pS.Value in SomeOf<'t> (asP.Create (&p))
 
-    static member Rec (tR: Record<'t>, asP: AsPairs<'p, 't, 't>) =
+    static member Record (tR: Record<'t>, asP: AsPairs<'p, 't, 't>) =
       let t = asP.Default tR
       {new Rec<SomeOf<'t>> () with
         member r.Get () = SomeOf<_> (t)
