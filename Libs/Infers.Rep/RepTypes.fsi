@@ -25,10 +25,10 @@ type Empty = struct end
 /// Note that the idea behind using a struct type is to make it possible to
 /// construct and deconstruct products without performing any heap allocations.
 /// When used carefully, avoiding copying and making sure structs are stack
-/// allocated, this can lead to significantly better performance than with heap
-/// allocated products.  However, naive use results in both heap allocations and
-/// copying, which can lead to worse performance than with heap allocated
-/// products.
+/// allocated or directly embedded within objects, this can lead to
+/// significantly better performance than with heap allocated products.
+/// However, naive use results in both heap allocations and copying, which can
+/// lead to worse performance than with heap allocated products.
 ///
 /// Note that while it is in no way enforced, the idea is that in a nested
 /// product the `Elem` field is the current singleton element and `Rest` is
