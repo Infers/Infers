@@ -112,6 +112,11 @@ type [<AbstractClass>] Enum<'t> =
   inherit Rep<'t>
   new: unit -> Enum<'t>
 
+/// Representation for enumerated type `'t` whose underlying type is `'u`.
+type [<AbstractClass>] Enum<'u,'t> =
+  inherit Enum<'t>
+  new: unit -> Enum<'u,'t>
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Representation for "subtyped" .Net types.

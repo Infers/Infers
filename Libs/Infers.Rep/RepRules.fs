@@ -267,7 +267,6 @@ module Unions =
 ////////////////////////////////////////////////////////////////////////////////
 
 type Class'<'t> () = inherit Class<'t> ()
-type Enum'<'t> () = inherit Enum<'t> ()
 type Interface'<'t> () = inherit Interface<'t> ()
 type Prim'<'t> () = inherit Prim<'t> ()
 type Struct'<'t> () = inherit Struct<'t> ()
@@ -368,7 +367,9 @@ type Rep () =
     elif t.IsPrimitive then
       upcast Prim'<'t> ()
     elif t.IsEnum then
-      upcast Enum'<'t> ()
+      let u = t.GetEnumUnderlyingType ()
+      Builder.metaType (typedefof<Enum<_,_>>.MakeGenericType [|u; t|]) [||] ^
+        Builder.result ()
     elif t.IsValueType then
       upcast Struct'<'t> ()
     elif t.IsInterface then
@@ -382,6 +383,7 @@ type Rep () =
   static member Tuple (_: Rep<'t>, r: Rep.Tuple<'t>) = r
   static member Prim (_: Rep<'t>, r: Prim<'t>) = r
   static member Enum (_: Rep<'t>, r: Enum<'t>) = r
+  static member Enum (_: Rep<'t>, r: Enum<'u,'t>) = r
   static member Subtyped (_: Rep<'t>, r: Subtyped<'t>) = r
   static member Struct (_: Rep<'t>, r: Struct<'t>) = r
   static member Class (_: Rep<'t>, r: Class<'t>) = r

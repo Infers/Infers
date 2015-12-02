@@ -20,6 +20,7 @@ type Rep =
   static member Prim: Rep<'t> * Prim<'t> -> Prim<'t>
 
   static member Enum: Rep<'t> * Enum<'t> -> Enum<'t>
+  static member Enum: Rep<'t> * Enum<'u,'t> -> Enum<'u,'t>
 
   static member Subtyped: Rep<'t> * Subtyped<'t> -> Subtyped<'t>
   static member Struct: Rep<'t> * Struct<'t> -> Struct<'t>

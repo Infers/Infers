@@ -38,6 +38,9 @@ type [<AbstractClass>] Tuple<'t> () =
 type [<AbstractClass>] Enum<'t> () =
   inherit Rep<'t> ()
 
+type [<AbstractClass>] Enum<'u,'t> () =
+  inherit Enum<'t> ()
+
 //------------------------------------------------------------------------------
 
 type [<AbstractClass>] Subtyped<'t> () =
