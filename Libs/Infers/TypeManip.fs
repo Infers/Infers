@@ -175,16 +175,16 @@ module Ty =
      | (Mono f, Mono a) ->
        if f = a then Some v2ty else None
      | (App' (formal, pars), App' (actual, args)) when formal = actual ->
-       assert (pars.Length = args.Length)
-       let rec loop i v2ty =
-         if i < pars.Length then
-           tryMatchIn pars.[i] args.[i] v2ty
-           |> Option.bind ^ loop ^ i+1
-         else
-           Some v2ty
-       loop 0 v2ty
+       tryMatchArrayIn pars args v2ty
      | _ ->
        None
+
+  and tryMatchArrayIn formals actuals v2ty =
+    if Array.length formals <> Array.length actuals
+    then None
+    else Seq.zip formals actuals
+         |> Seq.foldSomeFrom v2ty ^ fun v2ty (formal, actual) ->
+            tryMatchIn formal actual v2ty
 
   let tryMatch formal actual =
     tryMatchIn formal actual Map.empty

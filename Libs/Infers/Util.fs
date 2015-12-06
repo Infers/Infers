@@ -35,6 +35,14 @@ module List =
 module Seq =
   let inline foldFrom s f xs = Seq.fold f s xs
 
+  let foldSomeFrom s f (xs: seq<_>) =
+    use xs = xs.GetEnumerator ()
+    let rec loop s =
+      if xs.MoveNext ()
+      then f s xs.Current |> Option.bind loop
+      else Some s
+    loop s
+
 ////////////////////////////////////////////////////////////////////////////////
 
 module Option =
