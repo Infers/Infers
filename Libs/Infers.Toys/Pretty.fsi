@@ -20,8 +20,8 @@ module Pretty =
 
   type Pretty<'t> = 't -> Doc
   type PrettyO<'t>
-  type PrettyP<'e, 'r, 'o, 't>
-  type PrettyS<'p, 'o, 't>
+  type PrettyP<'e,'r,'o,'t>
+  type PrettyS<'p,'o,'t>
 
   type Pretty =
     inherit Rules
@@ -63,26 +63,25 @@ module Pretty =
 
     static member Item: Item<'e,'r,'t> * PrettyO<'e> -> PrettyP<'e,'r,'t,'t>
 
-    static member Labelled: Labelled<'e, 'r, 'o, 't>
-                          * PrettyO<'e>
-                         -> PrettyP<'e, 'r, 'o, 't>
+    static member Labelled: Labelled<'e,'r,'o,'t> * PrettyO<'e>
+                         -> PrettyP<'e,'r,'o,'t>
 
-    static member Pair: PrettyP<     'e      , Pair<'e, 'es>, 'o, 't>
-                      * PrettyP<         'es ,          'es , 'o, 't>
-                     -> PrettyP<Pair<'e, 'es>, Pair<'e, 'es>, 'o, 't>
+    static member Pair: PrettyP<     'e    , Pair<'e,'r>,'o,'t>
+                      * PrettyP<        'r ,         'r ,'o,'t>
+                     -> PrettyP<Pair<'e,'r>, Pair<'e,'r>,'o,'t>
 
-    static member Product: AsPairs<'p, 't, 't> * PrettyP<'p, 'p, 't, 't>
+    static member Product: AsPairs<'p,'t,'t> * PrettyP<'p,'p,'t,'t>
                         -> PrettyO<'t>
 
     // Discriminated Unions ----------------------------------------------------
 
-    static member Case: Case<Empty, 'cs, 't> -> PrettyS<Empty, 'cs, 't>
+    static member Case: Case<Empty,'o,'t> -> PrettyS<Empty,'o,'t>
 
-    static member Case: Case<'p, 'o, 't> * PrettyP<'p, 'p, 'o, 't>
-                     -> PrettyS<'p, 'o, 't>
+    static member Case: Case<'p,'o,'t> * PrettyP<'p,'p,'o,'t>
+                     -> PrettyS<'p,'o,'t>
 
-    static member Choice: PrettyS<       'p     , Choice<'p, 'o>, 't>
-                        * PrettyS<           'o ,            'o , 't>
-                       -> PrettyS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
+    static member Choice: PrettyS<       'p    , Choice<'p,'o>,'t>
+                        * PrettyS<          'o ,           'o ,'t>
+                       -> PrettyS<Choice<'p,'o>, Choice<'p,'o>,'t>
 
-    static member Sum: AsChoices<'s, 't> * PrettyS<'s, 's, 't> -> PrettyO<'t>
+    static member Sum: AsChoices<'s,'t> * PrettyS<'s,'s,'t> -> PrettyO<'t>

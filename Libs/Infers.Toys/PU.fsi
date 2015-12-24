@@ -56,15 +56,15 @@ module PU =
     static member Int32: PU<int32>
     static member Int64: PU<int64>
 
-    static member Bitwise: Bitwise<'b, 't> * PU<'b> -> PU<'t>
+    static member Bitwise: Bitwise<'b,'t> * PU<'b> -> PU<'t>
 
     static member String: PU<string>
 
-    static member Elem: Elem<'e, 'r, 'o, 't> * PU<'e> -> PUP<'e, 'r, 'o, 't>
+    static member Elem: Elem<'e,'r,'o,'t> * PU<'e> -> PUP<'e,'r,'o,'t>
 
-    static member Pair: PUP<     'e     , Pair<'e, 'r>, 'o, 't>
-                      * PUP<         'r ,          'r , 'o, 't>
-                     -> PUP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
+    static member Pair: PUP<     'e    , Pair<'e,'r>,'o,'t>
+                      * PUP<        'r ,         'r ,'o,'t>
+                     -> PUP<Pair<'e,'r>, Pair<'e,'r>,'o,'t>
 
     static member Tuple: Tuple<'t> * AsPairs<'p,'o,'t> * PUP<'p,'p,'o,'t>
                       -> PU<'t>
@@ -72,11 +72,11 @@ module PU =
     static member Record: Record<'t> * AsPairs<'p,'o,'t> * PUP<'p,'p,'o,'t>
                        -> PU<'t>
 
-    static member Case: Case<Empty, 'o, 't> -> PUS<Empty, 'o, 't>
-    static member Case: Case<'p, 'o, 't> * PUP<'p, 'p, 'o, 't> -> PUS<'p,'o,'t>
+    static member Case: Case<Empty,'o,'t> -> PUS<Empty,'o,'t>
+    static member Case: Case<'p,'o,'t> * PUP<'p,'p,'o,'t> -> PUS<'p,'o,'t>
 
-    static member Choice: PUS<       'p     , Choice<'p, 'o>, 't>
-                        * PUS<           'o ,            'o , 't>
-                       -> PUS<Choice<'p, 'o>, Choice<'p, 'o>, 't>
+    static member Choice: PUS<       'p    , Choice<'p,'o>,'t>
+                        * PUS<          'o ,           'o ,'t>
+                       -> PUS<Choice<'p,'o>, Choice<'p,'o>,'t>
 
-    static member Sum: AsChoices<'s, 't> * PUS<'s, 's, 't> -> PU<'t>
+    static member Sum: AsChoices<'s,'t> * PUS<'s,'s,'t> -> PU<'t>
