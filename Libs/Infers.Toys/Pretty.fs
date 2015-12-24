@@ -122,7 +122,7 @@ module Pretty =
       O ^ doc ^ fun b -> if b then t else f
 
     static member Integral (i: Integral<'t>) : PrettyO<'t> =
-      O ^ str ^ fun x -> x.ToString () + i.Suffix
+      O ^ str ^ fun x -> x.ToString () + List.head i.Suffices
 
     static member Float32: PrettyO<float32> = fmt "%.9gf"
     static member Float64: PrettyO<float>   = fmt "%.17g"
