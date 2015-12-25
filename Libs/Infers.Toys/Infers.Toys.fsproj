@@ -62,6 +62,8 @@
     <Compile Include="Util.fs" />
     <Compile Include="Basic.fsi" />
     <Compile Include="Basic.fs" />
+    <Compile Include="AsPairs.fsi" />
+    <Compile Include="AsPairs.fs" />
     <Compile Include="Rec.fsi" />
     <Compile Include="Rec.fs" />
     <Compile Include="Flatten.fsi" />
