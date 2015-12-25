@@ -7,35 +7,45 @@ open Infers.Rep
 
 module AsPairs =
   type [<AbstractClass>] Extract<'e> () =
-    abstract Extract: byref<'e> * array<obj> * int -> unit
+    abstract IntoPairs: byref<'e> * array<obj> * int -> unit
+    abstract IntoArray: array<obj> * int * byref<'e> -> unit
   type [<AbstractClass>] Extract<'e, 'r> () =
-    abstract Extract: byref<Pair<'e,'r>> * array<obj> * int -> unit
+    abstract IntoPairs: byref<Pair<'e,'r>> * array<obj> * int -> unit
+    abstract IntoArray: array<obj> * int * byref<Pair<'e,'r>> -> unit
 
   type Extract () =
     inherit Rules ()
     static member Empty =
       {new Extract<Empty> () with
-        override t.Extract (_, _, _) = ()}
+        override t.IntoPairs (_, _, _) = ()
+        override t.IntoArray (_, _, _) = ()}
     static member Elem () =
       {new Extract<'e> () with
-        override t.Extract (e, os, i) =
-          e <- unbox<'e> os.[i]}
-    static member Pair (rW: Extract<'r>) =
+        override t.IntoPairs (e, os, i) =
+          e <- unbox<'e> os.[i]
+        override t.IntoArray (os, i, e) =
+          os.[i] <- box<'e> e}
+    static member Pair (rE: Extract<'r>) =
       {new Extract<Pair<'e,'r>> () with
-        override t.Extract (er, os, i) =
+        override t.IntoPairs (er, os, i) =
           er.Elem <- unbox<'e> os.[i]
-          rW.Extract (&er.Rest, os, i+1)}
+          rE.IntoPairs (&er.Rest, os, i+1)
+        override t.IntoArray (os, i, er) =
+          os.[i] <- box<'e> er.Elem
+          rE.IntoArray (os, i, &er.Rest)}
+
+  let extract<'p> = generateDFS<Extract, Extract<'p>>
 
   type AsPairs<'p,'t> with
-    member asP.Extract (from: array<obj>, into: byref<'p>) =
-      if asP.Arity <> from.Length then
-        failwithf "Expected %d elems, but given %d elems" asP.Arity from.Length
-      generateDFS<Extract, Extract<'p>>.Extract (&into, from, 0)
-    member asP.Create (from: array<obj>) =
+    member asP.Extract (from: 't, into: array<obj>) =
       let mutable p = Unchecked.defaultof<'p>
       asP.Extract (from, &p)
+      extract.IntoArray (into, 0, &p)
+    member asP.Create (from: array<obj>) =
+      let mutable p = Unchecked.defaultof<'p>
+      extract.IntoPairs (&p, from, 0)
       asP.Create (&p)
     member asP.Overwrite (record, into, from: array<obj>) =
       let mutable p = Unchecked.defaultof<'p>
-      asP.Extract (from, &p)
+      extract.IntoPairs (&p, from, 0)
       asP.Overwrite (record, into, &p)
