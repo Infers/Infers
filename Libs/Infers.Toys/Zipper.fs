@@ -84,7 +84,7 @@ module Zipper =
     abstract Do: byref<'p> * byref<'v> * byref<'h> * byref<'n> -> unit
     abstract Un: byref<'v> * byref<'h> * byref<'n> * byref<'p> -> unit
 
-  type [<Rep>] Zipper () =
+  type [<Rep>] ZipperI () =
     inherit Rules ()
 
     static member ToZipper (wD: Down<'w, 'w>) =
@@ -245,7 +245,7 @@ module Zipper =
       U [downNone<'w, 't>]
 
     static member Case (m: Case<'p, 'o, 't>, pD: DownP<'w,'p,'p,'o,'p,'t>) =
-      U [Zipper.Product (m, pD)] : DownS<'w, 'p, 'o, 't>
+      U [ZipperI.Product (m, pD)] : DownS<'w, 'p, 'o, 't>
 
     static member Choice (U pD: DownS<'w,        'p     , Choice<'p, 'o>, 't>,
                           U oD: DownS<'w,            'o ,            'o , 't>) =
@@ -275,6 +275,9 @@ module Zipper =
       {new Rotate<Empty, 'h, Empty, 'h, 'h> () with
         member r1.Do (p, _, h, _) = h <- p
         member r1.Un (_, h, _, p) = p <- h}
+
+  type [<ZipperI>] Zipper () =
+    inherit Rules ()
 
   //////////////////////////////////////////////////////////////////////////////
 

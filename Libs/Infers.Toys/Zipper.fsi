@@ -2,6 +2,8 @@
 
 namespace Infers.Toys
 
+open Infers
+
 module Zipper =
 
   //////////////////////////////////////////////////////////////////////////////
@@ -25,6 +27,10 @@ module Zipper =
     inherit Zipper<'w>
     abstract Get: unit -> 'h
     abstract Set: 'h -> Zipper<'w, 'h>
+
+  type Zipper =
+    inherit Rules
+    new: unit -> Zipper
 
   //////////////////////////////////////////////////////////////////////////////
   // Common interface
