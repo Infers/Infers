@@ -9,4 +9,4 @@ mono:
   - latest
 
 script:
-  - ./build.sh
+  - ./test.sh
