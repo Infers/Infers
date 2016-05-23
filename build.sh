@@ -3,32 +3,34 @@
 SOLUTION=Infers.sln
 
 if hash xbuild &> /dev/null ; then
-    BUILD=xbuild
+  BUILD=xbuild
+  RUN=mono
 elif hash msbuild.exe &> /dev/null ; then
-    BUILD=msbuild.exe
+  BUILD=msbuild.exe
+  RUN=
 else
-    echo "Couldn't find build command."
-    exit 1
+  echo "Couldn't find build command."
+  exit 1
 fi
 
-if hash paket &> /dev/null ; then
-    PAKET=paket
-else
-    PAKET=.paket/paket.exe
+PAKET=.paket/paket.exe
+
+if [ ! -f $PAKET ] ; then
+  $RUN .paket/paket.bootstrapper.exe
 fi
 
 function build () {
-    $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
+  $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
 }
 
 if [ "$1" != "" ] ; then
-    build $SOLUTION "$*"
+  build $SOLUTION "$*"
 else
-    build $SOLUTION Debug
-    build $SOLUTION Release
+  for config in Debug Release ; do
+    build $SOLUTION $config
+  done
 
-    $PAKET pack output . templatefile Infers.paket.template
-    $PAKET pack output . templatefile Infers.Rep.paket.template
-    $PAKET pack output . templatefile Infers.Toys.paket.template
+  for template in *.paket.template ; do
+    $RUN $PAKET pack output . templatefile $template
+  done
 fi
-
