@@ -2,19 +2,22 @@
 
 namespace Infers.Toys
 
-/// Provides generic functions very much like Neil Mitchell's Uniplate.
+/// Provides generic functions similar to, but not exactly like, Neil Mitchell's
+/// Uniplate.
 ///
-/// The operations in the `Elems` module work most conveniently on recursive sum
-/// of products types of the form
+/// The operations in the `Elems` module work most conveniently on recursive
+/// union (sum of products) types of the form
 ///
 ///> type SoP<...> =
-///>  | Case1 of Elem<I1,J1> * ... * Elem<I1,Jm1>
+///>  | Case1 of Elem<I1, J1> * ... * Elem<I1, Jm1>
 ///>  | ...
-///>  | CaseN of Elem<In,J1> * ... * Elem<Im,Jmn>
+///>  | CaseN of Elem<In, J1> * ... * Elem<Im, Jmn>
 ///
-/// where the `Elem<_,_>` types are not compound types such as `list<SoP<...>>`
+/// where the `Elem<_, _>` types are not compound types such as `list<SoP<...>>`
 /// or `SoP<...> * SoP<...>`.  This is because the primitive `elems` and `subst`
-/// operations do not look inside the `Elem<_,_>` types.
+/// operations do not look inside the `Elem<_,_>` types.  Aside from recursive
+/// union types, many `Elems` operations work on (non-recursive) unions,
+/// (recursive or non-recursive) records and (never recursive) tuples.
 ///
 /// In the documentation we will make use of the following type:
 ///
@@ -22,8 +25,7 @@ namespace Infers.Toys
 ///>   | Lf
 ///>   | Br of BinTr<'x> * 'x * BinTr<'x>
 ///
-/// Note that `Elems` is not limited to manipulating binary trees.  Elems will
-/// work with any recursive or non-recursive union or product type.  Binary tree
+/// Note that `Elems` is not limited to manipulating binary trees.  Binary tree
 /// is merely used as an example of a simple recursive datatype.
 [<AutoOpen>]
 module Elems =
@@ -92,8 +94,8 @@ module Elems =
   ///
   ///> let height t = para (fun _ hs -> Array.fold max 0 hs + 1) t
   ///
-  /// computes the "height" of any recursive sum of products type.  For
-  /// example, `height` gives
+  /// computes the "height" of any recursive union or record type.  For example,
+  /// `height` gives
   ///
   ///> height Lf = 1
   ///> height [] = 1
@@ -112,12 +114,13 @@ module Elems =
   val subst<'h, 'w> : ('h -> 'h) -> 'w -> 'w
 
   /// `descend` is equivalent to `subst<'w, 'w>`.  `descend` only makes sense
-  /// when applied to a recursive sum type.
+  /// when applied to a recursive union or record type.
   val inline descend: ('w -> 'w) -> 'w -> 'w
 
   /// `substUp<'h, 'w> h2h w` performs a bottom-up transformation of the given
   /// value `w`, recursively `descend`ing into `w` and then `subst`ituting with
   /// `h2h`.
+#if DOC
   ///
   /// For example,
   ///
@@ -126,9 +129,11 @@ module Elems =
   /// and
   ///
   ///> substUp (fun xs -> 0::xs) [1; 2; 3] = [1; 0; 2; 0; 3; 0]
+#endif
   val substUp<'h, 'w> : ('h -> 'h) -> 'w -> 'w
 
   /// `transform w2w w` is equivalent to `w |> substUp w2w |> w2w`.
+#if DOC
   ///
   /// For example, given type of a binary trees
   ///
@@ -150,6 +155,7 @@ module Elems =
   /// evaluates to
   ///
   ///> Br (Br (Lf, 4, Br (Lf, 3, Lf)), 2, Br (Lf, 1, Lf))
+#endif
   val inline transform: ('w -> 'w) -> 'w -> 'w
 
   /// Transforms with given partial function until a fixed point is reached.
