@@ -19,6 +19,8 @@ if [ ! -f $PAKET ] ; then
   $RUN .paket/paket.bootstrapper.exe
 fi
 
+$RUN $PAKET install
+
 function build () {
   $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
 }
