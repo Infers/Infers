@@ -1,17 +1,12 @@
-language: objective-c
+language: csharp
+
+sudo: false
 
 notifications:
   email: false
 
-env:
-  global:
-    - EnableNuGetPackageRestore=true
-  matrix:
-    - MONO_VERSION=3.6.0
-
-install:
-  - wget "http://download.mono-project.com/archive/${MONO_VERSION}/macos-10-x86/MonoFramework-MDK-${MONO_VERSION}.macos10.xamarin.x86.pkg"
-  - sudo installer -pkg "MonoFramework-MDK-${MONO_VERSION}.macos10.xamarin.x86.pkg" -target /
+mono:
+  - latest
 
 script:
   - ./build.sh
