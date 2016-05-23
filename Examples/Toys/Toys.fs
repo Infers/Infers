@@ -154,7 +154,7 @@ let main _ =
     time Goat.test
     time PU.test
     time Pretty.test
-    time Zebra.test
+    //time Zebra.test
   with
    | e ->
      let rec explain (e: System.Exception) =
