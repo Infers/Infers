@@ -225,10 +225,10 @@ type [<AbstractClass>] AsPairs<'p,'t> =
   val IsMutable: bool
 
   /// Copies the fields of the type `'t` to the generic product of type `'p`.
-  abstract Extract: 't * byref<'p> -> unit
+  abstract Extract: from: 't * into: byref<'p> -> unit
 
   /// Creates a new instance of type `'t` from the nested pairs of type `'p`.
-  abstract Create: byref<'p> -> 't
+  abstract Create: from: byref<'p> -> 't
 
   /// Overwrites the fields of the record type `'t` with values from the nested
   /// pairs of type `'p`.  Along with `Default` this supports the generation of
