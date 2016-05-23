@@ -74,10 +74,10 @@ module Rec =
     new: unit -> Rec
     static member Fun: unit -> Rec<'x -> 'y>
     static member Func0: unit -> Rec<Func<'x>>
-    static member Func1: unit -> Rec<Func<'x, 'y>>
-    static member Func2: unit -> Rec<Func<'x, 'y, 'z>>
-    static member Elem: Elem<'e, 'r, 'o, 't> * Rec<'e> -> RecP<'e, 'r, 'o, 't>
-    static member Pair: RecP<     'e     , Pair<'e, 'r>, 'o, 't>
-                      * RecP<         'r ,          'r , 'o, 't>
-                     -> RecP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
+    static member Func1: unit -> Rec<Func<'x,'y>>
+    static member Func2: unit -> Rec<Func<'x,'y,'z>>
+    static member Elem: Elem<'e,'r,'o,'t> * Rec<'e> -> RecP<'e,'r,'o,'t>
+    static member Pair: RecP<     'e    , Pair<'e,'r>,'o,'t>
+                      * RecP<        'r ,         'r ,'o,'t>
+                     -> RecP<Pair<'e,'r>, Pair<'e,'r>,'o,'t>
     static member Product: AsPairs<'p,'o,'t> * RecP<'p,'p,'o,'t> -> Rec<'t>
