@@ -1,5 +1,5 @@
 source https://www.nuget.org/api/v2/
 
-nuget FParsec >= 1.0.2 framework: >= net45
-nuget FSharp.Core >= 3.1.2.5 framework: >= net45
-nuget PPrint >= 1.4.5 framework: >= net45
+nuget FParsec >= 1.0.2
+nuget FSharp.Core >= 3.1.2.5
+nuget PPrint >= 2.0.0

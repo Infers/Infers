@@ -3,7 +3,7 @@ type
 id
         Infers.Toys
 version
-        0.2.1
+        0.2.2
 summary
         Infers.Toys provides a collection of more or less experimental datatype
         generic functions for F#.
@@ -32,10 +32,10 @@ tags
         F# fsharp generic polytypic logic
 dependencies
         FParsec >= 1.0.2
-        FSharp.Core >= 4.0.0.1
-        Infers >= 0.2.1
-        Infers.Rep >= 0.2.1
-        PPrint >= 1.4.3
+        FSharp.Core >= 3.1.2.5
+        Infers >= 0.2.2
+        Infers.Rep >= 0.2.2
+        PPrint >= 2.0.0
 files
         Libs/Infers.Toys/bin/Release/Infers.Toys.dll      ==> lib/net45
         Libs/Infers.Toys/bin/Release/Infers.Toys.xml      ==> lib/net45
