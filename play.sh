@@ -2,9 +2,8 @@
 
 ./build.sh Debug
 
-for fsi in fsharpi fsianycpu.exe fsi.exe ; do
-    if hash $fsi &> /dev/null ; then
-        rlwrap -t dumb $fsi --use:Infers.fsx
-        exit
-    fi
-done
+if hash fsharpi &> /dev/null ; then
+  rlwrap -t dumb fsharpi --use:Infers.fsx
+else
+  rlwrap -t dumb fsianycpu.exe --use:Infers.fsx
+fi
