@@ -40,4 +40,7 @@ module SomeOf =
     static member Sum (c: Case<'p,_,'t>, pS: SomeOf<'p>) =
       SomeOf.Product (c, pS)
 
+    static member Arrow (yS: SomeOf<'y>) =
+      SomeOf<_> (fun _ -> yS.Value)
+
   let someOf<'t> = generateDFS<SomeOf, SomeOf<'t>>.Value
