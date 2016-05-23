@@ -3,7 +3,7 @@ type
 id
         Infers.Rep
 version
-        0.2.2
+        0.2.3
 summary
         Infers.Rep provides contains rules for Infers to generate sums of
         products representations of F# types.
@@ -31,7 +31,7 @@ tags
         F# fsharp generic polytypic logic
 dependencies
         FSharp.Core >= 3.1.2.5
-        Infers >= 0.2.2
+        Infers >= 0.2.3
 files
         Libs/Infers.Rep/bin/Release/Infers.Rep.dll      ==> lib/net45
         Libs/Infers.Rep/bin/Release/Infers.Rep.xml      ==> lib/net45
