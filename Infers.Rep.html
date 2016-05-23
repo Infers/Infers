@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
 <title>Infers.Rep Library Reference</title>
@@ -11,6 +11,10 @@ line-height: 160%;
 background: #f7f7f7;
 font-family: "Lucida Console", Monaco, monospace;
 font-size: 72%;
+}
+pre h3 {
+display: inline-block;
+margin: 1em 0em 0.5em 0em;
 }
 code {
 border: 1px solid #e0e0e0;
@@ -31,11 +35,10 @@ font-weight: bold;
 </head>
 <body><table width="80%" align="center"><tr><td>
 <h1>Infers.Rep Library Reference</h1>
-<p>This document provides a reference manual for the Infers.Rep library and is generated from the library source code.</p>
 <h2>Synopsis</h2>
 <pre><b>namespace</b> Infers<b>.</b><a id="dec:namespace Infers.Rep" href="#def:namespace Infers.Rep">Rep</a></pre>
 <pre><b>type</b> <a id="dec:type Infers.Rep.Rep" href="#def:type Infers.Rep.Rep">Rep</a> <b>=</b>
-  inherit Rules
+  <b>inherit</b> Rules
   <b>new</b><b>:</b> unit <b>-&gt;</b> Rep
   <b>static</b> <b>member</b> Rep<b>:</b> unit <b>-&gt;</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Union">Union</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Union">Union</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Union">Union</a><b>&lt;</b><i>'t</i><b>&gt;</b>
@@ -43,7 +46,12 @@ font-weight: bold;
   <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Record">Record</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Tuple">Tuple</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Tuple">Tuple</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Tuple">Tuple</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Prim">Prim</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Prim">Prim</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Prim">Prim</a><b>&lt;</b><i>'t</i><b>&gt;</b>
-  <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Unsupported">Unsupported</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Unsupported">Unsupported</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Unsupported">Unsupported</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> Enum<b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> Enum<b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> Enum<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> Enum<b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> Enum<b>&lt;</b><i>'u</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> Enum<b>&lt;</b><i>'u</i>,<i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Struct">Struct</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Struct">Struct</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Struct">Struct</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Class">Class</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Class">Class</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Class">Class</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>static</b> <b>member</b> <a href="#def:type Infers.Rep.Interface">Interface</a><b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Interface">Interface</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Interface">Interface</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> AnyCase<b>:</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Rep.Case">Case</a><b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Rep.Case">Case</a><b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> AsChoices<b>:</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b>
   <b>static</b> <b>member</b> AsPairs<b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b>
@@ -56,7 +64,7 @@ font-weight: bold;
 </pre>
 <pre><b>type</b> <a id="dec:type Infers.Rep.Empty" href="#def:type Infers.Rep.Empty">Empty</a> <b>=</b> <b>struct</b> <b>end</b>
 </pre>
-<pre><b>[&lt;</b>Struct<b>&gt;]</b> 
+<pre><b>[&lt;</b><a href="#def:type Infers.Rep.Struct">Struct</a><b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Pair" href="#def:type Infers.Rep.Pair">Pair</a><b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b> <b>=</b>
   <b>val</b> <b>mutable</b> <a id="dec:val Infers.Rep.Pair.Elem" href="#def:val Infers.Rep.Pair.Elem">Elem</a><b>:</b> <i>'e</i>
   <b>val</b> <b>mutable</b> <a id="dec:val Infers.Rep.Pair.Rest" href="#def:val Infers.Rep.Pair.Rest">Rest</a><b>:</b> <i>'r</i>
@@ -68,34 +76,59 @@ font-weight: bold;
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.AsChoices" href="#def:type Infers.Rep.AsChoices">AsChoices</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rules
+  <b>inherit</b> Rules
   <b>new</b><b>:</b> unit <b>-&gt;</b> AsChoices<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Rep.AsChoices.Arity" href="#def:val Infers.Rep.AsChoices.Arity">Arity</a><b>:</b> int
   <b>abstract</b> <a id="dec:abstract Infers.Rep.AsChoices.Tag" href="#def:abstract Infers.Rep.AsChoices.Tag">Tag</a><b>:</b> <i>'t</i> <b>-&gt;</b> int
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.AsChoices" href="#def:type Infers.Rep.AsChoices">AsChoices</a><b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit AsChoices<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> AsChoices<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Rep" href="#def:type Infers.Rep.Rep">Rep</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rules
+  <b>inherit</b> Rules
   <b>new</b><b>:</b> unit <b>-&gt;</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Prim" href="#def:type Infers.Rep.Prim">Prim</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Prim">Prim</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
-<b>type</b> <a id="dec:type Infers.Rep.Unsupported" href="#def:type Infers.Rep.Unsupported">Unsupported</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
-  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Unsupported">Unsupported</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+<b>type</b> <a id="dec:type Infers.Rep.Enum" href="#def:type Infers.Rep.Enum">Enum</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> Enum<b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rep.Enum" href="#def:type Infers.Rep.Enum">Enum</a><b>&lt;</b><i>'u</i>,<i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> Enum<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> Enum<b>&lt;</b><i>'u</i>,<i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rep.Subtyped" href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rep.Struct" href="#def:type Infers.Rep.Struct">Struct</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Struct">Struct</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rep.Class" href="#def:type Infers.Rep.Class">Class</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Class">Class</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="dec:type Infers.Rep.Interface" href="#def:type Infers.Rep.Interface">Interface</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Interface">Interface</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Product" href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
@@ -106,45 +139,45 @@ font-weight: bold;
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Elem" href="#def:type Infers.Rep.Elem">Elem</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Elem<b>&lt;</b><i>'e</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> Elem<b>&lt;</b><i>'e</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Labelled" href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Rep.Labelled.Name" href="#def:val Infers.Rep.Labelled.Name">Name</a><b>:</b> string
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Tuple" href="#def:type Infers.Rep.Tuple">Tuple</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit <a href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Tuple">Tuple</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Item" href="#def:type Infers.Rep.Item">Item</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Item">Item</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Record" href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit <a href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Field" href="#def:type Infers.Rep.Field">Field</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit <a href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Field">Field</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Rep.Field.IsMutable" href="#def:val Infers.Rep.Field.IsMutable">IsMutable</a><b>:</b> bool
   <b>abstract</b> <a id="dec:abstract Infers.Rep.Field.Set" href="#def:abstract Infers.Rep.Field.Set">Set</a><b>:</b> <i>'t</i> <b>*</b> <i>'e</i> <b>-&gt;</b> unit
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.AsPairs" href="#def:type Infers.Rep.AsPairs">AsPairs</a><b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rules
+  <b>inherit</b> Rules
   <b>new</b><b>:</b> unit <b>-&gt;</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Rep.AsPairs.Arity" href="#def:val Infers.Rep.AsPairs.Arity">Arity</a><b>:</b> int
   <b>val</b> <a id="dec:val Infers.Rep.AsPairs.IsMutable" href="#def:val Infers.Rep.AsPairs.IsMutable">IsMutable</a><b>:</b> bool
-  <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.Extract" href="#def:abstract Infers.Rep.AsPairs.Extract">Extract</a><b>:</b> <i>'t</i> <b>*</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit
-  <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.Create" href="#def:abstract Infers.Rep.AsPairs.Create">Create</a><b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>
+  <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.Extract" href="#def:abstract Infers.Rep.AsPairs.Extract">Extract</a><b>:</b> from<b>:</b> <i>'t</i> <b>*</b> into<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit
+  <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.Create" href="#def:abstract Infers.Rep.AsPairs.Create">Create</a><b>:</b> from<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>
   <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.Overwrite" href="#def:abstract Infers.Rep.AsPairs.Overwrite">Overwrite</a><b>:</b> <a href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> into<b>:</b> <i>'t</i> <b>*</b> from<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit
   <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.ToPairs" href="#def:abstract Infers.Rep.AsPairs.ToPairs">ToPairs</a><b>:</b> <i>'t</i> <b>-&gt;</b> <i>'p</i>
   <b>abstract</b> <a id="dec:abstract Infers.Rep.AsPairs.OfPairs" href="#def:abstract Infers.Rep.AsPairs.OfPairs">OfPairs</a><b>:</b> <i>'p</i> <b>-&gt;</b> <i>'t</i>
@@ -152,24 +185,24 @@ font-weight: bold;
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.AsPairs" href="#def:type Infers.Rep.AsPairs">AsPairs</a><b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Union" href="#def:type Infers.Rep.Union">Union</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-  inherit Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
+  <b>inherit</b> Rep<b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Union">Union</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Case" href="#def:type Infers.Rep.Case">Case</a><b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Case">Case</a><b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Rep.Case.Name" href="#def:val Infers.Rep.Case.Name">Name</a><b>:</b> string
   <b>val</b> <a id="dec:val Infers.Rep.Case.Tag" href="#def:val Infers.Rep.Case.Tag">Tag</a><b>:</b> int
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rep.Label" href="#def:type Infers.Rep.Label">Label</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>=</b>
-  inherit <a href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+  <b>inherit</b> <a href="#def:type Infers.Rep.Labelled">Labelled</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rep.Label">Label</a><b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
 </pre>
 <h2>Description</h2>
@@ -181,10 +214,10 @@ font-weight: bold;
 <pre><b>type</b> <a id="def:type Infers.Rep.Empty" href="#dec:type Infers.Rep.Empty">Empty</a> <b>=</b> <b>struct</b> <b>end</b>
 </pre>
 <div class="nested"><p> Represents an empty product as a special case for union cases.</div>
-<pre><b>[&lt;</b>Struct<b>&gt;]</b> 
+<pre><b>[&lt;</b><a href="#def:type Infers.Rep.Struct">Struct</a><b>&gt;]</b> 
 <b>type</b> <a id="def:type Infers.Rep.Pair" href="#dec:type Infers.Rep.Pair">Pair</a><b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b> <b>=</b>
 </pre>
-<div class="nested"><p> Represents a pair of the types <code><i>'e</i></code> and <code><i>'r</i></code>.</p><p> Note that the idea behind using a struct type is to make it possible to construct and deconstruct products without performing any heap allocations. When used carefully, avoiding copying and making sure structs are stack allocated, this can lead to significantly better performance than with heap allocated products.  However, naive use results in both heap allocations and copying, which can lead to worse performance than with heap allocated products.</p><p> Note that while it is in no way enforced, the idea is that in a nested product the <code>Elem</code> field is the current singleton element and <code><a href="#def:val Infers.Rep.Pair.Rest">Rest</a></code> is the remainder of the nested produced.  For example, the nested product of the type</p><pre>char <b>*</b> int <b>*</b> float <b>*</b> bool
+<div class="nested"><p> Represents a pair of the types <code><i>'e</i></code> and <code><i>'r</i></code>.</p><p> Note that the idea behind using a struct type is to make it possible to construct and deconstruct products without performing any heap allocations. When used carefully, avoiding copying and making sure structs are stack allocated or directly embedded within objects, this can lead to significantly better performance than with heap allocated products. However, naive use results in both heap allocations and copying, which can lead to worse performance than with heap allocated products.</p><p> Note that while it is in no way enforced, the idea is that in a nested product the <code>Elem</code> field is the current singleton element and <code><a href="#def:val Infers.Rep.Pair.Rest">Rest</a></code> is the remainder of the nested produced.  For example, the nested product of the type</p><pre>char <b>*</b> int <b>*</b> float <b>*</b> bool
 </pre><p> would be</p><pre><a href="#def:type Infers.Rep.Pair">Pair</a><b>&lt;</b>char, <a href="#def:type Infers.Rep.Pair">Pair</a><b>&lt;</b>int, <a href="#def:type Infers.Rep.Pair">Pair</a><b>&lt;</b>float, bool<b>&gt;&gt;&gt;</b>
 </pre><p> The <code>Rep</code> rules generate products in this manner and it is important to understand this in order to write rules guided by nested pairs.<pre><b>val</b> <b>mutable</b> <a id="def:val Infers.Rep.Pair.Elem" href="#dec:val Infers.Rep.Pair.Elem">Elem</a><b>:</b> <i>'e</i>
 </pre>
@@ -227,9 +260,29 @@ font-weight: bold;
 </pre>
 <div class="nested"><p> Representation for primitive types.</div>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
-<b>type</b> <a id="def:type Infers.Rep.Unsupported" href="#dec:type Infers.Rep.Unsupported">Unsupported</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+<b>type</b> <a id="def:type Infers.Rep.Enum" href="#dec:type Infers.Rep.Enum">Enum</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
 </pre>
-<div class="nested"><p> Representation for types that are not yet supported.  Pull requests are welcome!</div>
+<div class="nested"><p> Representation for enumerated types.</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rep.Enum" href="#dec:type Infers.Rep.Enum">Enum</a><b>&lt;</b><i>'u</i>,<i>'t</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Representation for enumerated type <code><i>'t</i></code> whose underlying type is <code><i>'u</i></code>.</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rep.Subtyped" href="#dec:type Infers.Rep.Subtyped">Subtyped</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Representation for "subtyped" .Net types.</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rep.Struct" href="#dec:type Infers.Rep.Struct">Struct</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Representation for struct or value types.</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rep.Class" href="#dec:type Infers.Rep.Class">Class</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Representation for class types.</div>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>type</b> <a id="def:type Infers.Rep.Interface" href="#dec:type Infers.Rep.Interface">Interface</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+</pre>
+<div class="nested"><p> Representation for interface types.</div>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="def:type Infers.Rep.Product" href="#dec:type Infers.Rep.Product">Product</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
 </pre>
@@ -287,10 +340,10 @@ font-weight: bold;
 <pre><b>val</b> <a id="def:val Infers.Rep.AsPairs.IsMutable" href="#dec:val Infers.Rep.AsPairs.IsMutable">IsMutable</a><b>:</b> bool
 </pre>
 <div class="nested"><p> Whether the product type directly contains mutable fields.</div>
-<pre><b>abstract</b> <a id="def:abstract Infers.Rep.AsPairs.Extract" href="#dec:abstract Infers.Rep.AsPairs.Extract">Extract</a><b>:</b> <i>'t</i> <b>*</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit
+<pre><b>abstract</b> <a id="def:abstract Infers.Rep.AsPairs.Extract" href="#dec:abstract Infers.Rep.AsPairs.Extract">Extract</a><b>:</b> from<b>:</b> <i>'t</i> <b>*</b> into<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit
 </pre>
 <div class="nested"><p> Copies the fields of the type <code><i>'t</i></code> to the generic product of type <code><i>'p</i></code>.</div>
-<pre><b>abstract</b> <a id="def:abstract Infers.Rep.AsPairs.Create" href="#dec:abstract Infers.Rep.AsPairs.Create">Create</a><b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>
+<pre><b>abstract</b> <a id="def:abstract Infers.Rep.AsPairs.Create" href="#dec:abstract Infers.Rep.AsPairs.Create">Create</a><b>:</b> from<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>
 </pre>
 <div class="nested"><p> Creates a new instance of type <code><i>'t</i></code> from the nested pairs of type <code><i>'p</i></code>.</div>
 <pre><b>abstract</b> <a id="def:abstract Infers.Rep.AsPairs.Overwrite" href="#dec:abstract Infers.Rep.AsPairs.Overwrite">Overwrite</a><b>:</b> <a href="#def:type Infers.Rep.Record">Record</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> into<b>:</b> <i>'t</i> <b>*</b> from<b>:</b> byref<b>&lt;</b><i>'p</i><b>&gt;</b> <b>-&gt;</b> unit

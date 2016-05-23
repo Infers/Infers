@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
 <title>Infers Library Reference</title>
@@ -11,6 +11,10 @@ line-height: 160%;
 background: #f7f7f7;
 font-family: "Lucida Console", Monaco, monospace;
 font-size: 72%;
+}
+pre h3 {
+display: inline-block;
+margin: 1em 0em 0.5em 0em;
 }
 code {
 border: 1px solid #e0e0e0;
@@ -31,12 +35,11 @@ font-weight: bold;
 </head>
 <body><table width="80%" align="center"><tr><td>
 <h1>Infers Library Reference</h1>
-<p>This document provides a reference manual for the Infers library and is generated from the library source code.</p>
 <h2>Synopsis</h2>
 <pre><b>namespace</b> <a id="dec:namespace Infers" href="#def:namespace Infers">Infers</a></pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
 <b>type</b> <a id="dec:type Infers.Rules" href="#def:type Infers.Rules">Rules</a> <b>=</b>
-  inherit System<b>.</b>Attribute
+  <b>inherit</b> System<b>.</b>Attribute
   <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Rules">Rules</a>
 </pre>
 <pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
@@ -47,14 +50,14 @@ font-weight: bold;
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a id="dec:module Infers.Infers" href="#def:module Infers.Infers">Infers</a> <b>=</b>
-  <b>val</b> <a id="dec:val Infers.Infers.generate" href="#def:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
-  <b>val</b> <a id="dec:val Infers.Infers.generateDFS" href="#def:val Infers.Infers.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
+  <b>val</b> <a id="dec:val Infers.Infers.generate" href="#def:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> <b>and</b> <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
+  <b>val</b> <a id="dec:val Infers.Infers.generateDFS" href="#def:val Infers.Infers.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> <b>and</b> <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
 </pre>
 <h2>Description</h2>
 <pre><b>namespace</b> <a id="def:namespace Infers" href="#dec:namespace Infers">Infers</a>
 </pre>
 <div class="nested"><p> Infers is a library for deriving F# values from their types and, in a way, a direct application of the Curry-Howard correspondence aka Propositions as Types.</p><p> The basic idea of Infers is to view the types of static member functions as Horn clauses.  Given a set of <code><a href="#def:type Infers.Rules">Rules</a></code>, it is then possible to attempt to prove goals using a Prolog-style resolution algorithm.  Infers invokes the rule functions during the resolution process to <code><a href="#def:val Infers.Infers.generate">generate</a></code> a value of the type given as the goal.</p><p> Another way to view Infers is as a specialized logic programming language embedded in F#.  However, to support generation of F# values, the Infers resolution algorithm differs from general purpose logic programming languages in a number of ways:</p><p> - Infers prunes the search space so that when it encounters a goal to build a monomorphic value, it only tries to find one way, rather than all possible ways, to build it.</p><p> - Infers statically memoizes all final and intermediate values that it has built.  When you invoke Infers twice with the same set of rules and the same type to generate, Infers returns the same (physical) value.</p><p> - Infers has special support, <code><a href="#def:type Infers.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>, for building cyclic values.  It is very common to need to build cyclic values to manipulate recursive types.</p><p> - Infers has special scoping rules such that when an antecedent value is built that contains <code><a href="#def:type Infers.Rules">Rules</a></code>, those rules are added to the set of rules until the consequent has been built.  This allows new rules, such as rules for viewing a type as a sum of products, to be generated dynamically.</p><p> Infers can be useful, for example, in situations where one might wish to use something like type classes or when one might want to do polytypic or datatype generic programming.  Other kinds of applications are also quite possible.  For example, it is possible to solve logic puzzles using Infers.</p><p> Here is a toy example of a set of rules that can generate functions to arbitrarily reorder or flip the arguments of a given curried function:</p><pre><b>type</b> GFlip () <b>=</b>
-  inherit <a href="#def:type Infers.Rules">Rules</a> ()
+  <b>inherit</b> <a href="#def:type Infers.Rules">Rules</a> ()
   <b>static</b> <b>member</b> Id () <b>=</b> id
   <b>static</b> <b>member</b> First ab2yz <b>=</b> <b>fun</b> xb <b>-&gt;</b> xb <b>&gt;&gt;</b> ab2yz
   <b>static</b> <b>member</b> Rest (ab2axc, ac2y) <b>=</b> <b>fun</b> ab <b>-&gt;</b>
@@ -80,10 +83,10 @@ font-weight: bold;
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a id="def:module Infers.Infers" href="#dec:module Infers.Infers">Infers</a> <b>=</b>
 </pre>
-<div class="nested"><p> Interface to the Infers resolution algorithm.<pre><b>val</b> <a id="def:val Infers.Infers.generate" href="#dec:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
+<div class="nested"><p> Interface to the Infers resolution algorithm.<pre><b>val</b> <a id="def:val Infers.Infers.generate" href="#dec:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> <b>and</b> <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
 </pre>
 <div class="nested"><p> Using IDDFS, tries to generate a value of type <code><i>'t</i></code> by using the given set of rules <code><i>'r</i></code>.  If a value can be generated, it is statically memoized, so that invoking <code><a href="#def:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>,&nbsp;<i>'t</i><b>&gt;</b></code> again returns the same value instantly. An exception is raised in case Infers detects that there is no way to build the desired value with the given rules.  See also: <code><a href="#def:val Infers.Infers.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>,&nbsp;<i>'t</i><b>&gt;</b></code>.</p><p> IDDFS is slow, but works even in cases where the given rules allow infinite non-productive derivations.  IDDFS also always finds a minimal solution in the sense that the depth of the derivation tree is minimal.</div>
-<pre><b>val</b> <a id="def:val Infers.Infers.generateDFS" href="#dec:val Infers.Infers.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> and <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
+<pre><b>val</b> <a id="def:val Infers.Infers.generateDFS" href="#dec:val Infers.Infers.generateDFS">generateDFS</a><b>&lt;</b><i>'r</i>, <i>'t</i> <b>when</b> <i>'r</i> <b>:&gt;</b> <a href="#def:type Infers.Rules">Rules</a> <b>and</b> <i>'r</i><b>:</b> (<b>new</b><b>:</b> unit <b>-&gt;</b> <i>'r</i>)<b>&gt;</b> <b>:</b> <i>'t</i>
 </pre>
 <div class="nested"><p> Using DFS, tries to generate a value of type <code><i>'t</i></code> by using the given set of rules <code><i>'r</i></code>.  If a value can be generated, it is statically memoized, so that invoking <code><a href="#def:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>,&nbsp;<i>'t</i><b>&gt;</b></code> again returns the same value instantly. An exception is raised in case Infers detects that there is no way to build the desired value with the given rules.  See also: <code><a href="#def:val Infers.Infers.generate">generate</a><b>&lt;</b><i>'r</i>,&nbsp;<i>'t</i><b>&gt;</b></code>.</p><p> DFS is fast, but requires that the given rules do not allow infinite non-productive derivations.  DFS also does not necessarily find a minimal solution.  Therefore, DFS should only be used when the rules are essentially deterministic, which basically means that there is only one way to generate a value of any given type using the rules.</div>
 </div>

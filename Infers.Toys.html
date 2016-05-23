@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
 <title>Infers.Toys Library Reference</title>
@@ -11,6 +11,10 @@ line-height: 160%;
 background: #f7f7f7;
 font-family: "Lucida Console", Monaco, monospace;
 font-size: 72%;
+}
+pre h3 {
+display: inline-block;
+margin: 1em 0em 0.5em 0em;
 }
 code {
 border: 1px solid #e0e0e0;
@@ -31,15 +35,21 @@ font-weight: bold;
 </head>
 <body><table width="80%" align="center"><tr><td>
 <h1>Infers.Toys Library Reference</h1>
-<p>This document provides a reference manual for the Infers.Toys library and is generated from the library source code.</p>
 <h2>Synopsis</h2>
 <pre><b>namespace</b> Infers<b>.</b>Toys</pre>
+<pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
+<b>module</b> AsPairs <b>=</b>
+  <b>type</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i><b>&gt;</b> <b>with</b>
+    <b>member</b> Extract<b>:</b> from<b>:</b> <i>'t</i> <b>*</b> into<b>:</b> array<b>&lt;</b>obj<b>&gt;</b> <b>-&gt;</b> unit
+    <b>member</b> Create<b>:</b> from<b>:</b> array<b>&lt;</b>obj<b>&gt;</b> <b>-&gt;</b> <i>'t</i>
+    <b>member</b> Overwrite<b>:</b> record<b>:</b> Record<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> into<b>:</b> <i>'t</i> <b>*</b> from<b>:</b> array<b>&lt;</b>obj<b>&gt;</b> <b>-&gt;</b> unit
+</pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a href="#def:type Infers.Toys.Basic.Basic">Basic</a> <b>=</b>
   <b>type</b> <a id="dec:type Infers.Toys.Basic.Eq" href="#def:type Infers.Toys.Basic.Eq">Eq</a><b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;</b>
   <b>type</b> <a id="dec:type Infers.Toys.Basic.Eq" href="#def:type Infers.Toys.Basic.Eq">Eq</a><b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;</b>
   <b>type</b> <a id="dec:type Infers.Toys.Basic.Basic" href="#def:type Infers.Toys.Basic.Basic">Basic</a> <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Basic.Basic">Basic</a>
     <b>static</b> <b>member</b> Eq'2<b>:</b> unit <b>-&gt;</b> Eq<b>&lt;</b><i>'x</i>, <i>'x</i><b>&gt;</b>
     <b>static</b> <b>member</b> Eq'3<b>:</b> unit <b>-&gt;</b> Eq<b>&lt;</b><i>'x</i>, <i>'x</i>, <i>'x</i><b>&gt;</b>
@@ -56,7 +66,7 @@ font-weight: bold;
       OfBits<b>:</b> <i>'b</i> <b>-&gt;</b> <i>'t</i>
     }
   <b>type</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a> <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a>
     <b>static</b> <b>member</b> Bool<b>:</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>&lt;</b>uint8, bool<b>&gt;</b>
     <b>static</b> <b>member</b> Char<b>:</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>&lt;</b>int16, char<b>&gt;</b>
@@ -81,6 +91,16 @@ font-weight: bold;
   <b>val</b> <a id="dec:val Infers.Toys.Elems.rewrite" href="#def:val Infers.Toys.Elems.rewrite">rewrite</a><b>:</b> (<i>'w</i> <b>-&gt;</b> option<b>&lt;</b><i>'w</i><b>&gt;</b>) <b>-&gt;</b> <i>'w</i> <b>-&gt;</b> <i>'w</i>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
+<b>module</b> Flatten <b>=</b>
+  <b>val</b> flatten<b>:</b> <i>'xxs</i> <b>-&gt;</b> seq<b>&lt;</b><i>'x</i><b>&gt;</b> <b>when</b> <i>'xxs</i> <b>:&gt;</b> seq<b>&lt;</b>_<b>&gt;</b>
+  <b>type</b> Flatten <b>=</b>
+    <b>inherit</b> Rules
+    <b>new</b><b>:</b> unit <b>-&gt;</b> Flatten
+    <b>static</b> <b>member</b> Flat<b>:</b> unit <b>-&gt;</b> (<i>'xs</i> <b>-&gt;</b> seq<b>&lt;</b><i>'x</i><b>&gt;</b>) <b>when</b> <i>'xs</i> <b>:&gt;</b> seq<b>&lt;</b><i>'x</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Nested<b>:</b> (<i>'xss</i> <b>-&gt;</b> seq<b>&lt;</b><i>'x</i><b>&gt;</b>)
+                       <b>-&gt;</b> (<i>'xsss</i> <b>-&gt;</b> seq<b>&lt;</b><i>'x</i><b>&gt;</b>) <b>when</b> <i>'xsss</i> <b>:&gt;</b> seq<b>&lt;</b><i>'xss</i><b>&gt;</b>
+</pre>
+<pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> GFlip <b>=</b>
   <b>val</b> <a id="dec:val Infers.Toys.GFlip.gflip" href="#def:val Infers.Toys.GFlip.gflip">gflip</a><b>:</b> (<i>'a</i> <b>-&gt;</b> <i>'b</i>) <b>-&gt;</b> (<i>'c</i> <b>-&gt;</b> <i>'d</i>)
 </pre>
@@ -90,11 +110,20 @@ font-weight: bold;
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a> <b>=</b>
-  <b>type</b> <a id="dec:type Infers.Toys.Integral.Integral" href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b> {
-      <a id="dec:field Infers.Toys.Integral.Integral.Suffix" href="#def:field Infers.Toys.Integral.Integral.Suffix">Suffix</a><b>:</b> string
+  <b>type</b> <a id="dec:type Infers.Toys.Integral.Integral" href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
+    {
+      IsSigned<b>:</b> bool
+      IsBigInt<b>:</b> bool
+      Suffices<b>:</b> list<b>&lt;</b>string<b>&gt;</b>
+      ToInt64<b>:</b> <i>'t</i> <b>-&gt;</b> int64
+      OfInt64<b>:</b> int64 <b>-&gt;</b> <i>'t</i>
+      ToUInt64<b>:</b> <i>'t</i> <b>-&gt;</b> uint64
+      OfUInt64<b>:</b> uint64 <b>-&gt;</b> <i>'t</i>
+      ToBigInt<b>:</b> <i>'t</i> <b>-&gt;</b> bigint
+      OfBigInt<b>:</b> bigint <b>-&gt;</b> <i>'t</i>
     }
   <b>type</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a> <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a>
     <b>static</b> <b>member</b> Int8<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>int8<b>&gt;</b>
     <b>static</b> <b>member</b> Int16<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>int16<b>&gt;</b>
@@ -104,11 +133,14 @@ font-weight: bold;
     <b>static</b> <b>member</b> UInt16<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>uint16<b>&gt;</b>
     <b>static</b> <b>member</b> UInt32<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>uint32<b>&gt;</b>
     <b>static</b> <b>member</b> UInt64<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>uint64<b>&gt;</b>
+    <b>static</b> <b>member</b> NativeInt<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>nativeint<b>&gt;</b>
+    <b>static</b> <b>member</b> UNativeInt<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>unativeint<b>&gt;</b>
+    <b>static</b> <b>member</b> BigInt<b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b>bigint<b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> Json <b>=</b>
   <b>type</b> <a id="dec:type Infers.Toys.Json.Obj" href="#def:type Infers.Toys.Json.Obj">Obj</a> <b>=</b> Map<b>&lt;</b>string, <a href="#def:type Infers.Toys.Json.Value">Value</a><b>&gt;</b>
-  and <a id="dec:type Infers.Toys.Json.Value" href="#def:type Infers.Toys.Json.Value">Value</a> <b>=</b>
+  <b>and</b> <a id="dec:type Infers.Toys.Json.Value" href="#def:type Infers.Toys.Json.Value">Value</a> <b>=</b>
    <b>|</b> <a href="#def:type Infers.Toys.Json.Obj">Obj</a> of <a href="#def:type Infers.Toys.Json.Obj">Obj</a>
    <b>|</b> List of list<b>&lt;</b><a href="#def:type Infers.Toys.Json.Value">Value</a><b>&gt;</b>
    <b>|</b> String of string
@@ -139,30 +171,30 @@ font-weight: bold;
   <b>type</b> PUP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
   <b>type</b> PUS<b>&lt;</b><i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
   <b>type</b> <a href="#def:module Infers.Toys.PU">PU</a> <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a>
-    <b>static</b> <b>member</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
+    <b>static</b> <b>member</b> Rec<b>:</b> unit <b>-&gt;</b> Rec<b>&lt;</b><a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
     <b>static</b> <b>member</b> Unit<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>unit<b>&gt;</b>
     <b>static</b> <b>member</b> UInt8<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>uint8<b>&gt;</b>
     <b>static</b> <b>member</b> Int16<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>int16<b>&gt;</b>
     <b>static</b> <b>member</b> Int32<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>int32<b>&gt;</b>
     <b>static</b> <b>member</b> Int64<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>int64<b>&gt;</b>
-    <b>static</b> <b>member</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>:</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>&lt;</b><i>'b</i>, <i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'b</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>:</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a><b>&lt;</b><i>'b</i>,<i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'b</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> String<b>:</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b>string<b>&gt;</b>
-    <b>static</b> <b>member</b> Elem<b>:</b> Elem<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'e</i><b>&gt;</b> <b>-&gt;</b> PUP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Pair<b>:</b> PUP<b>&lt;</b>     <i>'e</i>     , Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-                      <b>*</b> PUP<b>&lt;</b>         <i>'r</i> ,          <i>'r</i> , <i>'o</i>, <i>'t</i><b>&gt;</b>
-                     <b>-&gt;</b> PUP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Elem<b>:</b> Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'e</i><b>&gt;</b> <b>-&gt;</b> PUP<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Pair<b>:</b> PUP<b>&lt;</b>     <i>'e</i>    , Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                      <b>*</b> PUP<b>&lt;</b>        <i>'r</i> ,         <i>'r</i> ,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                     <b>-&gt;</b> PUP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Tuple<b>:</b> Tuple<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PUP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
                       <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Record<b>:</b> Record<b>&lt;</b><i>'t</i><b>&gt;</b> <b>*</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PUP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
                        <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b>Empty, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>-&gt;</b> PUS<b>&lt;</b>Empty, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b><i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>*</b> PUP<b>&lt;</b><i>'p</i>, <i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>-&gt;</b> PUS<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Choice<b>:</b> PUS<b>&lt;</b>       <i>'p</i>     , Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, <i>'t</i><b>&gt;</b>
-                        <b>*</b> PUS<b>&lt;</b>           <i>'o</i> ,            <i>'o</i> , <i>'t</i><b>&gt;</b>
-                       <b>-&gt;</b> PUS<b>&lt;</b>Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Sum<b>:</b> AsChoices<b>&lt;</b><i>'s</i>, <i>'t</i><b>&gt;</b> <b>*</b> PUS<b>&lt;</b><i>'s</i>, <i>'s</i>, <i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PUS<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PUP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PUS<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Choice<b>:</b> PUS<b>&lt;</b>       <i>'p</i>    , Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>,<i>'t</i><b>&gt;</b>
+                        <b>*</b> PUS<b>&lt;</b>          <i>'o</i> ,           <i>'o</i> ,<i>'t</i><b>&gt;</b>
+                       <b>-&gt;</b> PUS<b>&lt;</b>Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>, Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Sum<b>:</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>*</b> PUS<b>&lt;</b><i>'s</i>,<i>'s</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:module Infers.Toys.PU">PU</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> Pretty <b>=</b>
@@ -170,13 +202,13 @@ font-weight: bold;
   <b>val</b> show<b>:</b> <i>'x</i> <b>-&gt;</b> string
   <b>type</b> Pretty<b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b> <i>'t</i> <b>-&gt;</b> Doc
   <b>type</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
-  <b>type</b> PrettyP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-  <b>type</b> PrettyS<b>&lt;</b><i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
+  <b>type</b> PrettyP<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+  <b>type</b> PrettyS<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
   <b>type</b> Pretty <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> Pretty
     <b>static</b> <b>member</b> Enter<b>:</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> Pretty<b>&lt;</b><i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>PrettyO<b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
+    <b>static</b> <b>member</b> Rec<b>:</b> unit <b>-&gt;</b> Rec<b>&lt;</b>PrettyO<b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
     <b>static</b> <b>member</b> Unit<b>:</b> PrettyO<b>&lt;</b>unit<b>&gt;</b>
     <b>static</b> <b>member</b> Bool<b>:</b> PrettyO<b>&lt;</b>bool<b>&gt;</b>
     <b>static</b> <b>member</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>:</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
@@ -189,41 +221,40 @@ font-weight: bold;
     <b>static</b> <b>member</b> List<b>:</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b>list<b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
     <b>static</b> <b>member</b> Array<b>:</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b>array<b>&lt;</b><i>'t</i><b>&gt;&gt;</b>
     <b>static</b> <b>member</b> Item<b>:</b> Item<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyO<b>&lt;</b><i>'e</i><b>&gt;</b> <b>-&gt;</b> PrettyP<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Labelled<b>:</b> Labelled<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-                          <b>*</b> PrettyO<b>&lt;</b><i>'e</i><b>&gt;</b>
-                         <b>-&gt;</b> PrettyP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Pair<b>:</b> PrettyP<b>&lt;</b>     <i>'e</i>      , Pair<b>&lt;</b><i>'e</i>, <i>'es</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-                      <b>*</b> PrettyP<b>&lt;</b>         <i>'es</i> ,          <i>'es</i> , <i>'o</i>, <i>'t</i><b>&gt;</b>
-                     <b>-&gt;</b> PrettyP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>, <i>'es</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>, <i>'es</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Product<b>:</b> AsPairs<b>&lt;</b><i>'p</i>, <i>'t</i>, <i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>, <i>'p</i>, <i>'t</i>, <i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Labelled<b>:</b> Labelled<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyO<b>&lt;</b><i>'e</i><b>&gt;</b>
+                         <b>-&gt;</b> PrettyP<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Pair<b>:</b> PrettyP<b>&lt;</b>     <i>'e</i>    , Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                      <b>*</b> PrettyP<b>&lt;</b>        <i>'r</i> ,         <i>'r</i> ,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                     <b>-&gt;</b> PrettyP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Product<b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
                         <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b>Empty, <i>'cs</i>, <i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyS<b>&lt;</b>Empty, <i>'cs</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b><i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>, <i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-                     <b>-&gt;</b> PrettyS<b>&lt;</b><i>'p</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Choice<b>:</b> PrettyS<b>&lt;</b>       <i>'p</i>     , Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, <i>'t</i><b>&gt;</b>
-                        <b>*</b> PrettyS<b>&lt;</b>           <i>'o</i> ,            <i>'o</i> , <i>'t</i><b>&gt;</b>
-                       <b>-&gt;</b> PrettyS<b>&lt;</b>Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, Choice<b>&lt;</b><i>'p</i>, <i>'o</i><b>&gt;</b>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Sum<b>:</b> AsChoices<b>&lt;</b><i>'s</i>, <i>'t</i><b>&gt;</b> <b>*</b> PrettyS<b>&lt;</b><i>'s</i>, <i>'s</i>, <i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyS<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                     <b>-&gt;</b> PrettyS<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Choice<b>:</b> PrettyS<b>&lt;</b>       <i>'p</i>    , Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>,<i>'t</i><b>&gt;</b>
+                        <b>*</b> PrettyS<b>&lt;</b>          <i>'o</i> ,           <i>'o</i> ,<i>'t</i><b>&gt;</b>
+                       <b>-&gt;</b> PrettyS<b>&lt;</b>Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>, Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Sum<b>:</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyS<b>&lt;</b><i>'s</i>,<i>'s</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
-<b>module</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a> <b>=</b>
+<b>module</b> Rec <b>=</b>
   <b>type</b> <a id="dec:type Infers.Toys.Rec.RecVal" href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
-    inherit <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
-    <b>val</b> <b>mutable</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>:</b> <i>'t</i>
+    <b>inherit</b> Rec<b>&lt;</b><i>'t</i><b>&gt;</b>
+    <b>val</b> <b>mutable</b> <a id="dec:val Infers.Toys.Rec.RecVal.Rec" href="#def:val Infers.Toys.Rec.RecVal.Rec">Rec</a><b>:</b> <i>'t</i>
     <b>new</b><b>:</b> (<a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>) <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>val</b> <a id="dec:val Infers.Toys.Rec.recVal" href="#def:val Infers.Toys.Rec.recVal">recVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>:</b> (<a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>) <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
   <b>type</b> RecP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
   <b>type</b> <a id="dec:type Infers.Toys.Rec.Rec" href="#def:type Infers.Toys.Rec.Rec">Rec</a> <b>=</b>
-    inherit Rules
+    <b>inherit</b> Rules
     <b>new</b><b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a>
-    <b>static</b> <b>member</b> Func<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Fun<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'x</i> <b>-&gt;</b> <i>'y</i><b>&gt;</b>
     <b>static</b> <b>member</b> Func0<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i><b>&gt;&gt;</b>
-    <b>static</b> <b>member</b> Func1<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i><b>&gt;&gt;</b>
-    <b>static</b> <b>member</b> Func2<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>, <i>'y</i>, <i>'z</i><b>&gt;&gt;</b>
-    <b>static</b> <b>member</b> Elem<b>:</b> Elem<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'e</i><b>&gt;</b> <b>-&gt;</b> RecP<b>&lt;</b><i>'e</i>, <i>'r</i>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Pair<b>:</b> RecP<b>&lt;</b>     <i>'e</i>     , Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
-                      <b>*</b> RecP<b>&lt;</b>         <i>'r</i> ,          <i>'r</i> , <i>'o</i>, <i>'t</i><b>&gt;</b>
-                     <b>-&gt;</b> RecP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>, <i>'r</i><b>&gt;</b>, <i>'o</i>, <i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Func1<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>,<i>'y</i><b>&gt;&gt;</b>
+    <b>static</b> <b>member</b> Func2<b>:</b> unit <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>Func<b>&lt;</b><i>'x</i>,<i>'y</i>,<i>'z</i><b>&gt;&gt;</b>
+    <b>static</b> <b>member</b> Elem<b>:</b> Elem<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'e</i><b>&gt;</b> <b>-&gt;</b> RecP<b>&lt;</b><i>'e</i>,<i>'r</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> Pair<b>:</b> RecP<b>&lt;</b>     <i>'e</i>    , Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                      <b>*</b> RecP<b>&lt;</b>        <i>'r</i> ,         <i>'r</i> ,<i>'o</i>,<i>'t</i><b>&gt;</b>
+                     <b>-&gt;</b> RecP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Product<b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> RecP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
@@ -243,10 +274,14 @@ font-weight: bold;
     <b>abstract</b> PrevThe<b>:</b> unit <b>-&gt;</b> option<b>&lt;</b>Zipper<b>&lt;</b><i>'w</i>, <i>'w</i><b>&gt;&gt;</b>
     <b>abstract</b> Up<b>:</b> unit <b>-&gt;</b> option<b>&lt;</b>Zipper<b>&lt;</b><i>'w</i><b>&gt;&gt;</b>
     <b>abstract</b> GetObj<b>:</b> unit <b>-&gt;</b> obj
-  and <b>[&lt;</b>AbstractClass<b>&gt;]</b> <a id="dec:type Infers.Toys.Zipper.Zipper" href="#def:type Infers.Toys.Zipper.Zipper">Zipper</a><b>&lt;</b><i>'w</i>, <i>'h</i><b>&gt;</b> <b>=</b>
-    inherit Zipper<b>&lt;</b><i>'w</i><b>&gt;</b>
+  <b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+  <b>and</b> <b>[&lt;</b>AbstractClass<b>&gt;]</b> <a id="dec:type Infers.Toys.Zipper.Zipper" href="#def:type Infers.Toys.Zipper.Zipper">Zipper</a><b>&lt;</b><i>'w</i>, <i>'h</i><b>&gt;</b> <b>=</b>
+    <b>inherit</b> Zipper<b>&lt;</b><i>'w</i><b>&gt;</b>
     <b>abstract</b> Get<b>:</b> unit <b>-&gt;</b> <i>'h</i>
     <b>abstract</b> Set<b>:</b> <i>'h</i> <b>-&gt;</b> Zipper<b>&lt;</b><i>'w</i>, <i>'h</i><b>&gt;</b>
+  <b>type</b> Zipper <b>=</b>
+    <b>inherit</b> Rules
+    <b>new</b><b>:</b> unit <b>-&gt;</b> Zipper
   <b>val</b> fromZipper<b>:</b> Zipper<b>&lt;</b><i>'w</i><b>&gt;</b> <b>-&gt;</b> <i>'w</i>
   <b>val</b> toZipperAny<b>:</b> <i>'w</i> <b>-&gt;</b> Zipper<b>&lt;</b><i>'w</i><b>&gt;</b>
   <b>val</b> getAny<b>:</b> Zipper<b>&lt;</b><i>'w</i><b>&gt;</b> <b>-&gt;</b> option<b>&lt;</b><i>'h</i><b>&gt;</b>
@@ -281,7 +316,7 @@ font-weight: bold;
 <div class="nested"><p> Ternary equality: <code>Eq<b>&lt;</b><i>'x</i>,&nbsp;<i>'y</i>,&nbsp;<i>'z</i><b>&gt;</b></code> is equivalent to <code>And<b>&lt;</b>Eq<b>&lt;</b><i>'x</i>,&nbsp;<i>'y</i><b>&gt;</b>,&nbsp;Eq<b>&lt;</b><i>'y</i>,&nbsp;<i>'z</i><b>&gt;&gt;</b></code>.</div>
 <pre><b>type</b> <a id="def:type Infers.Toys.Basic.Basic" href="#dec:type Infers.Toys.Basic.Basic">Basic</a> <b>=</b>
 </pre>
-<div class="nested"><p> Some basic rules for logic programming.</div>
+<div class="nested"><p> Basic rules for logic programming: equality (<code>Eq<b>&lt;...&gt;</b></code>) and disjunction (<code>Choice<b>&lt;...&gt;</b></code>).</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a href="#def:type Infers.Toys.Bitwise.Bitwise">Bitwise</a> <b>=</b>
@@ -299,14 +334,14 @@ font-weight: bold;
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a id="def:module Infers.Toys.Elems" href="#dec:module Infers.Toys.Elems">Elems</a> <b>=</b>
 </pre>
-<div class="nested"><p> Provides generic functions very much like Neil Mitchell's Uniplate.</p><p> The operations in the <code><a href="#def:module Infers.Toys.Elems">Elems</a></code> module work most conveniently on recursive sum of products types of the form</p><pre><b>type</b> SoP<b>&lt;...&gt;</b> <b>=</b>
- <b>|</b> Case1 of Elem<b>&lt;</b>I1,J1<b>&gt;</b> <b>*</b> <b>...</b> <b>*</b> Elem<b>&lt;</b>I1,Jm1<b>&gt;</b>
+<div class="nested"><p> Provides generic functions similar to, but not exactly like, Neil Mitchell's Uniplate.</p><p> The operations in the <code><a href="#def:module Infers.Toys.Elems">Elems</a></code> module work most conveniently on recursive union (sum of products) types of the form</p><pre><b>type</b> SoP<b>&lt;...&gt;</b> <b>=</b>
+ <b>|</b> Case1 of Elem<b>&lt;</b>I1, J1<b>&gt;</b> <b>*</b> <b>...</b> <b>*</b> Elem<b>&lt;</b>I1, Jm1<b>&gt;</b>
  <b>|</b> <b>...</b>
- <b>|</b> CaseN of Elem<b>&lt;</b>In,J1<b>&gt;</b> <b>*</b> <b>...</b> <b>*</b> Elem<b>&lt;</b>Im,Jmn<b>&gt;</b>
-</pre><p> where the <code>Elem<b>&lt;</b>_,_<b>&gt;</b></code> types are not compound types such as <code>list<b>&lt;</b>SoP<b>&lt;...&gt;&gt;</b></code> or <code>SoP<b>&lt;...&gt;</b>&nbsp;<b>*</b>&nbsp;SoP<b>&lt;...&gt;</b></code>.  This is because the primitive <code><a href="#def:val Infers.Toys.Elems.elems">elems</a></code> and <code><a href="#def:val Infers.Toys.Elems.subst">subst</a></code> operations do not look inside the <code>Elem<b>&lt;</b>_,_<b>&gt;</b></code> types.</p><p> In the documentation we will make use of the following type:</p><pre><b>type</b> BinTr<b>&lt;</b><i>'x</i><b>&gt;</b> <b>=</b>
+ <b>|</b> CaseN of Elem<b>&lt;</b>In, J1<b>&gt;</b> <b>*</b> <b>...</b> <b>*</b> Elem<b>&lt;</b>Im, Jmn<b>&gt;</b>
+</pre><p> where the <code>Elem<b>&lt;</b>_,&nbsp;_<b>&gt;</b></code> types are not compound types such as <code>list<b>&lt;</b>SoP<b>&lt;...&gt;&gt;</b></code> or <code>SoP<b>&lt;...&gt;</b>&nbsp;<b>*</b>&nbsp;SoP<b>&lt;...&gt;</b></code>.  This is because the primitive <code><a href="#def:val Infers.Toys.Elems.elems">elems</a></code> and <code><a href="#def:val Infers.Toys.Elems.subst">subst</a></code> operations do not look inside the <code>Elem<b>&lt;</b>_,_<b>&gt;</b></code> types.  Aside from recursive union types, many <code><a href="#def:module Infers.Toys.Elems">Elems</a></code> operations work on (non-recursive) unions, (recursive or non-recursive) records and (never recursive) tuples.</p><p> In the documentation we will make use of the following type:</p><pre><b>type</b> BinTr<b>&lt;</b><i>'x</i><b>&gt;</b> <b>=</b>
   <b>|</b> Lf
   <b>|</b> Br of BinTr<b>&lt;</b><i>'x</i><b>&gt;</b> <b>*</b> <i>'x</i> <b>*</b> BinTr<b>&lt;</b><i>'x</i><b>&gt;</b>
-</pre><p> Note that <code><a href="#def:module Infers.Toys.Elems">Elems</a></code> is not limited to manipulating binary trees.  Elems will work with any recursive or non-recursive union or product type.  Binary tree is merely used as an example of a simple recursive datatype.<pre><b>val</b> <a id="def:val Infers.Toys.Elems.elems" href="#dec:val Infers.Toys.Elems.elems">elems</a><b>&lt;</b><i>'h</i>, <i>'w</i><b>&gt;</b> <b>:</b> <i>'w</i> <b>-&gt;</b> array<b>&lt;</b><i>'h</i><b>&gt;</b>
+</pre><p> Note that <code><a href="#def:module Infers.Toys.Elems">Elems</a></code> is not limited to manipulating binary trees.  Binary tree is merely used as an example of a simple recursive datatype.<pre><b>val</b> <a id="def:val Infers.Toys.Elems.elems" href="#dec:val Infers.Toys.Elems.elems">elems</a><b>&lt;</b><i>'h</i>, <i>'w</i><b>&gt;</b> <b>:</b> <i>'w</i> <b>-&gt;</b> array<b>&lt;</b><i>'h</i><b>&gt;</b>
 </pre>
 <div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.elems">elems</a><b>&lt;</b><i>'h</i>,&nbsp;<i>'w</i><b>&gt;</b>&nbsp;w</code> returns an array of the immediate elements of type <code><i>'h</i></code> in <code>w</code>.</p><p> By design, <code><a href="#def:val Infers.Toys.Elems.elems">elems</a></code> does not look inside the elements of <code><i>'w</i></code>.  The following examples should help to clarify what this means:</p><pre><a href="#def:val Infers.Toys.Elems.elems">elems</a><b>&lt;</b>int, _<b>&gt;</b> Lf <b>=</b> <b>[|</b><b>|]</b>
 <a href="#def:val Infers.Toys.Elems.elems">elems</a><b>&lt;</b>int, _<b>&gt;</b> (Br (Lf, 1, Lf)) <b>=</b> <b>[|</b>1<b>|]</b>
@@ -337,7 +372,7 @@ font-weight: bold;
 <pre><b>val</b> <a id="def:val Infers.Toys.Elems.para" href="#dec:val Infers.Toys.Elems.para">para</a><b>:</b> (<i>'w</i> <b>-&gt;</b> array<b>&lt;</b><i>'r</i><b>&gt;</b> <b>-&gt;</b> <i>'r</i>) <b>-&gt;</b> <i>'w</i> <b>-&gt;</b> <i>'r</i>
 </pre>
 <div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.para">para</a>&nbsp;w2rs2r&nbsp;w</code> performs a fold-like computation called a paramorphism.</p><p> For example,</p><pre><b>let</b> height t <b>=</b> <a href="#def:val Infers.Toys.Elems.para">para</a> (<b>fun</b> _ hs <b>-&gt;</b> Array<b>.</b>fold max 0 hs <b>+</b> 1) t
-</pre><p> computes the "height" of any recursive sum of products type.  For example, <code>height</code> gives</p><pre>height Lf <b>=</b> 1
+</pre><p> computes the "height" of any recursive union or record type.  For example, <code>height</code> gives</p><pre>height Lf <b>=</b> 1
 height [] <b>=</b> 1
 height ("Non", ("recursive", "type")) <b>=</b> 1
 height (Br (Lf, 1, Br (Lf, 2, Lf))) <b>=</b> 3
@@ -348,7 +383,7 @@ height [1;1;1] <b>=</b> 4
 <div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.subst">subst</a>&nbsp;h2h&nbsp;w</code> returns a new value of type <code><i>'w</i></code> which is like <code>w</code> except that every immediate element <code>h_i</code> of type <code><i>'h</i></code> in <code>w</code> is replaced with <code>h2h&nbsp;h_i</code>.  <code><a href="#def:val Infers.Toys.Elems.elems">elems</a>&nbsp;<b>&gt;&gt;</b>&nbsp;Array<b>.</b>map&nbsp;h2h</code> is equivalent to <code><a href="#def:val Infers.Toys.Elems.subst">subst</a>&nbsp;h2h&nbsp;<b>&gt;&gt;</b>&nbsp;<a href="#def:val Infers.Toys.Elems.elems">elems</a></code>.</div>
 <pre><b>val</b> <a id="def:val Infers.Toys.Elems.descend" href="#dec:val Infers.Toys.Elems.descend">descend</a><b>:</b> (<i>'w</i> <b>-&gt;</b> <i>'w</i>) <b>-&gt;</b> <i>'w</i> <b>-&gt;</b> <i>'w</i>
 </pre>
-<div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.descend">descend</a></code> is equivalent to <code><a href="#def:val Infers.Toys.Elems.subst">subst</a><b>&lt;</b><i>'w</i>,&nbsp;<i>'w</i><b>&gt;</b></code>.  <code><a href="#def:val Infers.Toys.Elems.descend">descend</a></code> only makes sense when applied to a recursive sum type.</div>
+<div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.descend">descend</a></code> is equivalent to <code><a href="#def:val Infers.Toys.Elems.subst">subst</a><b>&lt;</b><i>'w</i>,&nbsp;<i>'w</i><b>&gt;</b></code>.  <code><a href="#def:val Infers.Toys.Elems.descend">descend</a></code> only makes sense when applied to a recursive union or record type.</div>
 <pre><b>val</b> <a id="def:val Infers.Toys.Elems.substUp" href="#dec:val Infers.Toys.Elems.substUp">substUp</a><b>&lt;</b><i>'h</i>, <i>'w</i><b>&gt;</b> <b>:</b> (<i>'h</i> <b>-&gt;</b> <i>'h</i>) <b>-&gt;</b> <i>'w</i> <b>-&gt;</b> <i>'w</i>
 </pre>
 <div class="nested"><p> <code><a href="#def:val Infers.Toys.Elems.substUp">substUp</a><b>&lt;</b><i>'h</i>,&nbsp;<i>'w</i><b>&gt;</b>&nbsp;h2h&nbsp;w</code> performs a bottom-up transformation of the given value <code>w</code>, recursively <code><a href="#def:val Infers.Toys.Elems.descend">descend</a></code>ing into <code>w</code> and then <code><a href="#def:val Infers.Toys.Elems.subst">subst</a></code>ituting with <code>h2h</code>.</p><p> For example,</p><pre><a href="#def:val Infers.Toys.Elems.substUp">substUp</a> ((<b>+</b>) 1) [1; 2; 3] <b>=</b> [2; 3; 4]
@@ -387,12 +422,9 @@ height [1;1;1] <b>=</b> 4
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> <a href="#def:type Infers.Toys.Integral.Integral">Integral</a> <b>=</b>
 </pre>
-<div class="nested"><pre><b>type</b> <a id="def:type Infers.Toys.Integral.Integral" href="#dec:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b> {
+<div class="nested"><pre><b>type</b> <a id="def:type Infers.Toys.Integral.Integral" href="#dec:type Infers.Toys.Integral.Integral">Integral</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
 </pre>
-<div class="nested"><p> Provides information on the integral type <code><i>'t</i></code>.<pre><a id="def:field Infers.Toys.Integral.Integral.Suffix" href="#dec:field Infers.Toys.Integral.Integral.Suffix">Suffix</a><b>:</b> string
-</pre>
-<div class="nested"><p> The suffix used by F# on literals of the integral type.</div>
-</div>
+<div class="nested"><p> Provides information on the integral type <code><i>'t</i></code>.</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> Json <b>=</b>
@@ -400,7 +432,7 @@ height [1;1;1] <b>=</b> 4
 <div class="nested"><pre><b>type</b> <a id="def:type Infers.Toys.Json.Obj" href="#dec:type Infers.Toys.Json.Obj">Obj</a> <b>=</b> Map<b>&lt;</b>string, <a href="#def:type Infers.Toys.Json.Value">Value</a><b>&gt;</b>
 </pre>
 <div class="nested"><p> Represents a Json object.</div>
-<pre>and <a id="def:type Infers.Toys.Json.Value" href="#dec:type Infers.Toys.Json.Value">Value</a> <b>=</b>
+<pre><b>and</b> <a id="def:type Infers.Toys.Json.Value" href="#dec:type Infers.Toys.Json.Value">Value</a> <b>=</b>
  <b>|</b> <a href="#def:type Infers.Toys.Json.Obj">Obj</a> of <a href="#def:type Infers.Toys.Json.Obj">Obj</a>
  <b>|</b> List of list<b>&lt;</b><a href="#def:type Infers.Toys.Json.Value">Value</a><b>&gt;</b>
  <b>|</b> String of string
@@ -428,17 +460,33 @@ height [1;1;1] <b>=</b> 4
 <div class="nested"><p> Converts an array of bytes produced by <code><a href="#def:val Infers.Toys.PU.pickle">pickle</a></code> into a value.  The type of the result must match the type that was given to <code><a href="#def:val Infers.Toys.PU.pickle">pickle</a></code>.</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
-<b>module</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a> <b>=</b>
+<b>module</b> Rec <b>=</b>
 </pre>
 <div class="nested"><pre><b>type</b> <a id="def:type Infers.Toys.Rec.RecVal" href="#dec:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>=</b>
 </pre>
-<div class="nested"><p> Combination of <code>ref<b>&lt;</b><i>'t</i><b>&gt;</b></code> and <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>.</div>
+<div class="nested"><p> Combination of <code>ref<b>&lt;</b><i>'t</i><b>&gt;</b></code> and <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>.  See also: <code><a href="#def:val Infers.Toys.Rec.recVal">recVal</a></code>.<pre><b>val</b> <b>mutable</b> <a id="def:val Infers.Toys.Rec.RecVal.Rec" href="#dec:val Infers.Toys.Rec.RecVal.Rec">Rec</a><b>:</b> <i>'t</i>
+</pre>
+<div class="nested"><p> This is initially default initialized, but may later be written with a value of type <code><i>'t</i></code> via the <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code> base class to tie the knot.</div>
+<pre><b>new</b><b>:</b> (<a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>) <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<div class="nested"><p> Constructs a new <code><a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>, given a function that returns a new value of type <code><i>'t</i></code> that delegates to <code><a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>.</b><a href="#def:val Infers.Toys.Rec.RecVal.Rec">Rec</a></code>, but does not read it immediately.  See <code><a href="#def:val Infers.Toys.Rec.recVal">recVal</a></code>.</div>
+</div>
 <pre><b>val</b> <a id="def:val Infers.Toys.Rec.recVal" href="#dec:val Infers.Toys.Rec.recVal">recVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>:</b> (<a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b> <b>-&gt;</b> <i>'t</i>) <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
-<div class="nested"><p> Conveniently creates a <code><a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b></code> and returns it as a <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>.</div>
+<div class="nested"><p> Conveniently creates a <code><a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>&lt;</b><i>'t</i><b>&gt;</b></code> and returns it as a <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b></code>.</p><p> The given function should delegate to <code><a href="#def:type Infers.Toys.Rec.RecVal">RecVal</a><b>.</b><a href="#def:val Infers.Toys.Rec.RecVal.Rec">Rec</a></code>, but must not read it immediately.  For example, one could define <code>Rec<b>.</b>Fun</code> as follows:</p><pre><b>static</b> <b>member</b> Fun () <b>=</b> <a href="#def:val Infers.Toys.Rec.recVal">recVal</a> <b>&lt;|</b> <b>fun</b> r <b>-&gt;</b> <b>fun</b> x <b>-&gt;</b> r<b>.</b>Rec x
+</pre><p> Note that the above does not read <code>r<b>.</b>Rec</code> immediately.  The following definition</p><pre><b>static</b> <b>member</b> Fun () <b>=</b> <a href="#def:val Infers.Toys.Rec.recVal">recVal</a> <b>&lt;|</b> <b>fun</b> r <b>-&gt;</b> r<b>.</b>Rec <b>:</b> _ <b>-&gt;</b> _
+</pre><p> reads <code>r<b>.</b>Rec</code> immediately and does not work correctly.</div>
 <pre><b>type</b> <a id="def:type Infers.Toys.Rec.Rec" href="#dec:type Infers.Toys.Rec.Rec">Rec</a> <b>=</b>
 </pre>
-<div class="nested"><p> Rules for computing fixed points over products, single case union types (aka newtypes) and functions.</div>
+<div class="nested"><p> Rules for computing fixed points over products, single case union types (aka newtypes) and functions.</p><p> Consider the following toy example:</p><pre><b>type</b> Fib () <b>=</b>
+  <b>inherit</b> Rules ()
+  <b>static</b> <b>member</b> fib (fib<b>:</b> int <b>-&gt;</b> int) <b>:</b> int <b>-&gt;</b> int <b>=</b>
+    <b>fun</b> n <b>-&gt;</b> <b>if</b> n <b>&lt;</b> 2 <b>then</b> n <b>else</b> fib (n<b>-</b>1) <b>+</b> fib (n<b>-</b>2)
+</pre><p> An attempt to <code>generate<b>&lt;</b>Fib,&nbsp;int&nbsp;<b>-&gt;</b>&nbsp;int<b>&gt;</b></code> fails: the only rule, namely <code>fib</code>, that could generate <code>int&nbsp;<b>-&gt;</b>&nbsp;int</code>, requires a <code>int&nbsp;<b>-&gt;</b>&nbsp;int</code>, which leads Infers to look for a <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b>int&nbsp;<b>-&gt;</b>&nbsp;int<b>&gt;</b></code> rule, which fails.</p><p> We can make <code>Fib</code> depend on <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a></code> to add a rule for making recursive functions:</p><pre><b>type</b> <b>[&lt;</b><a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&gt;]</b> Fib () <b>=</b>
+  <b>inherit</b> Rules ()
+  <b>static</b> <b>member</b> fib (fib<b>:</b> int <b>-&gt;</b> int) <b>:</b> int <b>-&gt;</b> int <b>=</b>
+    <b>fun</b> n <b>-&gt;</b> <b>if</b> n <b>&lt;</b> 2 <b>then</b> n <b>else</b> fib (n<b>-</b>1) <b>+</b> fib (n<b>-</b>2)
+</pre><p> Now <code>generate<b>&lt;</b>Fib,&nbsp;int&nbsp;<b>-&gt;</b>&nbsp;int<b>&gt;</b></code> returns the desired function.</p><p> Of course, the above is very much a toy example.  One usually uses <code><a href="#def:type Infers.Toys.Rec.Rec">Rec</a></code> to allow Infers to generate functions to manipulate recursive types.</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> SomeOf <b>=</b>
@@ -453,7 +501,8 @@ height [1;1;1] <b>=</b> 4
 <b>type</b> <a id="def:type Infers.Toys.Zipper.Zipper" href="#dec:type Infers.Toys.Zipper.Zipper">Zipper</a><b>&lt;</b><i>'w</i><b>&gt;</b> <b>=</b>
 </pre>
 <div class="nested"><p> Zipper over type <code><i>'w</i></code> pointing at an unknown type of hole.</div>
-<pre>and <b>[&lt;</b>AbstractClass<b>&gt;]</b> <a id="def:type Infers.Toys.Zipper.Zipper" href="#dec:type Infers.Toys.Zipper.Zipper">Zipper</a><b>&lt;</b><i>'w</i>, <i>'h</i><b>&gt;</b> <b>=</b>
+<pre><b>[&lt;</b>AbstractClass<b>&gt;]</b> 
+<b>and</b> <b>[&lt;</b>AbstractClass<b>&gt;]</b> <a id="def:type Infers.Toys.Zipper.Zipper" href="#dec:type Infers.Toys.Zipper.Zipper">Zipper</a><b>&lt;</b><i>'w</i>, <i>'h</i><b>&gt;</b> <b>=</b>
 </pre>
 <div class="nested"><p> Zipper over type <code><i>'w</i></code> pointing at a hole of type <code><i>'h</i></code>.</div>
 </div>
