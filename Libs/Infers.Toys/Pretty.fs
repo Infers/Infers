@@ -159,7 +159,7 @@ module Pretty =
              | '\r' -> S"\\r" ; sawCR <- true
              | '\\' -> S"\\\\"
              | '\t' -> S"\\t"
-             | c when Char.IsControl c -> S (hexc c)
+             | c when Char.IsControl c -> S ^ hexc c
              | c -> C c
           C '\"'
           txt ^ sb.ToString ()
@@ -190,12 +190,12 @@ module Pretty =
                S"\\r"
              | '\\' -> S"\\\\"
              | '\t' -> S"\\t"
-             | c when Char.IsControl c -> S (hexc c)
+             | c when Char.IsControl c -> S ^ hexc c
              | c -> C c
           C '\"'
           cut ()
-          nest 1 (vcat parts)
-        atom (if sawLF || sawCR then choice wide ^ delay narrow else wide)
+          nest 1 ^ vcat parts
+        atom ^ if sawLF || sawCR then choice wide ^ delay narrow else wide
 
     static member Option (O tP) =
       let n = atxt "None"
