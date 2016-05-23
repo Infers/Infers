@@ -6,6 +6,8 @@ open System.Diagnostics
 open Infers.Rep
 open Infers.Toys
 
+let inline (^) x = x
+
 let time ef =
   let start = Stopwatch.StartNew ()
   ef ()
@@ -137,9 +139,14 @@ module PU =
     printfn "%A %A %A" t.Val t.Tricky.Val t.Tricky.Tricky.Val
 
 module Pretty =
-  type Foo = {bar: string}
+  open PPrint
+  type Bar = | Bar of foo: int * bar: string
+  type Foo = {bar: Bar; baz: float; foo: char}
   let test () =
-    show (Some 10, [2], [|{bar = "3"}|]) |> printfn "%s"
+    (Some 10, [2], [|{bar = Bar (3, "3"); baz = 3.14; foo = 'F'}|]) |> pretty |> render ^ Some 20 |> printfn "%s"
+    (Some 10, [2], [|{bar = Bar (3, "3"); baz = 3.14; foo = 'F'}|]) |> pretty |> render ^ Some 60 |> printfn "%s"
+    List.init 4 id |> pretty |> render ^ Some 10 |> printfn "%s"
+    List.init 4 id |> pretty |> render ^ Some 15 |> printfn "%s"
 
 [<EntryPoint>]
 let main _ =

@@ -20,13 +20,16 @@ module Pretty =
   type [<AbstractClass>] InternalPretty<'t> () =
     abstract Pretty: byref<'t> -> Fixity * Doc
 
+  type [<AbstractClass>] InternalPrettyP<'t> () =
+    abstract Pretty: byref<'t> -> list<Fixity * Doc>
+
   type RecPretty<'x> () =
     inherit InternalPretty<'x> ()
     [<DefaultValue>] val mutable impl: InternalPretty<'x>
     override this.Pretty (x) = this.impl.Pretty (&x)
 
   type PrettyO<'t> = O of InternalPretty<'t>
-  type PrettyP<'e, 'r, 'o, 't> = P of InternalPretty<'e>
+  type PrettyP<'e, 'r, 'o, 't> = P of InternalPrettyP<'e>
   type PrettyS<'p, 'o, 't> = S of list<InternalPretty<'t>>
 
   [<AutoOpen>]
@@ -55,7 +58,8 @@ module Pretty =
       else sprintf "\\U%08x" c
 
     let commaLine = comma <^> line
-    let semiLine = choice (semi <^> line) line
+    let commaSpace = comma <^> space
+    let semiSpace = semi <^> space
 
     let inline seq (o: string)
                    (c: string)
@@ -66,33 +70,31 @@ module Pretty =
       let c = txt c
       O {new InternalPretty<'xs> () with
           override this.Pretty (xs) =
-           toSeq xs
-           |> Seq.map ^ fun (x: 'x) ->
-                let mutable x = x
-                xP.Pretty (&x) |> snd
-           |> joinSep semiLine
+           let elems =
+             toSeq xs
+             |> Seq.map ^ fun (x: 'x) ->
+                  let mutable x = x
+                  xP.Pretty (&x) |> snd
+             |> Array.ofSeq
+           choice (joinSep semiSpace elems) (joinSep line elems)
            |> gnest i
            |> enclose (o, c)
            |> atom}
 
-  let case name (asP: AsPairs<'p, 't>) (lsP: InternalPretty<'p>) =
+  let case name (asP: AsPairs<'p, 't>) (lsP: InternalPrettyP<'p>) =
     let con = txt name <^> line
     doc ^ fun x ->
     let mutable ls = Unchecked.defaultof<_>
     asP.Extract (x, &ls)
-    part ^ gnest 2 (con <^> atomize ^ lsP.Pretty (&ls))
-
-  let labelled (n: string) i (eP: InternalPretty<'e>) =
-      if n.StartsWith "Item" &&
-         (i = 0 && n.Length = 4 ||
-          let suffix = string (i+1)
-          n.Length = suffix.Length + 4 &&
-          n.EndsWith suffix)
-      then eP
-      else let label = txt n <+> (equals <^> line)
-           {new InternalPretty<'e> () with
-             override t.Pretty e =
-              part ^ gnest 2 (label <^> just ^ eP.Pretty (&e))}
+    let elems =
+      match lsP.Pretty (&ls) with
+       | [elem] -> atomize elem
+       | elems ->
+         let elems = List.map just elems
+         choice (joinSep commaSpace elems) (joinSep commaLine elems)
+         |> enclose lrparen
+         |> gnest 1
+    part ^ gnest 2 (con <^> elems)
 
   let pair sep (eP: InternalPretty<'e>) (rP: InternalPretty<'r>) =
     {new InternalPretty<Pair<'e, 'r>> () with
@@ -231,22 +233,46 @@ module Pretty =
           override t.Pretty x = sP.[asC.Tag x].Pretty (&x)}
 
     static member Item (_: Item<'e, 'r, 't>, O eP: PrettyO<'e>) =
-      P eP : PrettyP<'e, 'r, 't, 't>
+      P {new InternalPrettyP<_> () with
+          override t.Pretty (rx) =
+           [eP.Pretty (&rx)]} : PrettyP<'e, 'r, 't, 't>
 
     static member Labelled (l: Labelled<'e, 'r, 'o, 't>, O eP: PrettyO<'e>) =
-      P (labelled l.Name l.Index eP) : PrettyP<'e, 'r, 'o, 't>
+      let n = l.Name
+      let i = l.Index
+      if n.StartsWith "Item" &&
+         (i = 0 && n.Length = 4 ||
+          let suffix = string (i+1)
+          n.Length = suffix.Length + 4 &&
+          n.EndsWith suffix)
+      then P {new InternalPrettyP<_> () with
+               override t.Pretty (rx) =
+                [eP.Pretty (&rx)]} : PrettyP<'e, 'r, 'o, 't>
+      else let label = txt n <+> (equals <^> line)
+           P {new InternalPrettyP<'e> () with
+               override t.Pretty e =
+                [part ^ gnest 2 (label <^> just ^ eP.Pretty (&e))]}
 
     static member Pair (P eP: PrettyP<     'e,      Pair<'e, 'r>, 'o, 't>,
-                        P rP: PrettyP<         'r ,          'r , 'o, 't>) =
-      let sep = if FSharpType.IsRecord typeof<'t> then semiLine else commaLine
-      P (pair sep eP rP)    : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't>
+                        P rP: PrettyP<         'r ,          'r , 'o, 't>)
+                            : PrettyP<Pair<'e, 'r>, Pair<'e, 'r>, 'o, 't> =
+      P {new InternalPrettyP<_> () with
+          override t.Pretty (er) =
+           eP.Pretty (&er.Elem) @ rP.Pretty (&er.Rest)}
 
     static member Product (asP: AsPairs<'p,'t,'t>, P pP: PrettyP<'p,'p,'t,'t>) =
-      let lr = if FSharpType.IsRecord typeof<'t> then lrbrace else lrparen
+      let (lr, ws, ns) =
+        if FSharpType.IsRecord typeof<'t>
+        then (lrbrace, semiSpace, line)
+        else (lrparen, commaSpace, commaLine)
       O << doc <| fun t ->
       let mutable es = Unchecked.defaultof<_>
       asP.Extract (t, &es)
-      atom ^ enclose lr ^ gnest 1 ^ just ^ pP.Pretty (&es)
+      let elems = List.map just ^ pP.Pretty (&es)
+      choice (joinSep ws elems) (joinSep ns elems)
+      |> gnest 1
+      |> enclose lr
+      |> atom
 
   let pretty x = generateDFS<Pretty, _ -> Doc> x
   let show x = render None ^ pretty x
