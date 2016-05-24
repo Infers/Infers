@@ -41,3 +41,28 @@ module Product =
   /// prints `1x2.0`.
 #endif
   val iter: 'handlers -> 'p -> unit
+
+  /// Creates a value of the given product of type `'p` using the handler
+  /// functions in the product of function and values of type `'handlers`.
+#if DOC
+  ///
+  /// Each handler function or value must have a type of one of the forms
+  ///
+  ///>           'e
+  ///>    int -> 'e
+  ///> string -> 'e
+  ///
+  /// where the type `'e` is the type of an element of `'p`, the `int` is the
+  /// index of the element, and the `string` is the name of the element.
+  ///
+  /// Only records and single case union types have labeled elements.  The
+  /// handler is chosen by attempting to get an element of one of the above
+  /// types from the handlers product.
+  ///
+  /// For example,
+  ///
+  ///> (init (sprintf "%d") : string * string * string)
+  ///
+  /// returns the tuple `("0", "1", "2")`.
+#endif
+  val init: 'handlers -> 'p

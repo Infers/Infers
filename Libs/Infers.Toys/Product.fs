@@ -57,3 +57,40 @@ module Product =
 
   let iter (hs: 'hs) (p: 'p) =
     generateDFS<Iter, 'hs -> 'p -> unit> hs p
+
+  //
+
+  type [<AbstractClass>] Init<'e,'r,'o,'t,'hs> () =
+    abstract Do: 'hs * byref<'e> -> unit
+
+  type [<Rep; Get>] Init () =
+    inherit Rules ()
+    static member Labelled (m: Labelled<'e,'r,'o,'t>,
+                            get: 'hs -> (string -> 'e)) =
+      let n = m.Name
+      {new Init<'e,'r,'o,'t,'hs> () with
+        member t.Do (hs, e) = e <- get hs n}
+    static member Elem (m: Elem<'e,'r,'o,'t>, get: 'hs -> (int -> 'e)) =
+      let i = m.Index
+      {new Init<'e,'r,'o,'t,'hs> () with
+        member t.Do (hs, e) = e <- get hs i}
+    static member Elem (_: Elem<'e,'r,'o,'t>, get: 'hs -> 'e) =
+      {new Init<'e,'r,'o,'t,'hs> () with
+        member t.Do (hs, e) = e <- get hs}
+    static member Pair (eI: Init<'e,Pair<'e,'r>,'o,'t,'hs>,
+                        rI: Init<'r,        'r, 'o,'t,'hs>) =
+      {new Init<Pair<'e,'r>,Pair<'e,'r>,'o,'t,'hs> () with
+        member t.Do (hs, er) =
+          eI.Do (hs, &er.Elem)
+          rI.Do (hs, &er.Rest)}
+    static member Id (get: 'hs -> 't) = get
+    static member Product (m: AsPairs<'p,'o,'t>, pI: Init<'p,'p,'o,'t,'hs>) =
+      fun hs ->
+        let mutable p = Unchecked.defaultof<_>
+        pI.Do (hs, &p)
+        m.Create (&p)
+    static member Union (_: AsChoices<'p,'t>, m: Case<'p,'p,'t>, pI: Init<'p,'p,'p,'t,'hs>) =
+      Init.Product (m, pI)
+
+  let init (hs: 'hs) : 'p =
+    generateDFS<Init, 'hs -> 'p> hs
