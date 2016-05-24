@@ -472,17 +472,19 @@ height [1;1;1] <b>=</b> 4
 </pre><p> prints <code>a</code>.</div>
 <pre><b>val</b> <a id="def:val Infers.Toys.Product.iter" href="#dec:val Infers.Toys.Product.iter">iter</a><b>:</b> <i>'handlers</i> <b>-&gt;</b> <i>'p</i> <b>-&gt;</b> unit
 </pre>
-<div class="nested"><p> Iterates over the elements of the product of type <code><i>'p</i></code> using the handler functions in the product of functions of type <code><i>'handlers</i></code>.</p><p> Each handler function must have a type of one of the forms</p><pre>          <i>'e</i> <b>-&gt;</b> unit
-   int <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
-string <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
+<div class="nested"><p> Iterates over the elements of the product of type <code><i>'p</i></code> using the handler functions in the product of functions of type <code><i>'handlers</i></code>.</p><p> Each handler function must have a type of one of the forms</p><pre>                 <i>'e</i> <b>-&gt;</b> unit
+int           <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
+       string <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
+int <b>-&gt;</b> string <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
 </pre><p> where the type <code><i>'e</i></code> is the type of an element of <code><i>'p</i></code>, the <code>int</code> is the index of the element, and the <code>string</code> is the name of the element.</p><p> Only records and single case union types have labeled elements.  The handler is chosen by attempting to get an element of one of the above types from the handlers product.</p><p> For example,</p><pre><a href="#def:val Infers.Toys.Product.iter">iter</a> (printf "%s", printf "%1.1f", printf "%d") (1, "x", 2.0)
 </pre><p> prints <code>1x2.0</code>.</div>
 <pre><b>val</b> <a id="def:val Infers.Toys.Product.init" href="#dec:val Infers.Toys.Product.init">init</a><b>:</b> <i>'handlers</i> <b>-&gt;</b> <i>'p</i>
 </pre>
-<div class="nested"><p> Creates a value of the given product of type <code><i>'p</i></code> using the handler functions in the product of function and values of type <code><i>'handlers</i></code>.</p><p> Each handler function or value must have a type of one of the forms</p><pre>          <i>'e</i>
-   int <b>-&gt;</b> <i>'e</i>
-string <b>-&gt;</b> <i>'e</i>
-</pre><p> where the type <code><i>'e</i></code> is the type of an element of <code><i>'p</i></code>, the <code>int</code> is the index of the element, and the <code>string</code> is the name of the element.</p><p> Only records and single case union types have labeled elements.  The handler is chosen by attempting to get an element of one of the above types from the handlers product.</p><p> For example,</p><pre>(<a href="#def:val Infers.Toys.Product.init">init</a> (sprintf "%d") <b>:</b> string <b>*</b> string <b>*</b> string)
+<div class="nested"><p> Creates a value of the given product of type <code><i>'p</i></code> using the handler functions in the product of function and values of type <code><i>'handlers</i></code>.</p><p> Each handler function or value must have a type of one of the forms</p><pre>                 <i>'e</i>
+int           <b>-&gt;</b> <i>'e</i>
+       string <b>-&gt;</b> <i>'e</i>
+int <b>-&gt;</b> string <b>-&gt;</b> <i>'e</i>
+</pre><p> where the type <code><i>'e</i></code> is the type of an element of <code><i>'p</i></code>, the <code>int</code> is the index of the element, and the <code>string</code> is the name of the element.</p><p> Only records and single case union types have labeled elements.  The handler is chosen by attempting to get an element of one of the above types from the handlers product.</p><p> For example,</p><pre><a href="#def:val Infers.Toys.Product.init">init</a> (sprintf "%d") <b>:</b> string <b>*</b> string <b>*</b> string
 </pre><p> returns the tuple <code>("0",&nbsp;"1",&nbsp;"2")</code>.</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
