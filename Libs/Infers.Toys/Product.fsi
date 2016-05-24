@@ -30,7 +30,7 @@ module Product =
   /// where the type `'e` is the type of an element of `'p`, the `int` is the
   /// index of the element, and the `string` is the name of the element.
   ///
-  /// Only records and single case union types have labelled elements.  The
+  /// Only records and single case union types have labeled elements.  The
   /// handler is chosen by attempting to get an element of one of the above
   /// types from the handlers product.
   ///
