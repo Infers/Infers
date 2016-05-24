@@ -226,7 +226,7 @@ font-weight: bold;
     <b>static</b> <b>member</b> Pair<b>:</b> PrettyP<b>&lt;</b>     <i>'e</i>    , Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
                       <b>*</b> PrettyP<b>&lt;</b>        <i>'r</i> ,         <i>'r</i> ,<i>'o</i>,<i>'t</i><b>&gt;</b>
                      <b>-&gt;</b> PrettyP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Product<b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> <a href="#def:module Infers.Toys.Product">Product</a><b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'t</i>,<i>'t</i><b>&gt;</b>
                         <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyS<b>&lt;</b>Empty,<i>'o</i>,<i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Case<b>:</b> Case<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b>
@@ -235,6 +235,10 @@ font-weight: bold;
                         <b>*</b> PrettyS<b>&lt;</b>          <i>'o</i> ,           <i>'o</i> ,<i>'t</i><b>&gt;</b>
                        <b>-&gt;</b> PrettyS<b>&lt;</b>Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>, Choice<b>&lt;</b><i>'p</i>,<i>'o</i><b>&gt;</b>,<i>'t</i><b>&gt;</b>
     <b>static</b> <b>member</b> Sum<b>:</b> AsChoices<b>&lt;</b><i>'s</i>,<i>'t</i><b>&gt;</b> <b>*</b> PrettyS<b>&lt;</b><i>'s</i>,<i>'s</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> PrettyO<b>&lt;</b><i>'t</i><b>&gt;</b>
+</pre>
+<pre><b>module</b> <a id="dec:module Infers.Toys.Product" href="#def:module Infers.Toys.Product">Product</a> <b>=</b>
+  <b>val</b> <a id="dec:val Infers.Toys.Product.get" href="#def:val Infers.Toys.Product.get">get</a><b>:</b> <i>'t</i> <b>-&gt;</b> <i>'e</i>
+  <b>val</b> <a id="dec:val Infers.Toys.Product.iter" href="#def:val Infers.Toys.Product.iter">iter</a><b>:</b> <i>'handlers</i> <b>-&gt;</b> <i>'p</i> <b>-&gt;</b> unit
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> Rec <b>=</b>
@@ -255,7 +259,7 @@ font-weight: bold;
     <b>static</b> <b>member</b> Pair<b>:</b> RecP<b>&lt;</b>     <i>'e</i>    , Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
                       <b>*</b> RecP<b>&lt;</b>        <i>'r</i> ,         <i>'r</i> ,<i>'o</i>,<i>'t</i><b>&gt;</b>
                      <b>-&gt;</b> RecP<b>&lt;</b>Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>, Pair<b>&lt;</b><i>'e</i>,<i>'r</i><b>&gt;</b>,<i>'o</i>,<i>'t</i><b>&gt;</b>
-    <b>static</b> <b>member</b> Product<b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> RecP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
+    <b>static</b> <b>member</b> <a href="#def:module Infers.Toys.Product">Product</a><b>:</b> AsPairs<b>&lt;</b><i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>*</b> RecP<b>&lt;</b><i>'p</i>,<i>'p</i>,<i>'o</i>,<i>'t</i><b>&gt;</b> <b>-&gt;</b> <a href="#def:type Infers.Toys.Rec.Rec">Rec</a><b>&lt;</b><i>'t</i><b>&gt;</b>
 </pre>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> SomeOf <b>=</b>
@@ -458,6 +462,20 @@ height [1;1;1] <b>=</b> 4
 <pre><b>val</b> <a id="def:val Infers.Toys.PU.unpickle" href="#dec:val Infers.Toys.PU.unpickle">unpickle</a><b>&lt;</b><i>'x</i><b>&gt;</b> <b>:</b> array<b>&lt;</b>byte<b>&gt;</b> <b>-&gt;</b> <i>'x</i>
 </pre>
 <div class="nested"><p> Converts an array of bytes produced by <code><a href="#def:val Infers.Toys.PU.pickle">pickle</a></code> into a value.  The type of the result must match the type that was given to <code><a href="#def:val Infers.Toys.PU.pickle">pickle</a></code>.</div>
+</div>
+<pre><b>module</b> <a id="def:module Infers.Toys.Product" href="#dec:module Infers.Toys.Product">Product</a> <b>=</b>
+</pre>
+<div class="nested"><p> Generic functions for ad hoc record manipulation.<pre><b>val</b> <a id="def:val Infers.Toys.Product.get" href="#dec:val Infers.Toys.Product.get">get</a><b>:</b> <i>'t</i> <b>-&gt;</b> <i>'e</i>
+</pre>
+<div class="nested"><p> Gets an element of type <code><i>'e</i></code> from the product of type <code><i>'t</i></code>.  If the product has multiple elements of type <code><i>'e</i></code> it is not specified which element is returned.</p><p> For example,</p><pre><a href="#def:val Infers.Toys.Product.get">get</a> (1, "a", <b>true</b>) <b>|&gt;</b> printf "%s"
+</pre><p> prints <code>a</code>.</div>
+<pre><b>val</b> <a id="def:val Infers.Toys.Product.iter" href="#dec:val Infers.Toys.Product.iter">iter</a><b>:</b> <i>'handlers</i> <b>-&gt;</b> <i>'p</i> <b>-&gt;</b> unit
+</pre>
+<div class="nested"><p> Iterates over the elements of the product of type <code><i>'p</i></code> using the handler functions in the product of functions of type <code><i>'handlers</i></code>.</p><p> Each handler function must have a type of one of the following forms:</p><pre>          <i>'e</i> <b>-&gt;</b> unit
+   int <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
+string <b>-&gt;</b> <i>'e</i> <b>-&gt;</b> unit
+</pre><p> Only records and single case union types have labelled elements.  The handler is chosen by attempting to get an element of one of the above types from the handlers product.</p><p> For example,</p><pre><a href="#def:val Infers.Toys.Product.iter">iter</a> (printf "%s", printf "%1.1f", printf "%d") (1, "x", 2.0)
+</pre><p> prints <code>1x2.0</code>.</div>
 </div>
 <pre><b>[&lt;</b>AutoOpen<b>&gt;]</b>
 <b>module</b> Rec <b>=</b>
