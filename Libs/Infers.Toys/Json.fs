@@ -153,16 +153,21 @@ module Json =
 
   type Is<'t> = | Is
 
-  type JsonO<'t> =
+  type JsonValue<'t> =
     {OfJson: Value -> Choice<'t, string>
      ToJson: 't -> Value}
 
-  type [<AbstractClass>] JsonI<'t> () =
+  type [<AbstractClass>] JsonObj<'t> () =
     abstract OfJson: Obj * byref<'t> -> option<string>
     abstract ToJson: byref<'t> * Obj -> Obj
 
-  type JsonP<'e,'r,'o,'t> = P of JsonI<'e>
-  type JsonS<'p,'o,'t> = S of list<JsonO<'t>>
+  type [<AbstractClass>] JsonArray<'t> () =
+    abstract OfJson: list<Value> * byref<'t> -> option<string>
+    abstract ToJson: byref<'t> -> list<Value>
+
+  type JsonA<'e,'r,'t> = A of JsonArray<'e>
+  type JsonP<'e,'r,'o,'t> = P of JsonObj<'e>
+  type JsonS<'p,'o,'t> = S of list<JsonValue<'t>>
 
   let number (ofString: string -> 't) (toString: 't -> string) =
     {OfJson = function (Number v) -> v |> ofString |> Choice1Of2
@@ -182,14 +187,14 @@ module Json =
       {OfJson = function String v -> Choice1Of2 v | _ -> Choice2Of2 "string"
        ToJson = String}
 
-    static member Literal () : JsonO<Is<'t>> =
+    static member Literal () : JsonValue<Is<'t>> =
       let name = typeof<'t>.Name
       let nameJ = String name
       {OfJson = function String v when v = name -> Choice1Of2 Is
                        | _ -> Choice2Of2 name
        ToJson = fun Is -> nameJ}
 
-    static member Array (tJ: JsonO<'t>) =
+    static member Array (tJ: JsonValue<'t>) =
       {OfJson = function
         | List js ->
           let n = List.length js
@@ -208,12 +213,61 @@ module Json =
         | _ -> Choice2Of2 "list"
        ToJson = Array.map tJ.ToJson >> List.ofArray >> List}
 
-    static member List (tsJ: JsonO<array<'t>>) =
+    static member List (tsJ: JsonValue<array<'t>>) =
       {OfJson = tsJ.OfJson >> Choice.map List.ofArray id
        ToJson = Array.ofList >> tsJ.ToJson}
 
-    static member Elem (eL: Labelled<'e,'r,'o,'t>, eJ: JsonO<'e>) =
-      P {new JsonI<'e> () with
+    static member Item (_: Item<'e,'r,'t>, eJ: JsonValue<'e>) =
+      let name = Some typeof<'e>.Name
+      A {new JsonArray<'e> () with
+          member jm.OfJson (vs, e) =
+            match vs with
+             | v::_ ->
+               match eJ.OfJson v with
+                | Choice1Of2 v -> e <- v ; None
+                | Choice2Of2 e -> Some e
+             | [] ->
+               name
+          member jm.ToJson (e) =
+            [eJ.ToJson e]} : JsonA<'e,'r,'t>
+
+    static member Pair (A eJ: JsonA<     'e,    Pair<'e,'r>,'t>,
+                        A rJ: JsonA<        'r,         'r ,'t>)
+                            : JsonA<Pair<'e,'r>,Pair<'e,'r>,'t>  =
+      let nameComma = typeof<'e>.Name + ", "
+      let nameCommaEllipsis = Some ^ nameComma + "..."
+      A {new JsonArray<Pair<'e,'r>> () with
+          member jm.OfJson (vs, er) =
+           match eJ.OfJson (vs, &er.Elem) with
+            | None ->
+              match vs with
+               | _::vsRest ->
+                 match rJ.OfJson (vsRest, &er.Rest) with
+                  | None ->
+                    eJ.OfJson (vs, &er.Elem)
+                  | Some e ->
+                    Some ^ nameComma + e
+               | _ ->
+                 nameCommaEllipsis
+            | some ->
+              some
+          member jm.ToJson (er) =
+            eJ.ToJson (&er.Elem) @ rJ.ToJson (&er.Rest)}
+
+    static member Product (asP: AsPairs<'p,'o,'t>, A pJ: JsonA<'p,'p,'t>) =
+      {OfJson = function
+        | List o ->
+          let mutable p = Unchecked.defaultof<_>
+          match pJ.OfJson (o, &p) with
+           | None -> asP.Create (&p) |> Choice1Of2
+           | Some e -> Choice2Of2 ^ "[" + e + "]"
+        | _ -> Choice2Of2 "[ ... ]"
+       ToJson = fun t ->
+         let mutable p = asP.ToPairs t
+         pJ.ToJson (&p) |> List}
+
+    static member Elem (eL: Labelled<'e,'r,'o,'t>, eJ: JsonValue<'e>) =
+      P {new JsonObj<'e> () with
           member jm.OfJson (o, e) =
             match Map.tryFind eL.Name o with
              | None -> Some ^ eL.Name + ": ..."
@@ -224,8 +278,8 @@ module Json =
           member jm.ToJson (e, o) =
             Map.add eL.Name (eJ.ToJson e) o} : JsonP<'e,'r,'o,'t>
 
-    static member OptElem (eL: Labelled<option<'e>,'r,'o,'t>, eJ: JsonO<'e>) =
-      P {new JsonI<option<'e>> () with
+    static member OptElem (eL: Labelled<option<'e>,'r,'o,'t>, eJ: JsonValue<'e>) =
+      P {new JsonObj<option<'e>> () with
           member jm.OfJson (o, eO) =
            match Map.tryFind eL.Name o with
             | None -> eO <- None; None
@@ -238,9 +292,10 @@ module Json =
              | None -> o
              | Some e -> Map.add eL.Name (eJ.ToJson e) o}
 
-    static member Pair (P eJ: JsonP<'e,Pair<'e,'r>,'o,'t>,
-                        P rJ: JsonP<'r,        'r ,'o,'t>) =
-      P {new JsonI<Pair<'e,'r>> () with
+    static member Pair (P eJ: JsonP<     'e,    Pair<'e,'r>,'o,'t>,
+                        P rJ: JsonP<        'r,         'r ,'o,'t>)
+                            : JsonP<Pair<'e,'r>,Pair<'e,'r>,'o,'t> =
+      P {new JsonObj<Pair<'e,'r>> () with
           member jm.OfJson (o, er) =
             match eJ.OfJson (o, &er.Elem) with
              | None -> rJ.OfJson (o, &er.Rest)
@@ -254,7 +309,7 @@ module Json =
           let mutable p = Unchecked.defaultof<_>
           match pJ.OfJson (o, &p) with
            | None -> asP.Create (&p) |> Choice1Of2
-           | Some e -> Choice2Of2 ("{" + e + "}")
+           | Some e -> Choice2Of2 ^ "{" + e + "}"
         | _ -> Choice2Of2 "{ ... }"
        ToJson = fun t ->
          let mutable p = asP.ToPairs t
@@ -269,7 +324,7 @@ module Json =
 
     static member Case (m: Case<'e,'o,'t>,
                         eL: Labelled<'e,'e,'o,'t>,
-                        eJ: JsonO<'e>) =
+                        eJ: JsonValue<'e>) =
       S [(if eL.Name = "Item"
           then {OfJson = eJ.OfJson >> Choice.map m.OfPairs id
                 ToJson = m.ToPairs >> eJ.ToJson}
@@ -291,8 +346,8 @@ module Json =
         lp [] 0
        ToJson = fun t -> pJ.[asC.Tag t].ToJson t}
 
-  let toJson<'t> t = generateDFS<Json, JsonO<'t>>.ToJson t
-  let tryOfJson<'t> j = generateDFS<Json, JsonO<'t>>.OfJson j
+  let toJson<'t> t = generateDFS<Json, JsonValue<'t>>.ToJson t
+  let tryOfJson<'t> j = generateDFS<Json, JsonValue<'t>>.OfJson j
   let ofJson<'t> j =
     tryOfJson<'t> j |> Choice.fold id  (failwithf "Expected: %s")
 
