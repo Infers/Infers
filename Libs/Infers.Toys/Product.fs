@@ -28,6 +28,10 @@ module Product =
   type [<Rep; Get>] Iter () =
     inherit Rules ()
     static member Labelled (m: Labelled<'e,'r,'o,'t>,
+                            get: 'hs -> (int -> string -> 'e -> unit)) =
+      {new Iter<'e,'r,'o,'t,'hs> () with
+        member t.Do (e, hs) = get hs m.Index m.Name e}
+    static member Labelled (m: Labelled<'e,'r,'o,'t>,
                             get: 'hs -> (string -> 'e -> unit)) =
       let n = m.Name
       {new Iter<'e,'r,'o,'t,'hs> () with
@@ -65,6 +69,10 @@ module Product =
 
   type [<Rep; Get>] Init () =
     inherit Rules ()
+    static member Labelled (m: Labelled<'e,'r,'o,'t>,
+                            get: 'hs -> (int -> string -> 'e)) =
+      {new Init<'e,'r,'o,'t,'hs> () with
+        member t.Do (hs, e) = e <- get hs m.Index m.Name}
     static member Labelled (m: Labelled<'e,'r,'o,'t>,
                             get: 'hs -> (string -> 'e)) =
       let n = m.Name

@@ -23,9 +23,10 @@ module Product =
   ///
   /// Each handler function must have a type of one of the forms
   ///
-  ///>           'e -> unit
-  ///>    int -> 'e -> unit
-  ///> string -> 'e -> unit
+  ///>                  'e -> unit
+  ///> int           -> 'e -> unit
+  ///>        string -> 'e -> unit
+  ///> int -> string -> 'e -> unit
   ///
   /// where the type `'e` is the type of an element of `'p`, the `int` is the
   /// index of the element, and the `string` is the name of the element.
@@ -48,9 +49,10 @@ module Product =
   ///
   /// Each handler function or value must have a type of one of the forms
   ///
-  ///>           'e
-  ///>    int -> 'e
-  ///> string -> 'e
+  ///>                  'e
+  ///> int           -> 'e
+  ///>        string -> 'e
+  ///> int -> string -> 'e
   ///
   /// where the type `'e` is the type of an element of `'p`, the `int` is the
   /// index of the element, and the `string` is the name of the element.
@@ -61,7 +63,7 @@ module Product =
   ///
   /// For example,
   ///
-  ///> (init (sprintf "%d") : string * string * string)
+  ///> init (sprintf "%d") : string * string * string
   ///
   /// returns the tuple `("0", "1", "2")`.
 #endif
