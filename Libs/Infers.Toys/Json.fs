@@ -177,6 +177,9 @@ module Json =
   type [<Rep>] Json () =
     inherit Rules ()
 
+    static member Null =
+      {OfJson = function Nil -> Choice1Of2 () | _ -> Choice2Of2 "null"
+       ToJson = function () -> Nil}
     static member Bool =
       {OfJson = function Bool v -> Choice1Of2 v | _ -> Choice2Of2 "bool"
        ToJson = Bool}
