@@ -2,6 +2,7 @@
 
 namespace Infers.Toys
 
+/// Generic functions for ad hoc record manipulation.
 module Product =
   /// Gets an element of type `'e` from the product of type `'t`.  If the
   /// product has multiple elements of type `'e` it is not specified which
@@ -12,7 +13,7 @@ module Product =
   ///
   ///> get (1, "a", true) |> printf "%s"
   ///
-  /// prints "a".
+  /// prints `a`.
 #endif
   val get: 't -> 'e
 
@@ -34,6 +35,6 @@ module Product =
   ///
   ///> iter (printf "%s", printf "%1.1f", printf "%d") (1, "x", 2.0)
   ///
-  /// prints "1x2.0".
+  /// prints `1x2.0`.
 #endif
   val iter: 'handlers -> 'p -> unit
