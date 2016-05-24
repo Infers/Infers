@@ -8,7 +8,7 @@ open System.Runtime.InteropServices
 [<AutoOpen>]
 module AssemblyInfo =
   [<Literal>]
-  let Version = "0.2.6"
+  let Version = "0.2.7"
 
 [<assembly: AssemblyTitle("Infers.Toys")>]
 [<assembly: AssemblyDescription("Infers.Toys implements a number of datatype generic functions.")>]
