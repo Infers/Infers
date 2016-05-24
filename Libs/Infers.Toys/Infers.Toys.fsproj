@@ -90,6 +90,8 @@
     <Compile Include="Elems.fs" />
     <Compile Include="Zipper.fsi" />
     <Compile Include="Zipper.fs" />
+    <Compile Include="Product.fsi" />
+    <Compile Include="Product.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <PropertyGroup>
