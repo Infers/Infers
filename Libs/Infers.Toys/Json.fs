@@ -281,7 +281,8 @@ module Json =
           member jm.ToJson (e, o) =
             Map.add eL.Name (eJ.ToJson e) o} : JsonP<'e,'r,'o,'t>
 
-    static member OptElem (eL: Labelled<option<'e>,'r,'o,'t>, eJ: JsonValue<'e>) =
+    static member OptElem (eL: Labelled<option<'e>,'r,'o,'t>, eJ: JsonValue<'e>)
+                             :    JsonP<option<'e>,'r,'o,'t> =
       P {new JsonObj<option<'e>> () with
           member jm.OfJson (o, eO) =
            match Map.tryFind eL.Name o with
