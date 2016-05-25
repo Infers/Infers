@@ -68,3 +68,33 @@ module Product =
   /// returns the tuple `("0", "1", "2")`.
 #endif
   val init: 'handlers -> 'p
+
+  /// Fold over the elements of the product of type `'p` using the handler
+  /// functions in the product of functions of type `'handlers`.
+#if DOC
+  ///
+  /// Each handler function must have a type of one of the forms
+  ///
+  ///>                  'e -> 's -> 's
+  ///> int           -> 'e -> 's -> 's
+  ///>        string -> 'e -> 's -> 's
+  ///> int -> string -> 'e -> 's -> 's
+  ///
+  /// where `'s` is the type of the fold state, `'e` is the type of an element
+  /// of `'p`, the `int` is the index of the element, and the `string` is the
+  /// name of the element.
+  ///
+  /// Only records and single case union types have labeled elements.  The
+  /// handler is chosen by attempting to get an element of one of the above
+  /// types from the handlers product.
+  ///
+  /// For example,
+  ///
+  ///> iter (sprintf "%s"    >> (+),
+  ///>       sprintf "%1.1f" >> (+),
+  ///>       sprintf "%d"    >> (+))
+  ///>      (1, "x", 2.0)
+  ///
+  /// returns `"2.0x1"`.
+#endif
+  val fold: 'handlers -> 'p -> 's -> 's

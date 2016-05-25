@@ -106,3 +106,47 @@ module Product =
 
   let init hs =
     generateDFS<Init, 'hs -> 'p> hs
+
+  //
+
+  type [<AbstractClass>] Fold<'e,'r,'o,'t,'hs,'s> () =
+    abstract Do: 'hs * byref<'e> * 's -> 's
+
+  type [<Rep; Get>] Fold () =
+    inherit Rules ()
+    static member Labelled (m: Labelled<'e,'r,'o,'t>,
+                            get: 'hs -> (int -> string -> 'e -> 's -> 's)) =
+      {new Fold<'e,'r,'o,'t,'hs,'s> () with
+        member t.Do (hs, e, s) = get hs m.Index m.Name e s}
+    static member Labelled (m: Labelled<'e,'r,'o,'t>,
+                            get: 'hs -> (string -> 'e -> 's -> 's)) =
+      let n = m.Name
+      {new Fold<'e,'r,'o,'t,'hs,'s> () with
+        member t.Do (hs, e, s) = get hs n e s}
+    static member Elem (m: Elem<'e,'r,'o,'t>,
+                        get: 'hs -> (int -> 'e -> 's -> 's)) =
+      let i = m.Index
+      {new Fold<'e,'r,'o,'t,'hs,'s> () with
+        member t.Do (hs, e, s) = get hs i e s}
+    static member Elem (_: Elem<'e,'r,'o,'t>, get: 'hs -> ('e -> 's -> 's)) =
+      {new Fold<'e,'r,'o,'t,'hs,'s> () with
+        member t.Do (hs, e, s) = get hs e s}
+    static member Pair (eI: Fold<'e,Pair<'e,'r>,'o,'t,'hs,'s>,
+                        rI: Fold<'r,        'r, 'o,'t,'hs,'s>) =
+      {new Fold<Pair<'e,'r>,Pair<'e,'r>,'o,'t,'hs,'s> () with
+        member t.Do (hs, er, s) =
+          rI.Do (hs, &er.Rest, eI.Do (hs, &er.Elem, s))}
+    static member Id (get: 'hs -> ('s -> 't -> 's)) =
+      fun hs t s ->
+        get hs s t
+    static member Product (m: AsPairs<'p,'o,'t>, pI: Fold<'p,'p,'o,'t,'hs,'s>) =
+      fun hs t s ->
+        let mutable p = m.ToPairs t
+        pI.Do (hs, &p, s)
+    static member Union (_: AsChoices<'p,'t>,
+                         m: Case<'p,'p,'t>,
+                         pI: Fold<'p,'p,'p,'t,'hs,'s>) =
+      Fold.Product (m, pI)
+
+  let fold hs p s =
+    generateDFS<Fold, 'hs -> 'p -> 's -> 's> hs p s
