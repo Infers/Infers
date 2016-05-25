@@ -61,7 +61,7 @@ module Product =
                          pI: Iter<'p,'p,'p,'t,'hs>) =
       Iter.Product (m, pI)
 
-  let iter (hs: 'hs) (p: 'p) =
+  let iter hs p =
     generateDFS<Iter, 'hs -> 'p -> unit> hs p
 
   //
@@ -104,5 +104,5 @@ module Product =
                          pI: Init<'p,'p,'p,'t,'hs>) =
       Init.Product (m, pI)
 
-  let init (hs: 'hs) : 'p =
+  let init hs =
     generateDFS<Init, 'hs -> 'p> hs
