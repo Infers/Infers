@@ -56,7 +56,9 @@ module Product =
       fun hs t ->
         let mutable p = m.ToPairs t
         pI.Do (&p, hs)
-    static member Union (_: AsChoices<'p,'t>, m: Case<'p,'p,'t>, pI: Iter<'p,'p,'p,'t,'hs>) =
+    static member Union (_: AsChoices<'p,'t>,
+                         m: Case<'p,'p,'t>,
+                         pI: Iter<'p,'p,'p,'t,'hs>) =
       Iter.Product (m, pI)
 
   let iter (hs: 'hs) (p: 'p) =
@@ -97,7 +99,9 @@ module Product =
         let mutable p = Unchecked.defaultof<_>
         pI.Do (hs, &p)
         m.Create (&p)
-    static member Union (_: AsChoices<'p,'t>, m: Case<'p,'p,'t>, pI: Init<'p,'p,'p,'t,'hs>) =
+    static member Union (_: AsChoices<'p,'t>,
+                         m: Case<'p,'p,'t>,
+                         pI: Init<'p,'p,'p,'t,'hs>) =
       Init.Product (m, pI)
 
   let init (hs: 'hs) : 'p =
