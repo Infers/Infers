@@ -379,6 +379,10 @@ module Json =
         lp [] 0
        ToJson = fun t -> pJ.[asC.Tag t].ToJson t}
 
+    static member Value =
+      {OfJson = Choice1Of2
+       ToJson = id}
+
   let toJson<'t> t = generateDFS<Json, JsonValue<'t>>.ToJson t
   let tryOfJson<'t> j = generateDFS<Json, JsonValue<'t>>.OfJson j
   let ofJson<'t> j =
