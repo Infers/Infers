@@ -214,7 +214,7 @@ module Json =
                 | Choice2Of2 expected ->
                   Choice2Of2 ^ "[" + expected + "]"
           lp 0 js
-        | _ -> Choice2Of2 "list"
+        | _ -> Choice2Of2 "[ ... ]"
        ToJson = Array.map tJ.ToJson >> List.ofArray >> List}
 
     static member List (tsJ: JsonValue<array<'t>>) =
