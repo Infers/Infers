@@ -5,6 +5,7 @@ namespace Infers.Toys
 open System
 open System.IO
 open System.Text
+open System.Collections.Generic
 open Infers
 open Infers.Rep
 open FParsec.Primitives
@@ -219,6 +220,31 @@ module Json =
     static member List (tsJ: JsonValue<array<'t>>) =
       {OfJson = tsJ.OfJson >> Choice.map List.ofArray id
        ToJson = Array.ofList >> tsJ.ToJson}
+
+    static member Dictionary (tJ: JsonValue<'t>) =
+      {OfJson = function
+        | Obj o ->
+          let d = Dictionary<_, _> ()
+          use e = (o :> seq<_>).GetEnumerator ()
+          let rec lp () =
+            if e.MoveNext () then
+              let kv = e.Current
+              match tJ.OfJson kv.Value with
+               | Choice1Of2 v ->
+                 d.Add (kv.Key, v)
+                 lp ()
+               | Choice2Of2 expected ->
+                 Choice2Of2 ^ "{\"...\":" + expected + "}"
+            else
+              Choice1Of2 d
+          lp ()
+        | _ ->
+          Choice2Of2 "{ ... }"
+       ToJson = Seq.map (fun kv -> (kv.Key, tJ.ToJson kv.Value)) >> Map >> Obj}
+
+    static member Map (dtJ: JsonValue<Dictionary<string, 't>>) =
+      {OfJson = dtJ.OfJson >> Choice.map Map.ofDictionary id
+       ToJson = Dictionary<_, _> >> dtJ.ToJson}
 
     static member Item (_: Item<'e,'r,'t>, eJ: JsonValue<'e>) =
       let name = Some typeof<'e>.Name
