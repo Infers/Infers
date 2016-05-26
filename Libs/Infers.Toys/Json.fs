@@ -41,52 +41,55 @@ module Json =
 
   type N = NumberLiteralOptions
 
+  let tString =
+    skipChar '\"' >>= fun () ->
+    let b = StringBuilder ()
+    let (outside, outside') = createParserForwardedToRef ()
+    let (escaped, escaped') = createParserForwardedToRef ()
+    let app (c: char) = b.Append c |> ignore ; outside
+    outside' :=
+      anyChar >>= function
+       | '\"' -> spaces >>% b.ToString ()
+       | '\\' -> escaped
+       | c -> app c
+    escaped' :=
+      anyChar >>= function
+       | '\"' -> app '\"'
+       | '\\' -> app '\\'
+       | '/'  -> app '/'
+       | 'b'  -> app '\b'
+       | 'f'  -> app '\f'
+       | 'n'  -> app '\n'
+       | 'r'  -> app '\r'
+       | 't'  -> app '\t'
+       | 'u'  ->
+         (pipe4 hex hex hex hex <| fun d1 d2 d3 d4 ->
+          let inline d d s =
+            s * 16 + int d - (if   '0' <= d && d <= '9' then int '0'
+                              elif 'a' <= d && d <= 'f' then int 'a' - 10
+                              else                           int 'A' - 10)
+          0 |> d d1 |> d d2 |> d d3 |> d d4 |> char) >>= app
+       | c -> sprintf "Invalid escape: %A" c |> fail
+    outside
+  let tNumber =
+    numberLiteral (N.AllowMinusSign ||| N.AllowFraction ||| N.AllowExponent)
+     "number" |>> (fun n -> n.String) .>> spaces
+  let tNull =
+    skipString "null" .>> spaces
+  let tBool =
+    choiceL [skipString "true" >>% true
+             skipString "false" >>% false] "boolean"
   let (pJSON', pJSON'') = createParserForwardedToRef ()
+  let inline p c = skipChar c .>> spaces
+  let pObject = p '{' >>. sepBy (tString .>> p ':' .>>. pJSON') (p ',') .>> p '}'
+  let pArray = p '[' >>. sepBy pJSON' (p ',') .>> p ']'
   do pJSON'' :=
-     let pId = many1Satisfy Char.IsLower .>> spaces
-     let pStr =
-       skipChar '\"' >>= fun () ->
-       let b = StringBuilder ()
-       let rec app (c: char) = b.Append c |> ignore ; unescaped ()
-       and unescaped () =
-         anyChar >>= function
-          | '\"' -> spaces >>% b.ToString ()
-          | '\\' -> escaped ()
-          | c -> app c
-       and escaped () =
-         anyChar >>= function
-          | '\"' -> app '\"'
-          | '\\' -> app '\\'
-          | '/'  -> app '/'
-          | 'b'  -> app '\b'
-          | 'f'  -> app '\f'
-          | 'n'  -> app '\n'
-          | 'r'  -> app '\r'
-          | 't'  -> app '\t'
-          | 'u'  ->
-            (pipe4 hex hex hex hex <| fun d1 d2 d3 d4 ->
-             let inline d d s =
-               s * 16 + int d - (if   '0' <= d && d <= '9' then int '0'
-                                 elif 'a' <= d && d <= 'f' then int 'a' - 10
-                                 else                           int 'A' - 10)
-             0 |> d d1 |> d d2 |> d d3 |> d d4 |> char) >>= app
-          | c -> sprintf "Invalid escape: %A" c |> fail
-       unescaped ()
-     let pNum =
-       numberLiteral (N.AllowMinusSign ||| N.AllowFraction ||| N.AllowExponent)
-        "number" |>> (fun n -> n.String) .>> spaces
-     let inline p c = skipChar c .>> spaces
-     let pObj = p '{' >>. sepBy (pStr .>> p ':' .>>. pJSON') (p ',') .>> p '}'
-     let pLst = p '[' >>. sepBy pJSON' (p ',') .>> p ']'
-     choiceL [
-       pObj |>> (toMap >> Obj)
-       pLst |>> List
-       pStr |>> String
-       pNum |>> Number
-       pId >>= function "true"  -> preturn t
-                      | "false" -> preturn f
-                      | "null"  -> preturn Nil
-                      | id -> sprintf "Unexpected: %s" id |> fail] "value"
+     choiceL [pObject |>> (toMap >> Obj)
+              pArray  |>> List
+              tString |>> String
+              tNumber |>> Number
+              tBool   |>> Bool
+              tNull    >>%Nil] "value"
   let pJSON = spaces >>. pJSON'
 
   let tryOfString string =
