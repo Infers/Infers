@@ -188,7 +188,11 @@ module Json =
       {OfJson = function Bool v -> Choice1Of2 v | _ -> Choice2Of2 "bool"
        ToJson = Bool}
     static member Int32 = number int string
-    static member Float = number float ^ sprintf "%.17g"
+    static member Float =
+      number float ^ fun x ->
+      if Double.IsNaN x || Double.IsInfinity x
+      then "null"
+      else sprintf "%.17g" x
     static member Int64 = number int64 string
     static member String =
       {OfJson = function String v -> Choice1Of2 v | _ -> Choice2Of2 "string"
