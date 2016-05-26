@@ -166,9 +166,9 @@ module Json =
     abstract OfJson: list<Value> * byref<'t> -> option<string>
     abstract ToJson: byref<'t> -> list<Value>
 
-  type JsonA<'e,'r,'t> = A of JsonArray<'e>
+  type JsonA<'e,'r,   't> = A of JsonArray<'e>
   type JsonP<'e,'r,'o,'t> = P of JsonObj<'e>
-  type JsonS<'p,'o,'t> = S of list<JsonValue<'t>>
+  type JsonS<'p,'o,   't> = S of list<JsonValue<'t>>
 
   let number (ofString: string -> 't) (toString: 't -> string) =
     {OfJson = function (Number v) -> v |> ofString |> Choice1Of2
