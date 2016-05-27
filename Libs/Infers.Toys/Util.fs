@@ -16,3 +16,14 @@ module Map =
     d
     |> Seq.map ^ fun kv -> (kv.Key, kv.Value)
     |> Map
+
+module Choice =
+  let inline fold f g = function Choice1Of2 x -> f x
+                               | Choice2Of2 y -> g y
+  let inline map f g = fold (f >> Choice1Of2) (g >> Choice2Of2)
+
+module Option =
+  let inline orElse u2xO xO =
+    match xO with
+     | None -> u2xO ()
+     | some -> some

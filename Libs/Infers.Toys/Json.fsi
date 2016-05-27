@@ -2,6 +2,7 @@
 
 namespace Infers.Toys
 
+open System.Collections.Generic
 open PPrint
 
 /// Provides a mapping between a subset of F# and JSON values.  The goal is to
@@ -19,24 +20,25 @@ open PPrint
 /// APIs.
 ///
 /// A mapping is always specified as a F# type.  In the following we specify the
-/// (almost) bidirectional translation of the supported subset of F# values to
-/// JSON values.
+/// semi bidirectional translation of the supported subset of F# values to JSON
+/// values.  The notation below uses `[<` and `>]` as "semantic brackets" inside
+/// of which translation proceeds.
 ///
 /// Simple values are translated as is:
 ///
-///>                      [< true >]  ~  true
-///>                     [< false >]  ~  false
-///>                [< number:int >]  ~  number
-///>              [< number:float >]  ~  number
-///>              [< number:int64 >]  ~  number
-///>                  [< "string" >]  ~  "string"
+///>                 [< true >]  ~  true
+///>                [< false >]  ~  false
+///>           [< number:int >]  ~  number
+///>         [< number:float >]  ~  number
+///>         [< number:int64 >]  ~  number
+///>             [< "string" >]  ~  "string"
 ///
 /// Special numbers are translated to null and the translation is obviously not
 /// bidirectional:
 ///
-///>                  [< nan:float>]  ~  null
-///>             [< infinity:float>]  ~  null
-///>            [< -infinity:float>]  ~  null
+///>             [< nan:float>]  ~  null
+///>        [< infinity:float>]  ~  null
+///>       [< -infinity:float>]  ~  null
 ///
 /// Note that special numbers do not have standard representation in JSON and
 /// the above treatment of special numbers corresponds to what JavaScript's
@@ -45,16 +47,16 @@ open PPrint
 ///
 /// The unit value, `()`, is translated to null:
 ///
-///>                        [< () >]  ~  null
+///>                   [< () >]  ~  null
 ///
 /// Records are translated to objects where record fields of `option<_>` type
 /// are considered optional properties:
 ///
-///>   [< {l1 = v1; ...; lN = vN} >]  ~  {[< "l1": v1 >], ..., [< "lN": vN >]}
+///>       [< {l1 = v1; ...} >]  ~  {[< l1 = v1 >], ...}
 ///
-///>               [< "l": None   >]  ~
-///>               [< "l": Some v >]  ~  "l": [< v >]
-///>               [< "l":      v >]  ~  "l": [< v >]
+///>           [< l = None   >]  ~
+///>           [< l = Some v >]  ~  "l": [< v >]
+///>           [< l =      v >]  ~  "l": [< v >]
 ///
 /// Note that `option<_>` types are only treated specially when they are fields
 /// of record types (or labeled elements of a union case as specified below).
@@ -65,63 +67,71 @@ open PPrint
 /// Tuples are translated to fixed length arrays with non-uniform types while
 /// lists and arrays are translated to arrays with uniform type:
 ///
-///>           [<  (v1, ..., vN)  >]  ~  [[< v1 >], ..., [< vN >]]
-///>           [<  [v1, ..., vN]  >]  ~  [[< v1 >], ..., [< vN >]]
-///>           [< [|v1, ..., vN|] >]  ~  [[< v1 >], ..., [< vN >]]
+///>           [<  (v, ...)  >]  ~  [[< v >], ...]
+///
+///>           [<  [v, ...]  >]  ~  [[< v >], ...]
+///>           [< [|v, ...|] >]  ~  [[< v >], ...]
 ///
 /// Union cases are translated by ignoring the union constructor `C` and
 /// treating the carried value(s) either as a value by itself or as a record:
 ///
-///>                       [< C v >]  ~  [< v >]
-///> [< C (l1 = v1, ..., lN = vN) >]  ~  {[< "l1": v1 >], ..., [< "lN": vN >]}
+///>                  [< C v >]  ~  [< v >]
+///
+///>       [< C (l = v, ...) >]  ~  {[< l1 = v1 >], ...}
+///
+/// Note that if you do not specify labels for elements of a union case product,
+/// F# will implicitly assign names starting with `Item1` to such elements.
 ///
 /// That union constructors are ignored makes it possible to use them in
 /// encodings of both discriminated and non-discriminated unions.  For the
 /// purpose of encoding typical discriminated unions, the special `Is<_>` value
 /// is translated to a string constant:
 ///
-///>              [< Is<TypeName> >]  ~  "TypeName"
+///>         [< Is<TypeName> >]  ~  "TypeName"
 ///
 /// Maps and dictionaries whose keys are strings are translated to objects:
 ///
-///>       [< map [("k", v); ...] >]  ~  {"k": [< v >], ...}
-///>      [< dict [("k", v); ...] >]  ~  {"k": [< v >], ...}
+///>  [< map [("k", v); ...] >]  ~  {"k": [< v >], ...}
+///> [< dict [("k", v); ...] >]  ~  {"k": [< v >], ...}
 ///
-/// Finally, JSON AST values are traslated to JSON:
+/// Finally, JSON `AST` values are translated to JSON:
 ///
-///>                   [< Obj map >]  ~  [< map >]
-///>                 [< List list >]  ~  [< list >]
-///>           [< String "string" >]  ~  "string"
-///>           [< Number "number" >]  ~  number
-///>                 [< Bool bool >]  ~  [< bool >]
-///>                       [< Nil >]  ~  null
+///>          [< Object dict >]  ~  [< dict >]
+///>            [< Array seq >]  ~  [< seq >]
+///>      [< String "string" >]  ~  "string"
+///>      [< Number "number" >]  ~  number
+///>         [< Boolean bool >]  ~  [< bool >]
+///>                 [< Null >]  ~  null
 #endif
-[<AutoOpen>]
 module Json =
-  /// Represents a Json object.
-  type Obj = Map<string, Value>
-  /// Represents a Json value.
-  and Value =
-    |    Obj of Obj
-    |   List of list<Value>
-    | String of string
-    | Number of string
-    |   Bool of bool
-    |    Nil
+  /// Represents an arbitrary JSON value.
+  type AST =
+    |  Object of Dictionary<string, AST>
+    |   Array of ResizeArray<AST>
+    |  String of string
+    |  Number of string
+    | Boolean of bool
+    |    Null
 
+  /// Use type name as a simple constant string.
   type Is<'t> = | Is
 
-  val toString: Value -> string
-  val toDoc:    Value -> Doc
+  /// Converts a value of type `'t` to a string in JSON format.  See the `Json`
+  /// module documentation for a description of the type directed conversion and
+  /// allowed types.
+  val toString: 't -> string
 
-  val    ofString: string ->        Value
-  val tryOfString: string -> Choice<Value, string>
+  /// Converts a JSON format string to a value of type `'t`.  See the `Json`
+  /// module documentation for a description of the type directed conversion and
+  /// allowed types.
+  val ofString<'t> : string -> 't
 
-  val       toJson<'t> : 't -> Value
-  val toJsonString<'t> : 't -> string
+  /// Converts a value of type `'t` to a pretty printable document in JSON
+  /// format.  See the `Json` module documentation for a description of the type
+  /// directed conversion and allowed types.
+  val toDoc: 't -> Doc
 
-  val    ofJson<'t> : Value ->        't
-  val tryOfJson<'t> : Value -> Choice<'t, string>
-
-  val    ofJsonString<'t> : string ->        't
-  val tryOfJsonString<'t> : string -> Choice<'t, string>
+  /// Tries to parse a JSON format string to a value of type `'t`.  See the
+  /// `Json` module documentation for a description of the type directed
+  /// conversion and allowed types.
+  val tryParseString<'t> : string -> Choice<'t, string>
