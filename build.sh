@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
-SOLUTION=Infers.sln
-
 if hash xbuild &> /dev/null ; then
   BUILD=xbuild
   RUN=mono
@@ -25,14 +23,16 @@ function build () {
   $BUILD /nologo /verbosity:quiet /p:Configuration=$2 $1
 }
 
-if [ "$1" != "" ] ; then
-  build $SOLUTION "$*"
-else
-  for config in Debug Release ; do
-    build $SOLUTION $config
-  done
+for SOLUTION in *.sln ; do
+  if [ "$1" != "" ] ; then
+      build $SOLUTION "$*"
+  else
+    for config in Debug Release ; do
+      build $SOLUTION $config
+    done
 
-  for template in *.paket.template ; do
-    $RUN $PAKET pack output . templatefile $template
-  done
-fi
+    for template in *.paket.template ; do
+      $RUN $PAKET pack output . templatefile $template
+    done
+  fi
+done

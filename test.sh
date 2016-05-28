@@ -7,5 +7,3 @@ if hash mono &> /dev/null ; then
 else
   RUN=
 fi
-
-$RUN ./Examples/Toys/bin/Debug/Toys.exe
