@@ -4,6 +4,12 @@ Infers is a library for deriving F# values from their types and, in a way, a
 direct application of the
 [Curry-Howard correspondence](https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence)
 aka [Propositions as Types](https://www.youtube.com/watch?v=IOiZatlZtGU).
+Another way to describe Infers is as a
+[logic programming](https://en.wikipedia.org/wiki/Logic_programming) language
+embedded in F#.  Infers can be useful, for example, in situations where one
+might wish to use something like
+[type classes](https://en.wikipedia.org/wiki/Type_class) or when one might want
+to do polytypic or datatype generic programming.
 
 [![Travis Build Status](https://travis-ci.org/Infers/Infers.svg?branch=master)](https://travis-ci.org/Infers/Infers) [![NuGet](https://img.shields.io/nuget/v/Infers.svg)](https://www.nuget.org/packages/Infers/)
 
@@ -17,10 +23,13 @@ The basic idea of Infers is to view the types of static member functions as
 Infers invokes the rule functions during the resolution process to
 [`generate`](#generate) a value of the type given as the goal.
 
-Another way to view Infers is as a specialized logic programming language
-embedded in F#.  However, to support generation of F# values, the Infers
-resolution algorithm differs from general purpose logic programming languages in
-a number of ways:
+Aside from thinking of Infers as a library for generating values, another way to
+view Infers is as a specialized logic programming language embedded in F#.  The
+logo, ⊃∧∨≡, lists the connectives, namely implication, conjunction, disjunction
+and equivalence, that are provided by the logic of Infers.
+
+To support generation of F# values, the Infers resolution algorithm differs from
+general purpose logic programming languages in a number of ways:
 
 * Infers prunes the search space so that when it encounters a goal to build a
   monomorphic value, it only tries to find one way, rather than all possible
@@ -37,12 +46,6 @@ a number of ways:
   that contains [`Rules`](#Rules), those rules are added to the set of rules
   until the consequent has been built.  This allows new rules, such as rules for
   viewing a type as a sum of products, to be generated dynamically.
-
-Infers can be useful, for example, in situations where one might wish to use
-something like [type classes](https://en.wikipedia.org/wiki/Type_class) or when
-one might want to do polytypic or datatype generic programming.  Other kinds of
-applications are also quite possible.  For example, it is possible to solve
-logic puzzles using Infers.
 
 Here is a toy example of a set of rules that can generate functions to
 arbitrarily reorder or flip the arguments of a given curried function:
