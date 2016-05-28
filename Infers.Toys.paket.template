@@ -5,8 +5,7 @@ id
 version
         0.2.11
 summary
-        Infers.Toys provides a collection of more or less experimental datatype
-        generic functions for F#.
+        Infers.Toys provides a collection of more or less experimental datatype generic functions for F#.
 authors
         Vesa Karvonen and Anton Tayanovskyy
 owners
@@ -20,14 +19,9 @@ projectUrl
 requireLicenseAcceptance
         false
 description
-        Infers.Toys provides a collection of more or less experimental datatype
-        generic functions for F#.  The primary focus of Infers.Toys is to
-        demonstrate possibilities rather than to provide the best possible
-        implementations.  The documentation of individual generic functions
-        typically mention known limitations, if any.  Pull requests are welcome!
+        Infers.Toys provides a collection of more or less experimental datatype generic functions for F#.  The primary focus of Infers.Toys is to demonstrate possibilities rather than to provide the best possible implementations.  The documentation of individual generic functions typically mention known limitations, if any.  Pull requests are welcome!
 releaseNotes
-        This is an experimental version of Infers.Toys and is not recommended
-        for production use.
+        This is an experimental version of Infers.Toys and is not recommended for production use.
 copyright
         © Vesa Karvonen and Anton Tayanovskyy
 tags

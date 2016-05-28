@@ -5,8 +5,7 @@ id
 version
         0.2.3
 summary
-        Infers.Rep provides contains rules for Infers to generate sums of
-        products representations of F# types.
+        Infers.Rep provides contains rules for Infers to generate sums of products representations of F# types.
 authors
         Vesa Karvonen and Anton Tayanovskyy
 owners
@@ -20,13 +19,9 @@ projectUrl
 requireLicenseAcceptance
         false
 description
-        Infers.Rep provides rules for Infers to generate representations and
-        efficient accessors for F# types based on a sum of products
-        representation.  The representations are designed to allow the
-        implementation of efficient polytypic and datatype generic functions.
+        Infers.Rep provides rules for Infers to generate representations and efficient accessors for F# types based on a sum of products representation.  The representations are designed to allow the implementation of efficient polytypic and datatype generic functions.
 releaseNotes
-        This is an experimental version of Infers.Rep and is not recommended for
-        production use.
+        This is an experimental version of Infers.Rep and is not recommended for production use.
 copyright
         © Vesa Karvonen and Anton Tayanovskyy
 tags
