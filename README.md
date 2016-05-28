@@ -77,8 +77,16 @@ Now, for example, we could say:
 gflip (sprintf "%s %d %c!") 2 'U' "Hello" = "Hello 2 U!"
 ```
 
-You might want to try the above in a REPL.  There is a caveat: When you request
-Infers to generate a value, the value must have a monomorphic type.
+There is a caveat: When you request Infers to generate a value, the value must
+have a monomorphic type.
+
+Here is how you can get F# interactive running to try the above:
+
+```bash
+git clone https://github.com/Infers/Infers.git
+cd Infers
+./play.sh
+```
 
 ## Reference
 
