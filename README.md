@@ -1,9 +1,13 @@
-[![Travis Build Status](https://travis-ci.org/Infers/Infers.svg?branch=master)](https://travis-ci.org/Infers/Infers) [![NuGet](https://img.shields.io/nuget/v/Infers.svg)](https://www.nuget.org/packages/Infers/)
+[ [Background](#background) | [Reference](#reference) ]
 
 Infers is a library for deriving F# values from their types and, in a way, a
 direct application of the
 [Curry-Howard correspondence](https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence)
 aka [Propositions as Types](https://www.youtube.com/watch?v=IOiZatlZtGU).
+
+[![Travis Build Status](https://travis-ci.org/Infers/Infers.svg?branch=master)](https://travis-ci.org/Infers/Infers) [![NuGet](https://img.shields.io/nuget/v/Infers.svg)](https://www.nuget.org/packages/Infers/)
+
+## Background
 
 The basic idea of Infers is to view the types of static member functions as
 [Horn clauses](https://en.wikipedia.org/wiki/Horn_clause).  Given a set of
