@@ -10,8 +10,8 @@ The basic idea of Infers is to view the types of static member functions as
 [`Rules`](#Rules), it is then possible to attempt to prove goals using a
 [Prolog](https://en.wikipedia.org/wiki/Prolog)-style
 [resolution](https://en.wikipedia.org/wiki/Resolution_(logic)) algorithm.
-Infers invokes the rule functions during the resolution process to `generate` a
-value of the type given as the goal.
+Infers invokes the rule functions during the resolution process to
+[`generate`](#generate) a value of the type given as the goal.
 
 Another way to view Infers is as a specialized logic programming language
 embedded in F#.  However, to support generation of F# values, the Infers
@@ -132,7 +132,7 @@ subsequently the same value is returned instantly.  An exception is raised in
 case Infers detects that there is no way to build the desired value with the
 given rules.
 
-#### <a name="Infers.generate"></a>[`val generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#Infers.generate)
+#### <a name="generate"></a>[`val generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generate)
 
 Uses
 [IDDFS](https://en.wikipedia.org/wiki/Iterative_deepening_depth-first_search) to
@@ -141,7 +141,7 @@ is slow, but works even in cases where the given rules allow infinite
 non-productive derivations.  IDDFS also always finds a minimal solution in the
 sense that the depth of the derivation tree is minimal.
 
-#### <a name="Infers.generateDFS"></a>[`val generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#Infers.generateDFS)
+#### <a name="generateDFS"></a>[`val generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generateDFS)
 
 Uses [DFS](https://en.wikipedia.org/wiki/Depth-first_search) to try to find a
 way to generate a value of type `'t` using the rules `'r`.  DFS is fast, but
