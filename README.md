@@ -122,7 +122,7 @@ is called.
 The `Set` method must set the value of the proxy to close the resulting cyclic
 value.
 
-### <a name="Infers"></a>[`module Infers`](#Infers)
+#### <a name="Infers"></a>[`module Infers`](#Infers)
 
 The type-indexed functions of the `Infers` module, `generate<'r, 't>` and
 `generateDFS<'r, 't>` are the interface to the Infers resolution algorithm.
@@ -132,7 +132,7 @@ subsequently the same value is returned instantly.  An exception is raised in
 case Infers detects that there is no way to build the desired value with the
 given rules.
 
-#### <a name="generate"></a>[`val generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generate)
+##### <a name="generate"></a>[`val generate<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generate)
 
 Uses
 [IDDFS](https://en.wikipedia.org/wiki/Iterative_deepening_depth-first_search) to
@@ -141,7 +141,7 @@ is slow, but works even in cases where the given rules allow infinite
 non-productive derivations.  IDDFS also always finds a minimal solution in the
 sense that the depth of the derivation tree is minimal.
 
-#### <a name="generateDFS"></a>[`val generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generateDFS)
+##### <a name="generateDFS"></a>[`val generateDFS<'r, 't when 'r :> Rules and 'r: (new: unit -> 'r)> : 't`](#generateDFS)
 
 Uses [DFS](https://en.wikipedia.org/wiki/Depth-first_search) to try to find a
 way to generate a value of type `'t` using the rules `'r`.  DFS is fast, but
