@@ -24,9 +24,13 @@ Infers invokes the rule functions during the resolution process to
 [`generate`](#generate) a value of the type given as the goal.
 
 Aside from thinking of Infers as a library for generating values, another way to
-view Infers is as a specialized logic programming language embedded in F#.  The
-logo, ⊃∧∨≡, lists the connectives, namely implication, conjunction, disjunction
-and equivalence, that are provided by the logic of Infers.
+view Infers is as a specialized logic programming language embedded in F#.
+Applications such as solving
+[logic puzzles](http://www.anselm.edu/internet/compsci/faculty_staff/mmalita/HOMEPAGE/logic/index.html)
+that are typical for more general purpose logic programming languages are also
+possible with Infers.  The logo, ⊃∧∨≡, lists the connectives, namely
+implication, conjunction, disjunction and equivalence, that are provided by the
+logic of Infers.
 
 To support generation of F# values, the Infers resolution algorithm differs from
 general purpose logic programming languages in a number of ways:
