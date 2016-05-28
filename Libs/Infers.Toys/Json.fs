@@ -310,7 +310,7 @@ module Json =
           match eJ.parse (ast, i, &er.Elem) with
            | None -> rJ.parse (ast, i+eCount, &er.Rest)
            | some -> some
-        member t.toAST (er, ast) =
+        member __.toAST (er, ast) =
           eJ.toAST (&er.Elem, ast)
           rJ.toAST (&er.Rest, ast)}
 
