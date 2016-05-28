@@ -65,7 +65,7 @@ type GFlip () =
     xac >> ac2y
 ```
 
-To generate flipping functions we invoke `generate`:
+To generate flipping functions we invoke [`generate`](#generate):
 
 ```fs
 let gflip f = generate<GFlip, (_ -> _) -> _ -> _> f
