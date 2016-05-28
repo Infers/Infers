@@ -11,10 +11,12 @@ authors
         Vesa Karvonen and Anton Tayanovskyy
 owners
         Vesa Karvonen
+iconUrl
+        https://avatars0.githubusercontent.com/u/19616776
 licenseUrl
-        https://github.com/VesaKarvonen/Infers/blob/master/LICENSE.md
+        https://github.com/Infers/Infers/blob/master/LICENSE.md
 projectUrl
-        https://github.com/VesaKarvonen/Infers
+        https://github.com/Infers/Infers
 requireLicenseAcceptance
         false
 description
